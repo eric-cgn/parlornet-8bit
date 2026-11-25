@@ -1,9 +1,10 @@
 /* ParlorNet on the Apple IIe and IIgs: Cannon Fire's arena (core/games/cannonfire.c includes it). In color
    the ground is green; in monochrome it is white.
 
-   Each tank has a barrel at its aim (the last shot's, from the A lines; the player's own as it is set),
-   and on the player's turn a lead of square dots beyond the barrel's tip, in the direction the shell will
-   leave in: one dot, and one more for each 40 of power. A shot's events are shown as they come: the shell
+   Each tank has its letter and its health ("87%") over it, a barrel at its aim (the last shot's, from the
+   A lines; the player's own as it is set), and on the player's turn a lead of square dots beyond the
+   barrel's tip, in the direction the shell will leave in: one dot, and one more for each 40 of power.
+   A shot's events are shown as they come: the shell
    flies along the path the TRJ lines give, leaving a dot at each point, bursts at the HIT, and the ground
    the crater takes (ZCH) dissolves in eight steps; ground that a view shows lower than the screen does
    (a shot whose events were not shown) dissolves the same way. The barrels, the lead, the shell, the
@@ -200,9 +201,9 @@ static void mark(unsigned char x, unsigned char wide)
 {
     unsigned int p0 = ox + x * scale, p1 = p0 + scale - 1;
     unsigned char b;
-    if (wide) {
-        p0 = cx(x) > 6 ? cx(x) - 6 : 0;
-        p1 = cx(x) + 6;
+    if (wide) {                         /* the tank, its letter and its health (tanks) */
+        p0 = cx(x) > 16 ? cx(x) - 16 : 0;
+        p1 = cx(x) + 17;
     }
     for (b = p0 / 7; b <= p1 / 7 && b < 40; ++b)
         dirty[b] = 1;
@@ -264,6 +265,18 @@ static void clear_box(unsigned int x0, unsigned int x1, unsigned char y0, unsign
     }
 }
 
+/* A tank's health over its letter (cell b): what is left of its 100, as "87%" (a wreck's, nothing). */
+static void health(unsigned char s, unsigned char b, unsigned char y)
+{
+    static char t[5];
+    t[0] = 0;
+    if (hp[s]) {
+        strcpy(t, utoa10(hp[s]));
+        strcat(t, "%");
+    }
+    ui_textn(b ? b - 1 : 0, y, t, 4);
+}
+
 /* The tanks. In monochrome each is cut out of the ground first, a black edge 2 pixels wide round it and 2
    lines under it, and its hull is hollow, so a white tank stands out from the white ground it sits on or
    in. */
@@ -291,10 +304,12 @@ static void tanks(void)
             hg_w = 7;
             hgr_hline();
         }
-        /* its letter above it, clear of the barrel and the lead */
+        /* its letter above it, clear of the barrel and the lead, and its health over that */
+        y = top < TOP + 36 ? TOP + 8 : top - 28;
         hg_x = l / 7;
-        hg_y = top < TOP + 28 ? TOP : top - 28;
+        hg_y = y;
         hgr_char('A' + s);
+        health(s, l / 7, y - 8);
         shown_tx[s] = tx[s];
         shown_hp[s] = hp[s];
         shown_tg[s] = ht[tx[s]];
@@ -504,7 +519,6 @@ static void crater(void)
 static void info(void)
 {
     static char b[42];
-    unsigned char s = g_seat >= 0 ? g_seat : 0;
     strcpy(b, "Angle ");
     strcat(b, utoa10(ang));
     strcat(b, " Power ");
@@ -519,10 +533,12 @@ static void info(void)
     } else
         strcat(b, "0");
     ui_textn(0, BASE + 4, b, 27);
-    strcpy(b, "HP ");
-    strcat(b, utoa10(hp[s]));
-    strcat(b, " Mv ");
-    strcat(b, utoa10(moves[s]));
+    b[0] = 0;
+    if (g_seat >= 0) {                  /* which tank is the player's, and their moves left */
+        strcpy(b, "You:A Mv ");
+        b[4] += g_seat;
+        strcat(b, utoa10(moves[g_seat]));
+    }
     ui_textn(28, BASE + 4, b, 12);
 }
 

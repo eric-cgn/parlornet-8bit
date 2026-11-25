@@ -2,7 +2,8 @@
    shows the terrain (Z lines), the tanks (K), the wind (N) and the shots, and sends the player's aim. The aim
    is an angle (0 towards the right, 90 straight up, 180 towards the left) and a power (0 to 100): the
    buttons change them by 5, the keys , and . (angle) and - and = (power) by 1. Fire shoots; Move drives the
-   tank left or right as far as one move goes (four a game).
+   tank left or right as far as one move goes (four a game). Over each tank are its letter and its health
+   (what is left of its 100 hit points, "87%"); the line under the arena says which letter is the player's.
 
    The machine draws it (draw/cannonfire.c, included below: cf_draw, cf_event, which shows a shot's events
    as they come, and aim_shown, which shows the aim changed), with the buttons ID_AL to ID_MR. */
@@ -142,5 +143,6 @@ static unsigned char cf_key(unsigned char k)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_cannonfire = {"cannonfire", "Cannon Fire", cf_begin, cf_line, cf_draw, cf_click, cf_key,
-                                  K3 ", . angle  " K3 "- = power  " K1 "F fire", 1, cf_event};
+                                  K3 ", . angle " K3 "- = power " K1 "F fire 87%=health", 1,
+                                  cf_event};
 #pragma rodata-name (pop)

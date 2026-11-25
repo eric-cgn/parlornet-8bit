@@ -3,6 +3,7 @@
 # out (--internal), with parlord on port 16501 (on the lab network; an empty database), the bot, and the lab's orchestrator
 # (test/lab/orch.py) answering the runner's `need` steps through test/work/c64xchg. ParlorNet comes from a
 # checkout (PARLORNET), mounted read-only; MOTD=file sets the message of the day (a path in the checkout).
+# The bot moves at once; THINK=least,most makes it wait that many seconds first (the deployed bot: 0.5,2).
 # The container runs unprivileged, with every capability dropped.
 set -eu
 : "${PARLORNET:?set PARLORNET to a ParlorNet checkout}"
@@ -20,7 +21,7 @@ docker run -d --name c64-parlor --network c64lab --cap-drop ALL --security-opt n
 	    --keys /srv/keys --db /srv/lab.db --admin-telnet 0 --rate 1000 --burst 1000 ${MOTD:+--motd /pn/$MOTD} \
 	    > /srv/core.log 2>&1 &
 	  sleep 2
-	  python3 -m bot --core 127.0.0.1:16590 --key /srv/keys/bot.key --think 0,0 --pace 0 --poll 0.3 > /srv/bot.log 2>&1 &
+	  python3 -m bot --core 127.0.0.1:16590 --key /srv/keys/bot.key --think ${THINK:-0,0} --pace 0 --poll 0.3 > /srv/bot.log 2>&1 &
 	  python3 /lab/orch.py /xchg > /srv/orch.log 2>&1 &
 	  wait" >/dev/null
 sleep 4

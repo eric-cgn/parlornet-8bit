@@ -111,6 +111,14 @@ shot the same way (`cfs_bot_*`), and a third aim and a shot in monochrome on a m
 checks that the bot's shot is shown, from the events after the move's reply, before the view that already
 has it.
 
+`plans/cannonfire_incoming.txt` is for a lab parlor whose bot thinks as the deployed one does
+(`THINK=0.5,2 test/lab/parlor.sh`; the bot otherwise moves at once): the player fires, and the bot answers
+while the player's shot is still being shown, so the view fetched after it already has the bot's shot. The
+snapshots every 6 frames from Fire on (`cfi_*`) show the bot's shell flying in along its path, its burst and
+its crater dissolving, before the view: the program sees that the view is newer than the events it has
+read, reads those first and fetches the view again. `cfi_after` and `cfi_mono` show each tank's health over
+its letter, in color and in monochrome.
+
 ## Through a Unix shell
 
 `lab/shell/` is a container with a shell on a pty behind a TCP port, as a login over a serial line
@@ -273,6 +281,8 @@ The plans in `vice/plans`:
   and the board in monochrome.
 - `table_entry.txt`: the first view of each of the ten games, as `plans/table_entry.txt` does for the Apple II, by
   the same target ids.
+- `cannonfire_incoming.txt` (`THINK=0.5,2` for `parlor.sh`): the bot's shot flying in after the player's, as
+  `plans/cannonfire_incoming.txt` shows on the Apple II.
 - `end_GAME.txt`, one for each of the ten games: signed up, a new game against the bot from the lobby, and the
   orchestrator's moves (`GAME+`) until the game is over, with the first view (`end_GAME_start`) and the end
   (`end_GAME_over`). In `GAME+` the orchestrator also takes a snapshot on its twelfth turn (`mid.png`), and when it
