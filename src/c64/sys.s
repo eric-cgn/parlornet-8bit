@@ -156,10 +156,14 @@ sys_start:
         sta     $FFFE
         lda     #>irq_entry
         sta     $FFFF
-        ; no CIA interrupts until the serial line is opened
+        ; no CIA interrupts until the serial line is opened, and the KERNAL's 60 Hz timer (CIA 1's timer A)
+        ; stopped: the user port sends with that timer (serial.s), and one left running would put its
+        ; underflow in the sender's way (the ticks come from the raster interrupt)
         lda     #$7F
         sta     CIA1+$0D
         sta     CIA2+$0D
+        lda     #0
+        sta     CIA1+$0E
         lda     CIA1+$0D
         lda     CIA2+$0D
         lda     #$35            ; RAM at $A000 and $E000, I/O at $D000
