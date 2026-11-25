@@ -1,4 +1,4 @@
-; ParlorNet on the Commodore 64: the serial line. Three ways, our own drivers all:
+; ParlorNet on the Commodore 64: the serial line. Two ways, our own drivers both:
 ;
 ; - The user port, bit by bit (SER_USER), wired as the KERNAL's RS-232 is: RXD on PB0 and FLAG2, TXD on PA2,
 ;   RTS PB1, DTR PB2. A start bit's falling edge on FLAG2 starts CIA2's timer B, whose NMIs sample PB0 near
@@ -8,29 +8,25 @@
 ;   ways at once. (Sending on CIA2's timer A as well, by NMI, loses an underflow now and then: an NMI is
 ;   taken on an edge, and one that comes as the interrupt register is read can slip by. The IRQ is taken on
 ;   a level.)
-; - The user port's UP9600 wiring (SER_UP9600), 9600 baud: RXD also on SP2 (CIA2's serial port) and FLAG2,
-;   with PB7 wired to CNT2, and TXD on SP1 (CIA1's). A start bit on FLAG2 starts CIA2's timer B toggling
-;   PB7, whose rising edges in the middle of the eight data bits shift them into CIA2's shift register; its
-;   interrupt then has the byte, the first bit last. To send, CIA1's shift register, clocked by its timer
-;   A at the bit rate, shifts out the start bit and the first seven bits, then the last bit and the stop bit.
-; - A SwiftLink or Turbo232 cartridge's 6551 (SER_SWIFT at $DE00, SER_SWIFT_DF at $DF00), received by
-;   interrupt as on the Apple II's Super Serial Card; its crystal makes the rates twice the 6551's own.
+; - A SwiftLink-compatible 6551 (SER_SWIFT) at $DE00, $DF00 or $DF80 (ser_acia; the settings choose it): a
+;   SwiftLink or Turbo232 cartridge (its jumper at $DE00 or $DF00), or the modem of a Commodore 64 Ultimate or an
+;   Ultimate 64 (its ACIA mapping DE00 or DF80); received by interrupt (NMI) as on the Apple II's Super
+;   Serial Card. Its crystal (3.6864 MHz) makes the rates twice the 6551's own: 300 to 38400 here.
 ;
 ; Received bytes go into a 256-byte ring from the NMI; bytes to send bit by bit go through a ring of their
-; own, and the other ways send them as they come. The NMI (sys.s jumps through nmi_vec) has a handler for each
+; own, and the 6551 sends them as they come. The NMI (sys.s jumps through nmi_vec) has a handler for each
 ; way; they use no zero page.
 
         .importzp       tmp1, tmp2, tmp3
         .import         popa, _pal
         .import         _eth_on, _eth_get, _eth_put, _eth_drop
         .export         _ser_open, _ser_close, _ser_get, _ser_put, _ser_used, _ser_drop
-        .export         _ser_pause, _ser_resume, _ser_flow, _ser_lost, _ser_iface
+        .export         _ser_pause, _ser_resume, _ser_flow, _ser_lost, _ser_iface, _ser_acia
         .export         nmi_vec, irq_tx, _ser_irq
 
 CIA1    = $DC00
 CIA2    = $DD00
 SER_USER   = 0
-SER_UP9600 = 1
 SER_SWIFT  = 2
 
         .segment "RING"
@@ -44,6 +40,7 @@ _ser_irq:       .byte   0       ; 1 while CIA1's timer A sends bit by bit (sys.s
 _ser_flow:      .byte   0       ; 0 none, 1 RTS/CTS
 _ser_lost:      .byte   0       ; bytes dropped because the ring was full
 _ser_iface:     .byte   $FF     ; the way in use ($FF: none open)
+_ser_acia:      .word   $DE00   ; the 6551's address: $DE00, $DF00 or $DF80
 rhead:  .byte   0               ; written by the NMI
 rtail:  .byte   0
 held:   .byte   0               ; 1 while RTS is off because the ring is nearly full
@@ -66,9 +63,6 @@ txcnt:  .byte   0
 txbyte: .byte   0
 txbase: .byte   0               ; CIA2's port A with TXD low (the start bit, a 0)
 txout:  .byte   0               ; CIA2's port A for CIA1's timer A's next underflow, made ready beforehand
-; UP9600
-srpend: .byte   0               ; bytes in CIA1's shift register still to go
-revtmp: .byte   0
 ; the 6551
 cmdreg: .byte   $09
 
@@ -111,7 +105,6 @@ _ser_open:
         sta     txhead
         sta     txtail
         sta     txbusy
-        sta     srpend
         sta     rxcnt
         lda     tmp1
         sta     _ser_iface
@@ -131,9 +124,6 @@ _ser_open:
         lda     #0
         sta     CIA2+$0E        ; timers stopped
         sta     CIA2+$0F
-        lda     tmp1
-        cmp     #SER_UP9600
-        beq     open_up9600
         ; bit by bit: the rate's timings (300 to 4800)
         ldx     tmp2
         cpx     #4
@@ -170,68 +160,27 @@ _ser_open:
         ldx     #>nmi_bits
         jmp     on_cia2
 
-open_up9600:
-        jsr     up_tx
-        ; CIA2 receives: its timer B's latch at half a bit, the shift register in
-        stx     CIA2+6
-        lda     #0
-        sta     CIA2+7
-        lda     CIA2+$0E
-        and     #$BF            ; serial port in
-        sta     CIA2+$0E
-        lda     #<nmi_up9600
-        ldx     #>nmi_up9600
-        jmp     on_cia2
-
-; UP9600: CIA1 sends, its timer A at half a bit and the shift register out. Again after a pause, since the
-; pause and the KERNAL's disk calls read CIA1's interrupt flags, which ser_put watches for the register.
-; Returns the timer's count in X.
-up_tx:
-        ldx     #50             ; PAL: 2 * 51 cycles a bit, 9659 baud
-        lda     _pal
-        bne     :+
-        ldx     #52             ; NTSC: 2 * 53, 9648 baud
-:       stx     CIA1+4
-        lda     #0
-        sta     CIA1+5
-        lda     #$51            ; start, force load, continuous, serial port out
-        sta     CIA1+$0E
-        lda     CIA1+$0D        ; (its interrupts stay off; ser_put watches the flag)
-        lda     #$FF            ; the line idle
-        sta     CIA1+$0C
-        lda     #1
-        sta     srpend
-        rts
-
 on_cia2:
         sta     nmi_vec
         stx     nmi_vec+1
-; The interrupts as they are between bytes: CIA2's FLAG (a start bit), and bit by bit CIA1's timer A (sending,
-; by IRQ); with UP9600, CIA2's FLAG and shift register.
+; The interrupts as they are between bytes: CIA2's FLAG (a start bit), and CIA1's timer A (sending, by IRQ).
 cia2_idle:
         lda     #$7F
         sta     CIA2+$0D
         lda     CIA2+$0D
-        ldx     #$98
-        lda     _ser_iface
-        bne     :+
-        lda     #$7F
         sta     CIA1+$0D
         lda     CIA1+$0D
         lda     #$81
         sta     CIA1+$0D
         lda     #1
         sta     _ser_irq
-        ldx     #$90
-:       stx     CIA2+$0D
+        lda     #$90
+        sta     CIA2+$0D
         rts
 
 open_acia:
-        ldx     #$DE
-        cmp     #SER_SWIFT
-        beq     :+
-        ldx     #$DF
-:       stx     a_s1+2          ; the registers' page in each access
+        ldx     _ser_acia+1     ; the registers' address in each access: $DE00, $DF00 or $DF80 (the settings)
+        stx     a_s1+2
         stx     a_d1+2
         stx     a_c1+2
         stx     a_s2+2
@@ -239,6 +188,18 @@ open_acia:
         stx     a_r1+2
         stx     a_k1+2
         stx     a_d3+2
+        ldx     _ser_acia       ; (its low byte, $00 or $80, and the register in its two low bits)
+        stx     a_d1+1          ; data
+        stx     a_d2+1
+        stx     a_d3+1
+        inx                     ; status
+        stx     a_s1+1
+        stx     a_s2+1
+        stx     a_r1+1
+        inx                     ; command
+        stx     a_c1+1
+        inx                     ; control
+        stx     a_k1+1
 a_r1:   sta     $DE01           ; any write to the status register resets the 6551
         ldx     tmp2
         lda     acia_rate,x
@@ -384,63 +345,6 @@ tr_idle:
         sta     txbusy
         rts
 
-; UP9600: FLAG (a start bit) starts timer B toggling PB7 (CNT2): low after its first count, then high (a
-; sample) every bit from the middle of the first data bit. The shift register's interrupt has the byte, the
-; first bit in bit 7: reversed, it goes into the ring.
-nmi_up9600:
-        pha
-        lda     CIA2+$0D
-        sta     icr
-        txa
-        pha
-        lda     icr
-        and     #$08
-        beq     nu_flag
-        lda     #0
-        sta     CIA2+$0F        ; timer B stopped
-        sta     rxcnt
-        lda     CIA2+$0C
-        ldx     #8
-:       lsr     a
-        rol     revtmp
-        dex
-        bne     :-
-        lda     CIA2+1          ; (reading port B: VICE counts PB7's changes otherwise)
-        lda     #$90            ; FLAG on again
-        sta     CIA2+$0D
-        lda     revtmp
-        jsr     rx_store
-        jmp     nu_done
-nu_flag:
-        lda     icr
-        and     #$10
-        beq     nu_done
-        lda     rxcnt
-        bne     nu_done
-        lda     #$10            ; FLAG off until the byte is in
-        sta     CIA2+$0D
-        ldx     #52             ; to the first rising edge: a bit and a half from the start bit's edge
-        lda     _pal
-        bne     *+4
-        ldx     #56
-        stx     CIA2+6
-        lda     #0
-        sta     CIA2+7
-        lda     #$17            ; start, force load, continuous, PB7 toggles
-        sta     CIA2+$0F
-        ldx     #50             ; then half a bit a count
-        lda     _pal
-        bne     *+4
-        ldx     #52
-        stx     CIA2+6
-        lda     #1
-        sta     rxcnt
-nu_done:
-        pla
-        tax
-        pla
-        rti
-
 ; The 6551: a received byte into the ring.
 nmi_acia:
         pha
@@ -567,10 +471,8 @@ _ser_put:
         jmp     _eth_put
 :       ldx     _ser_iface
         bmi     sp_done
-        cpx     #SER_UP9600
-        bne     :+
-        jmp     put_up9600
-:       bcc     :+
+        cpx     #SER_SWIFT
+        bcc     :+
         jmp     put_acia
 :       ; bit by bit: into the send ring (waiting while it is full), and the sender started if idle
         ldx     txhead
@@ -613,33 +515,6 @@ _ser_put:
         sta     CIA1+5
         plp
 sp_done:
-        rts
-
-; UP9600: two bytes through CIA1's shift register, the first bit first: the start bit and bits 0 to 6,
-; then bit 7 and the stop bit (and idle ones). The register holds one while it shifts another.
-put_up9600:
-        sta     tmp1
-        ldx     #8
-:       lsr     a
-        rol     tmp2
-        dex
-        bne     :-
-        lda     tmp2            ; bit 0 first
-        lsr     a               ; the start bit (0) before it
-        jsr     sr_out
-        lda     tmp1
-        ora     #$7F
-sr_out: ldx     srpend
-        cpx     #2
-        bcc     :++
-        pha
-:       lda     CIA1+$0D
-        and     #$08
-        beq     :-
-        dec     srpend
-        pla
-:       sta     CIA1+$0C
-        inc     srpend
         rts
 
 ; The 6551: when its transmitter is free (up to about a second).
@@ -701,10 +576,7 @@ _ser_resume:
         lda     _ser_iface
         cmp     #SER_SWIFT
         bcs     rs_acia
-        cmp     #SER_UP9600
-        bne     :+
-        jsr     up_tx
-:       jsr     cia2_idle
+        jsr     cia2_idle
         lda     held
         bne     pz_done
         jmp     rts_on

@@ -228,8 +228,9 @@ test/vice/run.sh build/c64/parlornet.d64 test/vice/plans/reversi.txt test/out/c6
 - `vice/run.sh` starts VICE under Xvfb, with its binary monitor on 127.0.0.1:6502 inside the container, and the
   serial line to `lab/bridge.py` in the same container: the WiFi-modem stand-in (`LINE=modem`, the default) or a
   plain relay (`LINE=direct`, with the dialer's number emptied after the title). `LINE=host:port` sends the line to
-  another container on the lab network (a shell with pndial, say). `IFACE=user` (the default, at `BAUD`, 2400 at
-  first), `IFACE=up9600` or `IFACE=swift` picks the user port, its UP9600 wiring or a SwiftLink at $DE00.
+  another container on the lab network (a shell with pndial, say). `IFACE=swift` (the default, at `BAUD`, 19200 at first) or `IFACE=user` picks a SwiftLink at $DE00 (at $DF00 with
+  `ACIA=0xdf00`), as the program's settings start (SwiftLink compatible), or the user port's RS-232 (Supra 2400
+  compatible).
   `ATTACH=1` only puts the disk in drive 8, for plans that type the LOAD themselves; `C128=1` runs x128, which boots
   the disk. `NTSC=1` runs an NTSC machine. VICE emulates the 1541 in full, at its own speed. VICE works on a copy
   of the disk, left in the output directory as `disk-after.d64`.
@@ -250,8 +251,16 @@ The plans in `vice/plans`:
 - `dial.txt`: the dialer (ATZ, ATDT, CONNECT), signing up, closing the connection and dialing again.
 - `dial_init.txt`: Pulse dial, which dials `ATDP`, and a number that starts with AT, sent as the whole dial
   command (`ATD"parlornet.org:6501"`).
-- `up9600.txt` (`IFACE=up9600`) and `swift.txt` (`IFACE=swift`): the faster lines, chosen in the settings (and
-  written to PARLOR.CFG), the console, the dialer and signing up.
+- `swift.txt`: the SwiftLink compatible modem at 19200, as the settings start (`swift_settings`); key 3 going round
+  its addresses, $DF00, $DF80 and $DE00 (`swift_addr_*`); key 2 going round the speeds (`swift_speed`); key 1 making the modem Supra 2400 compatible, at 2400 (`swift_to_supra`), and
+  SwiftLink compatible again, back at 19200 (`swift_back`); then the console, the dialer, signing up and the
+  lobby.
+- `swift_df00.txt` (`ACIA=0xdf00`): the SwiftLink compatible modem at $DF00, set with key 3, through the console, the
+  dialer, signing up and the lobby. VICE's C64 has the 6551 only at $DE00 or $DF00, so $DF80 is not run.
+- `swift38.txt` (`FAST=1`): the SwiftLink compatible modem at 38400, set with key 2, then signing up and Reversi
+  against the bot to the end.
+- `supra.txt` and `supra300.txt` (`IFACE=user`, with `BAUD=2400` and `BAUD=300`): the Supra 2400 compatible modem
+  on the user port at 2400 and at 300, through the console, the dialer, signing up and the lobby.
 - `progress.txt`: the progress bars, at the start, for the sign-in and for a game.
 - `reversi.txt`: a game of Reversi against the bot, with moves by the cursor keys, the orchestrator and the joystick,
   and the board in monochrome.
@@ -262,7 +271,7 @@ The plans in `vice/plans`:
   (`end_GAME_over`). In `GAME+` the orchestrator also takes a snapshot on its twelfth turn (`mid.png`), and when it
   would make the same move a fifth time in a row on a table whose view has not moved on, which means the program
   did not take it, it shows the screen (`stuck.png`, `stuck.txt`) and stops on the tenth. Each plan peeks
-  `net_lost` and `net_again` before its end shot. On the user port, VICE now and then (about once in a
+  `net_lost` and `net_again` before its end shot. On the user port (`IFACE=user`), VICE now and then (about once in a
   thousand replies at `FAST` speed, most often while the program polls after a game) loses the first byte of a
   reply: no start bit reaches the program, and the reply has no final line. The same polling over the
   SwiftLink (`IFACE=swift`) loses nothing. The program sends such a request again (`net_again` counts them),

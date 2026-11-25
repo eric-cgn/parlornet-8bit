@@ -18,12 +18,11 @@
 #ifndef C64_OWN_H
 #define C64_OWN_H
 
-/* The serial line (serial.s): the user port bit by bit (300 to 2400 baud, the KERNAL's wiring), the user
-   port's UP9600 wiring (9600), or a SwiftLink or Turbo232 cartridge's 6551 (2400 to 38400). */
+/* The serial line (serial.s), the modem in the settings: Supra 2400 compatible, the user port bit by bit
+   (300 to 2400 baud, the KERNAL's wiring), or SwiftLink compatible, a 6551 (300 to 38400): a
+   SwiftLink or Turbo232 cartridge, or the modem of a Commodore 64 Ultimate or an Ultimate 64. */
 #define SER_USER 0
-#define SER_UP9600 1
-#define SER_SWIFT 2                     /* at $DE00 */
-#define SER_SWIFT_DF 3                  /* at $DF00 */
+#define SER_SWIFT 2
 void __fastcall__ ser_open(unsigned char iface, unsigned char baud);   /* baud: an index of baud_name */
 void ser_close(void);
 unsigned char ser_used(void);
@@ -32,9 +31,12 @@ void ser_resume(void);
 extern unsigned char ser_flow;          /* 0 none, 1 RTS/CTS */
 extern unsigned char ser_lost;
 extern unsigned char ser_iface;
+extern unsigned int ser_acia;           /* the 6551's address: $DE00, $DF00 or $DF80 */
 
-/* The line's settings (line.c): the interface (SER_*), the speed (baud_name) and flow control. */
-extern unsigned char cfg_slot, cfg_baud, cfg_flow;
+/* The line's settings (line.c): the modem (SER_*), the speed (baud_name), flow control, and the SwiftLink
+   compatible modem's address (cfg_acia: acia_name, $DE00 as it starts). */
+extern unsigned char cfg_slot, cfg_baud, cfg_flow, cfg_acia;
+extern const char *const acia_name[];
 extern const char *const baud_name[];
 
 /* PAL or NTSC, from the raster at start-up. */
@@ -53,5 +55,6 @@ unsigned char __fastcall__ k_writefile(const char *name, const unsigned char *bu
 #define CFG_LEN 72
 extern unsigned char cfg_saved[CFG_LEN];
 unsigned char __fastcall__ baud_ok(unsigned char iface, unsigned char b);
+void __fastcall__ modem_set(unsigned char iface);   /* the modem, at the speed it starts with */
 
 #endif

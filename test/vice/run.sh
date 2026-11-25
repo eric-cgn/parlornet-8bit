@@ -3,8 +3,9 @@
 # steps; the program's addresses come from build.sh's label file, parlor.lbl, as labels.txt), with screenshots and the log in OUTDIR. The container joins the lab's network (c64lab, which
 # parlor.sh makes, with the parlor as c64-parlor) and nothing else.
 #
-# The serial line: VICE's user port RS-232 (IFACE=user, at BAUD, 2400 by default; IFACE=up9600, 9600 baud
-# with the UP9600 wiring) or a SwiftLink cartridge at $DE00 (IFACE=swift) goes to a TCP port in the
+# The serial line: a SwiftLink cartridge at $DE00 (IFACE=swift, the default, as the program's settings start;
+# ACIA=0xdf00 puts it at $DF00, the only other place VICE has for it on a C64)
+# or VICE's user port RS-232 (IFACE=user, for the Supra 2400 compatible modem) goes to a TCP port in the
 # container: there test/lab/bridge.py is a WiFi modem's stand-in (LINE=modem, the default: AT commands,
 # ATDT connects to the parlor) or a plain relay to the parlor (LINE=direct, with the dialer's number
 # emptied after the title, as a player on a direct line sets it). LINE=host:port sends the line to another
@@ -40,11 +41,10 @@ case "$LINE" in
 	direct) RELAY="python3 -I /lab/bridge.py 16600 c64-parlor 16501 bridge /out/bridge.log"; DEV=127.0.0.1:16600 ;;
 	*) RELAY=true; DEV=$LINE ;;
 esac
-BAUD=${BAUD:-2400}
-case "${IFACE:-user}" in
+BAUD=${BAUD:-19200}
+case "${IFACE:-swift}" in
 	user) SER="-userportdevice 2 -rsuserdev 0 -rsuserbaud $BAUD +rsuserup9600" ;;
-	up9600) SER="-userportdevice 2 -rsuserdev 0 -rsuserbaud 9600 -rsuserup9600" ;;
-	swift) SER="-acia1 -acia1base 0xde00 -acia1mode 1 -myaciadev 0" ;;
+	swift) SER="-acia1 -acia1base ${ACIA:-0xde00} -acia1mode 1 -myaciadev 0" ;;
 esac
 # control port 2: VICE's I/O simulation device, which the monitor's joyport set drives (run.py's joy)
 SER="$SER -controlport2device 37"

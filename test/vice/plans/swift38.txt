@@ -1,0 +1,39 @@
+# The SwiftLink compatible modem at 38400 (run.sh's default SwiftLink; key 2 takes the speed from 19200 to
+# 38400): the settings (swift38_settings), then signing up and Reversi against the bot to the end, as
+# end_reversi.txt plays it (swift38_start, swift38_game, swift38_over). Run with FAST=1.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type S
+waittext ParlorNet settings 300
+wait 60
+type 2
+wait 30
+snap swift38_settings
+peek cfg_slot cfg_baud cfg_acia
+key ret
+waittext ParlorNet: connect 2400
+snap swift38_start
+type P
+waittext Name: 2400
+type new\r
+waittext want 300
+type rex38\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+click 200
+wait 200
+click 8
+wait 200
+click 0
+wait 200
+wait 2400
+snap swift38_game
+need rv+ rex38 Swordfish 1997
+wait 120
+peek net_lost net_again
+snap swift38_over
+exit

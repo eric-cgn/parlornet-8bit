@@ -1,7 +1,7 @@
 /* ParlorNet on the Commodore 64: the start screen and the settings, an overlay (ovl.h) loaded when they are
-   shown. The settings are the serial line (the way it is connected, its speed, flow control), the console's
-   echo, the modem's dialing (an init string, ATZ as it starts, the number and pulse dialing), the
-   display and the title screen. They are kept in PARLOR.CFG on the program's disk, written only when they
+   shown. The settings are the modem (Supra 2400 compatible on the user port, or SwiftLink compatible on the
+   expansion port), its speed and flow control, the console's echo, the dialing (an init string, ATZ as it
+   starts, the number and pulse dialing), the display and the title screen. They are kept in PARLOR.CFG on the program's disk, written only when they
    have changed. */
 #include <string.h>
 #include "machine.h"
@@ -11,8 +11,7 @@
 #include "c64.h"
 #include "gfx.h"
 
-static const char *const iface_long[] = {"User port (RS-232)", "User port, UP9600", "SwiftLink at $DE00",
-                                         "SwiftLink at $DF00"};
+
 
 /* Edit buf on the text screen at row, after a label; it starts with what buf holds. 1 on Return. */
 static unsigned char edit_line(unsigned char row, const char *label, char *buf, unsigned char max)
@@ -68,7 +67,13 @@ static void setup_settings(void)
     txt_clear();
     title_bar("ParlorNet settings", "");
     for (;;) {
-        setting_line(2, "1", "Line: ", iface_long[cfg_slot & 3]);
+        setting_line(2, "1", "Modem: ", cfg_slot == SER_USER ? "Supra 2400 compatible" : "SwiftLink compatible");
+        txt_clrrow(3);
+        if (cfg_slot == SER_USER) {
+            txt_goto(3, 3);
+            say("on the user port");
+        } else
+            setting_line(3, "3", "Address: ", acia_name[cfg_acia]);
         setting_line(4, "2", "Speed: ", baud_name[cfg_baud]);
         setting_line(6, "4", "Flow: ", cfg_flow ? "RTS/CTS" : "no flow control");
         setting_line(8, "5", "Echo typing in the console: ", cfg_echo ? "on" : "off");
@@ -100,11 +105,13 @@ static void setup_settings(void)
         case 'T': cfg_title ^= 1; break;
         case 'M': mouse_on ^= 1; break;
         case '1':
-            cfg_slot = (cfg_slot + 1) & 3;
-            if (!baud_ok(cfg_slot, cfg_baud))
-                next_baud();
+            modem_set(cfg_slot == SER_USER ? SER_SWIFT : SER_USER);
             break;
         case '2': next_baud(); break;
+        case '3':
+            if (cfg_slot != SER_USER)
+                cfg_acia = cfg_acia == 2 ? 0 : cfg_acia + 1;
+            break;
         case '4': cfg_flow ^= 1; break;
         case '5': cfg_echo ^= 1; break;
         case '8': cfg_pulse ^= 1; break;
@@ -161,12 +168,12 @@ static void start_screen(void)
     say("then press " OA_NAME "-P.");
 }
 
-/* PARLOR.CFG: 'P', 'C', a version (CFG_VER, one more whenever the layout changes), the line's interface, speed
-   and flow control, the echo, the display, the title screen, pulse dialing, then the init string and the
+/* PARLOR.CFG: 'P', 'C', a version (CFG_VER, one more whenever the layout or the meaning of a byte changes), the
+   modem (SER_USER or SER_SWIFT), its speed and flow control, the echo, the display, the title screen, pulse dialing, then the init string and the
    number, each with
-   its 0 and room to spare, and whether a mouse is in port 1 (byte 70). A file of another version or size is
+   its 0 and room to spare, whether a mouse is in port 1 (byte 70) and the SwiftLink's address (byte 71). A file of another version or size is
    left alone: the settings stay as they start until they are saved again. */
-#define CFG_VER 3
+#define CFG_VER 4
 static void pack(unsigned char *b)
 {
     memset(b, 0, CFG_LEN);
@@ -183,6 +190,7 @@ static void pack(unsigned char *b)
     memcpy(b + 10, cfg_init, DIAL_INIT_MAX + 1);
     memcpy(b + 10 + DIAL_INIT_MAX + 1, cfg_number, DIAL_NUM_MAX + 1);
     b[70] = mouse_on;
+    b[71] = cfg_acia;
 }
 
 static void cfg_load(void)
@@ -192,8 +200,8 @@ static void cfg_load(void)
         pack(cfg_saved);                /* (none yet: the settings as they start) */
         return;
     }
-    cfg_slot = b[3] & 3;
-    cfg_baud = b[4] < 7 ? b[4] : 2;
+    cfg_slot = b[3];
+    cfg_baud = b[4];                    /* (serial_open puts a modem or speed it cannot use right) */
     cfg_flow = b[5] & 1;
     cfg_echo = b[6] & 1;
     mono = b[7] & 1;
@@ -202,6 +210,7 @@ static void cfg_load(void)
     memcpy(cfg_init, b + 10, DIAL_INIT_MAX);
     memcpy(cfg_number, b + 10 + DIAL_INIT_MAX + 1, DIAL_NUM_MAX);
     mouse_on = b[70] & 1;
+    cfg_acia = b[71];                   /* (serial_open puts one it cannot use right) */
     memcpy(cfg_saved, b, CFG_LEN);
 }
 
