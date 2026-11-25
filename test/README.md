@@ -257,8 +257,7 @@ The plans in `vice/plans`:
   lobby.
 - `swift_df00.txt` (`ACIA=0xdf00`): the SwiftLink compatible modem at $DF00, set with key 3, through the console, the
   dialer, signing up and the lobby. VICE's C64 has the 6551 only at $DE00 or $DF00, so $DF80 is not run.
-- `swift38.txt` (`FAST=1`): the SwiftLink compatible modem at 38400, set with key 2, then signing up and Reversi
-  against the bot to the end.
+- `swift38.txt`: the SwiftLink compatible modem's 38400, set with key 2 and kept in PARLOR.CFG.
 - `supra.txt` and `supra300.txt` (`IFACE=user`, with `BAUD=2400` and `BAUD=300`): the Supra 2400 compatible modem
   on the user port at 2400 and at 300, through the console, the dialer, signing up and the lobby.
 - `progress.txt`: the progress bars, at the start, for the sign-in and for a game.
