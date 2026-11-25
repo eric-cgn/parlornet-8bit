@@ -6,7 +6,6 @@
   parlor-files.po      PARLOR.SYSTEM and PARLOR.DAT for the player's own ProDOS, on a ProDOS volume
   parlornet-gs.po      the Apple IIgs program, PARLORNET, and its PARLOR.DAT, on an 800K ProDOS volume
   parlornet.d64        the Commodore 64's disk (a 1541's, 170K)
-  parlornet.crt        the Commodore 64's cartridge (Magic Desk, 128K), the program and every game in ROM
 
 The version is the one in VERSION; the release workflow tags it v<version>.
 Usage: tools/release.py [build dir]"""
@@ -16,8 +15,7 @@ import shutil
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FILES = ["parlornet.dsk", "parlornet-2.dsk", "prodos/parlor-files.po", "gs/parlornet-gs.po", "c64/parlornet.d64",
-         "c64cart/parlornet.crt"]
+FILES = ["parlornet.dsk", "parlornet-2.dsk", "prodos/parlor-files.po", "gs/parlornet-gs.po", "c64/parlornet.d64"]
 
 
 def version():

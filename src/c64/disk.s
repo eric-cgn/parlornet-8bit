@@ -5,11 +5,6 @@
         .importzp       ptr1, ptr2, ptr3, tmp1
         .import         popax, popa, _ser_pause, _ser_resume
         .export         _k_load, _k_readfile, _k_writefile, _k_cmd, _k_device, _k_end, _k_unpack, _k_bar
-        .export         _k_nodrive
-.ifdef C64_CART
-        .export         _c_load
-        .importzp       ptr4, tmp2, tmp3
-.endif
         .export         pb_on, pb_update
         .import         _txt_screen
 
@@ -29,7 +24,6 @@ READST  = $FFB7
 _k_device:      .byte   8       ; the drive the program came from (sys_init: the KERNAL's $BA)
 _k_end:         .word   0       ; where the last load ended (the byte after it)
 _k_bar:         .byte   0       ; 1: the next k_load shows a progress bar (pb_update)
-_k_nodrive:     .byte   0       ; 1: no drive answered the last k_readfile (device not present)
 pb_on:  .byte   0
 pb_st:  .word   0               ; where the file loads from
 pb_step:.word   0               ; the bytes for each of the bar's 40 cells
@@ -182,11 +176,6 @@ rf_byte:
         and     #$40
         beq     rf_byte
 rf_close:
-        lda     $90             ; the KERNAL's status: bit 7, the device not present
-        rol     a
-        lda     #0
-        rol     a
-        sta     _k_nodrive
         jsr     CLRCHN
         lda     #2
         jsr     CLOSE
@@ -331,45 +320,3 @@ pb_have:
         jmp     pb_have
 pb_done:
         rts
-
-.ifdef C64_CART
-; unsigned char __fastcall__ c_load(unsigned char k): file k of the cartridge (the overlays by their number,
-; ovl.h) copied out of its ROM to where its load address says, as k_load would load it; 0 when copied, 1 when
-; the cartridge has no such file. k_end is the address after its last byte. The serial line is paused and the
-; interrupts are off while the cartridge is on, since their handlers and data may be under it; $01 is $37
-; meanwhile (the BASIC and KERNAL ROMs in for reading, which nothing reads), as the cartridge's ROM needs.
-CART_DIR = $02A7
-CC_SRC  = ptr3
-CC_DST  = ptr4
-CC_LEN  = tmp2                  ; (and tmp3)
-CC_BANK = tmp1
-_c_load:
-        sta     k_n             ; (the file)
-        jsr     _ser_pause
-        php
-        sei
-        lda     $01             ; the ROM at $8000 shows only with LORAM and HIRAM both on ($37); the
-        pha                     ; program runs with HIRAM off ($35)
-        lda     #$37
-        sta     $01
-        lda     k_n             ; (read while the cartridge is still off)
-        jsr     cart_copy
-        lda     #$80            ; the cartridge off again
-        sta     $DE00
-        lda     #0
-        rol     a               ; (C: no such file)
-        sta     k_err
-        pla
-        sta     $01
-        plp
-        lda     CC_DST
-        sta     _k_end
-        lda     CC_DST+1
-        sta     _k_end+1
-        jsr     _ser_resume
-        lda     k_err
-        ldx     #0
-        rts
-
-        .include "cartcopy.inc"
-.endif

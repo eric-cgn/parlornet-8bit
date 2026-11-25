@@ -228,9 +228,7 @@ test/vice/run.sh build/c64/parlornet.d64 test/vice/plans/reversi.txt test/out/c6
 - `vice/run.sh` starts VICE under Xvfb, with its binary monitor on 127.0.0.1:6502 inside the container, and the
   serial line to `lab/bridge.py` in the same container: the WiFi-modem stand-in (`LINE=modem`, the default) or a
   plain relay (`LINE=direct`, with the dialer's number emptied after the title). `LINE=host:port` sends the line to
-  another container on the lab network (a shell with pndial, say). DISK may be the cartridge (`build/c64cart/parlornet.crt`), which then starts by itself with drive 8 off, or
-  with `SETDISK=NAME.d64` (a disk in the same folder) a drive with that disk in it. `IFACE=swift` (the default, at
-  `BAUD`, 19200 at first) or `IFACE=user` picks a SwiftLink at $DE00 (at $DF00 with
+  another container on the lab network (a shell with pndial, say). `IFACE=swift` (the default, at `BAUD`, 19200 at first) or `IFACE=user` picks a SwiftLink at $DE00 (at $DF00 with
   `ACIA=0xdf00`), as the program's settings start (SwiftLink compatible), or the user port's RS-232 (Supra 2400
   compatible).
   `ATTACH=1` only puts the disk in drive 8, for plans that type the LOAD themselves; `C128=1` runs x128, which boots
@@ -262,11 +260,6 @@ The plans in `vice/plans`:
 - `swift_df00.txt` (`ACIA=0xdf00`): the SwiftLink compatible modem at $DF00, set with key 2, through the console, the
   dialer, signing up and the lobby. VICE's C64 has the 6551 only at $DE00 or $DF00, so $DF80 is not run.
 - `swift38.txt`: the SwiftLink compatible modem's 38400, set with key 3 and kept in PARLOR.CFG.
-- `cart_supra.txt` (the cartridge as DISK, `IFACE=user`, `BAUD=2400`): the cartridge with no drive; the title screen at
-  once, the settings as the cartridge starts them (SwiftLink compatible at $DF00, kept for this session only),
-  key 2 going between $DF00 and $DF80, the Supra 2400 compatible modem, then the console, the dialer, signing up and
-  the lobby. `cart_keep.txt` (with `SETDISK`): the cartridge with a drive and a disk, where the settings are kept.
-  `end_reversi.txt` with the cartridge and `ACIA=0xdf00` plays a game to its end through the SwiftLink at $DF00.
 - `supra.txt` and `supra300.txt` (`IFACE=user`, with `BAUD=2400` and `BAUD=300`): the Supra 2400 compatible modem
   on the user port at 2400 and at 300, through the console, the dialer, signing up and the lobby.
 - `progress.txt`: the progress bars, at the start, for the sign-in and for a game.

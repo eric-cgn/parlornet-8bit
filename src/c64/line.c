@@ -10,12 +10,7 @@
    Commodore 64 Ultimate or an Ultimate 64 is at its default mapping ($DE00). */
 #define BAUD_SWIFT 5                    /* 19200, when the modem becomes SwiftLink compatible */
 #define BAUD_USER 2                     /* 2400, when it becomes Supra 2400 compatible */
-#ifdef C64_CART
-/* (The cartridge's own register is at $DE00, so its SwiftLink starts at $DF00 and is never at $DE00.) */
-unsigned char cfg_slot = SER_SWIFT, cfg_baud = BAUD_SWIFT, cfg_flow, cfg_acia = 1;
-#else
 unsigned char cfg_slot = SER_SWIFT, cfg_baud = BAUD_SWIFT, cfg_flow, cfg_acia;
-#endif
 unsigned char cfg_conn;
 unsigned char eth_on;
 unsigned char cfg_saved[CFG_LEN];      /* the settings as PARLOR.CFG has them (setup.c) */
@@ -62,10 +57,6 @@ void serial_open(void)
         modem_set(cfg_slot);
     if (cfg_acia > 2)
         cfg_acia = 0;
-#ifdef C64_CART
-    if (!cfg_acia)
-        cfg_acia = 1;                   /* (settings from the disk's program, which can use $DE00) */
-#endif
     ser_acia = acia_addr[cfg_acia];
     ser_flow = cfg_flow;
     ser_open(cfg_slot, cfg_baud);

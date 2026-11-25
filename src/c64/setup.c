@@ -104,10 +104,6 @@ static void setup_settings(void)
         say("done. The parlor's native port is 6501.");
         txt_goto(1, 21);
         txt_clreol();
-        if (k_nodrive) {
-            txt_goto(0, 22);
-            say("Settings are kept for this session only.");
-        }
         do
             k = kbd_get();
         while (!k);
@@ -127,11 +123,7 @@ static void setup_settings(void)
             if (k == 1)
                 modem_set(sw ? SER_USER : SER_SWIFT);
             else if (sw && k == 2)
-#ifdef C64_CART
-                cfg_acia = cfg_acia == 1 ? 2 : 1;   /* ($DE00 is the cartridge's own) */
-#else
                 cfg_acia = cfg_acia == 2 ? 0 : cfg_acia + 1;
-#endif
             else
                 switch (k - sw) {
                 case 2: next_baud(); break;
