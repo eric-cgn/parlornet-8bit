@@ -1,0 +1,74 @@
+# The console closes the parlor connection first, through the Unix shell with pndial as ATZ (as
+# dial_pndial.txt). P dials and signs up; Open-Apple-C from the lobby sends BYE, the parlor hangs up,
+# pndial says NO CARRIER (the dialer reads it) and waits in its command mode, so AT in the console gets OK
+# (cc_lobby_at) and Control-C ends pndial for the shell prompt (cc_lobby_shell). Then P dials again and
+# Open-Apple-C at the name prompt does the same (cc_name_at); last, Esc at the name prompt leaves the
+# connection open at the start screen, and C there closes it (cc_start_at).
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type S
+waittext ParlorNet settings 300
+type 7
+wait 30
+arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
+wait 120
+type host.docker.internal:16501\r
+wait 60
+key ret
+waittext ParlorNet: connect 300
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type cora\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap cc_lobby
+oa C
+waittext Console 600
+wait 300
+snap cc_lobby_console
+type AT\r
+wait 120
+dumptext cc_lobby_at
+ctrl C
+wait 120
+type echo $TERM\r
+wait 120
+snap cc_lobby_shell
+dumptext cc_lobby_shell
+oa Q
+waittext ParlorNet: connect 600
+type P
+waittext Name: 900
+oa C
+waittext Console 600
+wait 300
+type AT\r
+wait 120
+snap cc_name_at
+dumptext cc_name_at
+oa Q
+waittext ParlorNet: connect 600
+type P
+waittext Name: 900
+key esc
+waittext ParlorNet: connect 600
+type C
+waittext Console 600
+wait 300
+type AT\r
+wait 120
+snap cc_start_at
+dumptext cc_start_at
+ctrl C
+wait 120
+type echo $TERM\r
+wait 120
+dumptext cc_start_shell
+exit
