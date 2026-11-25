@@ -260,7 +260,7 @@ static char *modem_read(unsigned char keys)
 }
 
 /* A command before the dial, shown with the modem's OK, waiting up to three seconds; a line that says
-   nothing (pndial, say, until it has started) dials on all the same. 0 on ERROR (the reason in q) or a key
+   nothing (a shell's ATZ, say, until it has started) dials on all the same. 0 on ERROR (the reason in q) or a key
    (cancel). */
 static unsigned char modem_ok(const char *s)
 {
