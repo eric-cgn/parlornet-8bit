@@ -180,6 +180,11 @@ NET=a2lab LINE=a2shell:2323 A2ROMS=~/roms test/lab/run.sh 0 build/parlornet.dsk 
   that the connection ends 75 seconds after the dial, as when the parlor restarts. The lobby's next request
   finds NO CARRIER: "The connection to the parlor was lost." (`pl_lost`), and Return dials again and signs
   in (`pl_redialed`, `pl_lobby2`).
+- `plans/console_close.txt`, in the same shell as `dial_pndial.txt`: going to the console closes the parlor
+  connection first. Open-Apple-C from the lobby sends BYE, the parlor hangs up and pndial says NO CARRIER, so
+  AT in the console gets pndial's OK (`cc_lobby_at`) and Control-C (the plan's `ctrl` step) gives the shell
+  prompt (`cc_lobby_shell`). Open-Apple-C at the name prompt does the same (`cc_name_at`), and so does C on the
+  start screen after Esc at the name prompt has left the connection open (`cc_start_at`, `cc_start_shell`).
 
 ## The IIgs program in MAME
 
