@@ -1,7 +1,7 @@
-# The console closes the parlor connection first, through the Unix shell with pndial as ATZ (as
-# dial_pndial.txt). P dials and signs up; Open-Apple-C from the lobby sends BYE, the parlor hangs up,
-# pndial says NO CARRIER (the dialer reads it) and waits in its command mode, so AT in the console gets OK
-# (cc_lobby_at) and Control-C ends pndial for the shell prompt (cc_lobby_shell). Then P dials again and
+# The console closes the parlor connection first, through the Unix shell with ParlorNet's tools/ATZ as ATZ
+# (as dial_atz.txt). P dials and signs up; Open-Apple-C from the lobby sends BYE, the parlor hangs up, ATZ
+# says NO CARRIER at once (the dialer reads it) and waits at its commands, so AT in the console gets OK
+# (cc_lobby_at) and Control-C ends ATZ for the shell prompt (cc_lobby_shell). Then P dials again and
 # Open-Apple-C at the name prompt does the same (cc_name_at); last, Esc at the name prompt leaves the
 # connection open at the start screen, and C there closes it (cc_start_at).
 wait 120
