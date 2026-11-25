@@ -5,6 +5,7 @@
 --                      while it is up, until it is gone; at most N frames (default 1800)
 --   type TEXT          type it (post_coded: {ENTER}, {LEFT}, {UP} ... and \r for Return)
 --   oa C               Open-Apple and the key C
+--   ctrl C             Control and the key C
 --   snap NAME          save the screen as /out/NAME.png
 --   set TAG FIELD V    set an input field's value (DIP switches, configs)
 --   hold NAME V N      keep the byte at the program's variable NAME (from the link map) at V for the
@@ -64,6 +65,10 @@ sub = emu.add_machine_frame_notifier(function()
     field(":keyb_special", "Open Apple"):clear_value()
     release_oa = nil
   end
+  if release_ctrl and frame >= release_ctrl then
+    field(":keyb_special", "Control"):clear_value()
+    release_ctrl = nil
+  end
   if release_caps and frame >= release_caps then
     field(":keyb_special", "Caps Lock"):clear_value()
     release_caps = nil
@@ -102,6 +107,10 @@ sub = emu.add_machine_frame_notifier(function()
     field(":keyb_special", "Open Apple"):set_value(1)
     manager.machine.natkeyboard:post_coded(rest)
     release_oa = frame + 20; waiting = 25; i = i + 1
+  elseif cmd == "ctrl" then
+    field(":keyb_special", "Control"):set_value(1)
+    manager.machine.natkeyboard:post_coded(rest)
+    release_ctrl = frame + 20; waiting = 25; i = i + 1
   elseif cmd == "need" then
     -- ask the lab's orchestrator for steps: write /xchg/need, wait for /xchg/steps.txt, run its lines next
     if not need_asked then

@@ -7,7 +7,8 @@
    OA-P (Open-Apple on the Apple II, the Commodore key on the C64: OA_NAME). When a line has been typed
    and not yet sent, OA-P sends its Return first, so that a command that connects to the parlor (nc in a
    Unix shell) is followed at once by ParlorNet mode's opening line: the parlor waits 20 seconds for it.
-   OA-C comes back to the console from ParlorNet mode, and OA-S opens the settings from either. P on the start screen dials the
+   OA-C comes back to the console from ParlorNet mode, closing the connection to the parlor first, and
+   OA-S opens the settings from either. P on the start screen dials the
    modem first (parlor.c), unless the settings' number is empty. */
 #include <string.h>
 #include "machine.h"
@@ -63,6 +64,30 @@ void settings(void)
     serial_open();
 }
 
+static unsigned char signed_in;
+
+/* Close the connection to the parlor: BYE, after which the parlor hangs up, so a modem or a shell's
+   netcat ends too. A dialed line is then hung up by the dialer (in the sign-in overlay, loaded first).
+   1 when it was a dialed line. */
+static unsigned char close_parlor(void)
+{
+    unsigned char k = 0;
+    signed_in = 0;
+#if MACHINE_SERIAL
+    k = dialing && ovl_load(OVL_SIGNIN);
+#endif
+    q_set("BYE");
+    net_req();
+    connected = 0;
+    if (eth_on)
+        eth_close();
+#if MACHINE_SERIAL
+    if (k)
+        SIGNIN->hangup();
+#endif
+    return k;
+}
+
 /* The console. Returns 1 when Open-Apple-P asks for ParlorNet mode, 0 for the start screen. A machine with no
    serial line (MACHINE_SERIAL 0: the IIgs, whose connection is Marinetti's) has none. */
 #if !MACHINE_SERIAL
@@ -76,6 +101,12 @@ static unsigned char console(void)
     static unsigned char k, under, shown, lastcr, typed;
     static unsigned int blink;
     static int c;
+    /* A connection to the parlor still open (from the name prompt, the lobby or a table, or left at the
+       start screen) is closed first, as Open-Apple-Q closes it: what is typed in the console ends its
+       lines with CR alone, which the parlor would refuse, so the console starts on the line as it is
+       without the parlor, at the modem or the shell. */
+    if (connected)
+        close_parlor();
 again:
     /* The sign-in overlay first: OA-P's opening must follow the command that connected at once (the parlor
        waits 20 seconds for it), with no disk load in between; on a C64's 1541 that load takes seconds. */
@@ -186,7 +217,6 @@ char server_name[SERVER_NAME_MAX + 1];
    (1) or the start screen (0). */
 unsigned char parlor(void)
 {
-    static unsigned char signed_in;
     unsigned char k;
     for (;;) {
         if (!signed_in || net_lost) {
@@ -202,29 +232,12 @@ unsigned char parlor(void)
         }
         k = lobby();
         if (k == 1)
-            return 1;
+            return 1;                   /* (the console closes the connection) */
         signed_in = 0;
         if (k == 2) {
 quit:
-            /* Close the connection: the parlor hangs up, so a modem or a shell's netcat ends too. A
-               dialed line is then hung up by the dialer (in the sign-in overlay, loaded first), and the
-               start screen comes back. */
-            signed_in = 0;
-#if MACHINE_SERIAL
-            k = dialing && ovl_load(OVL_SIGNIN);
-#endif
-            q_set("BYE");
-            net_req();
-            connected = 0;
-            if (eth_on)
-                eth_close();
-#if MACHINE_SERIAL
-            if (k) {
-                SIGNIN->hangup();
-                return 0;
-            }
-#endif
-            return 1;
+            /* A dialed line comes back to the start screen, one connected by hand to the console. */
+            return !close_parlor();
         }
         if (net_lost) {
             connected = 0;
