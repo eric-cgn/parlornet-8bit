@@ -1,0 +1,12 @@
+# The C64's own glyphs in the program's character set, beside art/font.txt's: 8 by 8, '#' on, made for this
+# program. $7F, the Commodore key (C=), which the key legends show where the Apple II shows its Open-Apple.
+
+$7F
+..####..
+.##..#..
+##......
+##..###.
+##......
+.##..##.
+..####..
+........

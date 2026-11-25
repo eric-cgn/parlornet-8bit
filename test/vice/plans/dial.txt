@@ -1,0 +1,32 @@
+# The dialer on the WiFi-modem stand-in (LINE=modem, the default), with the settings as they start: reset
+# first (ATZ) on, no init string, the number parlornet.org:6501 (the stand-in connects any number to the
+# lab parlor). P sends ATZ, gets OK, dials ATDTparlornet.org:6501, and on CONNECT sends the opening at once
+# and signs in; C=-Q closes the connection, NO CARRIER comes when the parlor hangs up, and the start screen
+# is back, where P dials again.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type P
+waittext Name: 4800
+snap dial_dialed
+dumptext dial_dialed
+type new\r
+waittext want 300
+type dora\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap dial_lobby
+oa Q
+waittext ParlorNet: connect 2400
+snap dial_hungup
+type P
+waittext Name: 4800
+type dora\r
+waittext assword 600
+type Swordfish 1997\r
+wait 600
+snap dial_lobby2
+exit

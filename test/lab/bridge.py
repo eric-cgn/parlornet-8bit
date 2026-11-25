@@ -3,7 +3,7 @@
 
 MAME's Super Serial Card (null modem, -bitb socket.HOST:PORT) connects here. In bridge mode the bytes go
 straight to the parlor's native port, as a PC bridge (tcpser, ser2net) would. In modem mode it acts like a
-WiFi modem: it echoes what is typed, answers AT with OK, and ATDT host:port dials (CONNECT 9600), after
+WiFi modem: it echoes what is typed, answers AT with OK, and ATDT host:port (or ATDP, or ATD, the number quoted or not) dials (CONNECT 9600), after
 which bytes are relayed; the other end closing gives NO CARRIER. While connected, +++ with a second's
 quiet before and after it goes back to command mode (OK), where ATH hangs up and ATO goes back online.
 Some dial strings stand for a modem's other answers: a number with BUSY in it gives BUSY, NOCARRIER gives
@@ -87,9 +87,11 @@ def serve(c):
             line = b""
             if not cmd:
                 continue
-            if cmd.startswith(b"ATDT") or cmd.startswith(b"ATD"):
-                target = cmd[4:] if cmd.startswith(b"ATDT") else cmd[3:]
-                log("dial", target)
+            if cmd.startswith(b"ATD"):
+                # ATDT, ATDP (pulse) or ATD, and the number, quoted or not
+                target = cmd[4:] if cmd[3:4] in (b"T", b"P") else cmd[3:]
+                target = target.strip(b'"')
+                log("dial", cmd[:4] + b" " + target if cmd[3:4] in (b"T", b"P") else cmd[:3] + b" " + target)
                 if b"BUSY" in target:
                     c.sendall(b"\r\nBUSY\r\n")
                     continue

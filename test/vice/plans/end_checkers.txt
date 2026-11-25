@@ -1,0 +1,29 @@
+# Checkers against the bot to the end of the game: signed up, New game from the lobby (the same clicks as
+# table_entry.txt), the first view, then the orchestrator's moves (ckplay+) until the game is over, and the board
+# at the end. Run with FAST=1 to save time.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type P
+waittext Name: 4800
+type new\r
+waittext want 300
+type cid\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+click 200
+wait 200
+click 2
+wait 200
+click 0
+wait 200
+wait 2400
+snap end_checkers_start
+need ckplay+ cid Swordfish 1997
+wait 120
+peek net_lost net_again
+snap end_checkers_over
+exit

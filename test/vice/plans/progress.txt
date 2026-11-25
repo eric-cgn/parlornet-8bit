@@ -1,0 +1,41 @@
+# The progress bars: while the program loads at the start (the 1541's own speed: about 25 seconds), a bar on
+# the KERNAL's screen's bottom row; when the console is first opened, "Loading the lobby..." (PN.PARLOR) and
+# then "Loading the sign-in...", each with a bar on the text screen's bottom row; while a game loads from the
+# lobby, its name and a bar on the status row. Then the start screen and settings as they read now.
+wait 1500
+snap pb_startup
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+snap pb_start_screen
+type S
+waittext ParlorNet settings 300
+snap pb_settings
+key ret
+waittext ParlorNet: connect 600
+type C
+wait 400
+snap pb_parlor
+waittext Line: 4800
+oa Q
+waittext ParlorNet: connect 600
+type P
+waittext Name: 4800
+type new\r
+waittext want 300
+type pia\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+click 200
+wait 200
+click 8
+wait 200
+click 0
+wait 300
+snap pb_game
+wait 1800
+snap pb_game_loaded
+exit

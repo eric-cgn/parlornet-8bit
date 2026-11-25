@@ -1,0 +1,58 @@
+# The SwiftLink compatible modem at $DE00, 19200 baud, as the settings start (run.sh's default, IFACE=swift and
+# BAUD=19200). The settings as they start (swift_settings); key 2 goes round its addresses, $DF00, $DF80 and
+# $DE00 again (swift_addr_*); key 3 goes round the speeds, 300 to 38400, from 19200 to 38400 (swift_speed);
+# key 1 makes the modem Supra 2400 compatible, at 2400 (swift_to_supra), and again
+# SwiftLink compatible, back at 19200 (swift_back). Then the console, the dialer, signing up and the lobby,
+# and Commodore-Q.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type S
+waittext ParlorNet settings 300
+wait 60
+snap swift_settings
+type 2
+wait 30
+snap swift_addr_df00
+type 2
+wait 30
+snap swift_addr_df80
+type 2
+wait 30
+snap swift_addr_de00
+type 3
+wait 30
+snap swift_speed
+type 1
+wait 30
+snap swift_to_supra
+type 1
+wait 30
+snap swift_back
+peek cfg_slot cfg_baud
+key ret
+waittext ParlorNet: connect 2400
+snap swift_start
+type C
+waittext Line: 4800
+type AT\r
+waittext OK 300
+snap swift_console
+oa Q
+waittext ParlorNet: connect 600
+type P
+waittext Name: 4800
+snap swift_dialed
+type new\r
+waittext want 300
+type sam\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 900
+snap swift_lobby
+oa Q
+waittext ParlorNet: connect 2400
+snap swift_hungup
+exit

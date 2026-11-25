@@ -1,0 +1,12 @@
+# Starting the program by hand: LOAD"*",8 and RUN (ATTACH=1, so that VICE does not start it itself). The
+# title screen, then the start screen.
+wait 300
+basic LOAD"*",8\r
+wait 600
+basic RUN\r
+waittitle 7200
+snap load8_title
+title 3600
+waittext ParlorNet: connect 600
+snap load8_start
+exit

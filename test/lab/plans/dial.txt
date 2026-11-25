@@ -1,5 +1,5 @@
 # The dialer on the WiFi-modem stand-in (port 16600; test/README.md), with the settings as they start:
-# reset first (ATZ) on, no init string, the number parlornet.org:6501 (the stand-in connects any number to
+# the init string ATZ, the number parlornet.org:6501 (the stand-in connects any number to
 # the lab parlor). P sends ATZ, gets OK, dials ATDTparlornet.org:6501, and on CONNECT sends the opening at
 # once and signs in. Open-Apple-Q closes the connection: the stand-in says NO CARRIER when the parlor hangs
 # up, so no +++ is sent, and the start screen comes back, where P dials again.

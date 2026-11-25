@@ -1,0 +1,39 @@
+# The Supra 2400 compatible modem, VICE's user port RS-232 (run.sh with IFACE=user and BAUD=300): key 1
+# makes the modem Supra 2400 compatible, at 2400 (key 2 then goes round to 300); then the console, the
+# dialer, signing up, the lobby and Commodore-Q.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type S
+waittext ParlorNet settings 300
+type 1
+wait 30
+type 2
+wait 30
+snap supra300_settings_set
+key ret
+waittext ParlorNet: connect 2400
+snap supra300_start
+type C
+waittext Line: 4800
+type AT\r
+waittext OK 300
+snap supra300_console
+oa Q
+waittext ParlorNet: connect 600
+type P
+waittext Name: 4800
+snap supra300_dialed
+type new\r
+waittext want 300
+type sid\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 900
+snap supra300_lobby
+oa Q
+waittext ParlorNet: connect 2400
+snap supra300_hungup
+exit

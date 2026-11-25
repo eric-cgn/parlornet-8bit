@@ -1,0 +1,138 @@
+# The first view of each of the ten games against the bot, one after another on one connection, as a player
+# makes them from the lobby (New game, the game, its first rules and fewest players, the bot), by the same
+# target ids as test/lab/plans/table_entry.txt: each te_NAME.png shows the game's table, or for a game not
+# yet on the C64 its notice, and the lobby comes back after each. The waits allow for the 1541's loads.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 4800
+type new\r
+waittext want 300
+type tess\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+click 200
+wait 200
+click 0
+wait 200
+click 0
+wait 200
+wait 1800
+snap te_backgammon
+key esc
+wait 500
+click 200
+wait 200
+click 1
+wait 200
+click 0
+wait 200
+click 0
+wait 200
+wait 1800
+snap te_cannonfire
+key esc
+wait 500
+click 200
+wait 200
+click 2
+wait 200
+click 0
+wait 200
+wait 1800
+snap te_checkers
+key esc
+wait 500
+click 200
+wait 200
+click 3
+wait 200
+click 0
+wait 200
+click 0
+wait 200
+click 0
+wait 200
+wait 1800
+snap te_dotsandboxes
+key esc
+wait 500
+click 200
+wait 200
+click 4
+wait 200
+click 0
+wait 200
+click 0
+wait 200
+wait 1800
+snap te_fiveinarow
+key esc
+wait 500
+click 200
+wait 200
+click 5
+wait 200
+click 0
+wait 200
+click 0
+wait 200
+click 0
+wait 200
+wait 1800
+snap te_gridwords
+key esc
+wait 500
+click 200
+wait 200
+click 6
+wait 200
+click 0
+wait 200
+click 0
+wait 200
+wait 1800
+snap te_mancala
+key esc
+wait 500
+click 200
+wait 200
+click 7
+wait 200
+click 0
+wait 200
+click 0
+wait 200
+wait 1800
+snap te_navalcombat
+key esc
+wait 500
+click 200
+wait 200
+click 8
+wait 200
+click 0
+wait 200
+wait 1800
+snap te_reversi
+key esc
+wait 500
+click 200
+wait 200
+click 9
+wait 200
+click 0
+wait 200
+click 0
+wait 200
+wait 1800
+snap te_rummytile
+key esc
+wait 500
+snap te_lobby
+exit
+

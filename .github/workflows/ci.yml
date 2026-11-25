@@ -1,4 +1,4 @@
-# Every push to main and every pull request: a build (tools/build_apple2.sh, cc65 in Docker) and the tests,
+# Every push to main and every pull request: a build (tools/build.sh, cc65 in Docker) and the tests,
 # with the release files kept as an artifact. The MAME lab (test/lab) needs ROMs and is not run here. A pull
 # request into main fails unless it comes from dev: features go into dev, and main only takes dev, as a release.
 name: CI
@@ -22,7 +22,7 @@ jobs:
           exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Build
-        run: tools/build_apple2.sh
+        run: tools/build.sh
       - name: Test
         run: python3 -m unittest discover test
       - name: Release files

@@ -1,0 +1,26 @@
+# A number as long as the settings take (35 characters) on one line: key 7 (with the SwiftLink compatible modem)
+# edits it on the row below (the number there first deleted), which shows its end as it is typed (long_edit);
+# Return keeps it, and its line shows its start and '>' (long_settings); then P dials it in full (long_dial).
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type S
+waittext ParlorNet settings 300
+wait 60
+type 7
+wait 30
+key 18del
+type parlor.a-long-name.example.org:6501
+wait 30
+snap long_edit
+key ret
+wait 60
+snap long_settings
+key ret
+waittext ParlorNet: connect 2400
+type P
+waittext Dialing 4800
+wait 300
+snap long_dial
+dumptext long_dial
+exit

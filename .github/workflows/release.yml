@@ -1,5 +1,5 @@
 # Every push to main: if VERSION names a version with no release yet, build the programs with
-# tools/build_apple2.sh (cc65 in a Debian image pinned by digest), run the tests, tag the commit v<version>
+# tools/build.sh (cc65 in a Debian image pinned by digest), run the tests, tag the commit v<version>
 # and publish a GitHub Release with the Apple IIe's self-booting disk (parlornet.dsk), the ProDOS files on a
 # ProDOS volume (parlor-files.po), the Apple IIgs disk (parlornet-gs.po), and their SHA-256 and MD5 sums
 # (SHA256SUMS, MD5SUMS, and in the release notes). A push that keeps the version does nothing.
@@ -30,14 +30,14 @@ jobs:
           v=$(cat VERSION)
           echo "VERSION=$v" >> "$GITHUB_ENV"
           if gh release view "v$v" >/dev/null 2>&1; then
-            echo "ParlorNet for the Apple IIe and IIgs $v is already released"
+            echo "ParlorNet for the Apple IIe, IIgs and C64 $v is already released"
             echo "new=no" >> "$GITHUB_OUTPUT"
           else
             echo "new=yes" >> "$GITHUB_OUTPUT"
           fi
       - name: Build
         if: steps.version.outputs.new == 'yes'
-        run: tools/build_apple2.sh
+        run: tools/build.sh
       - name: Test
         if: steps.version.outputs.new == 'yes'
         run: python3 -m unittest discover test
@@ -51,11 +51,12 @@ jobs:
         run: |
           notes="$RUNNER_TEMP/notes.md"
           {
-            echo "ParlorNet for the Apple IIe and IIgs $VERSION. parlornet.dsk is the Apple IIe's self-booting disk (140K,"
+            echo "ParlorNet for the Apple IIe, IIgs and C64 $VERSION. parlornet.dsk is the Apple IIe's self-booting disk (140K,"
             echo "DOS 3.3 sector order); parlor-files.po is a ProDOS volume with PARLOR.SYSTEM and PARLOR.DAT, to copy to a"
             echo "disk with your own ProDOS; parlornet-gs.po is an 800K ProDOS volume with the Apple IIgs program, PARLORNET,"
-            echo "and its PARLOR.DAT, for System 6.0.1 with Marinetti. Built from this commit by tools/build_apple2.sh; the"
-            echo "README has the details."
+            echo "and its PARLOR.DAT, for System 6.0.1 with Marinetti; parlornet.d64 is the Commodore 64's 1541 disk"
+            echo "(LOAD\"*\",8,1 starts it; a C128 boots it by itself). Built from this commit by tools/build.sh; the README"
+            echo "has the details."
             echo
             echo "SHA-256:"
             echo
@@ -69,4 +70,4 @@ jobs:
             cat build/release/MD5SUMS
             echo '```'
           } > "$notes"
-          gh release create "v$VERSION" build/release/* --target "$GITHUB_SHA" --title "ParlorNet for the Apple IIe and IIgs $VERSION" --notes-file "$notes"
+          gh release create "v$VERSION" build/release/* --target "$GITHUB_SHA" --title "ParlorNet for the Apple IIe, IIgs and C64 $VERSION" --notes-file "$notes"

@@ -1,0 +1,49 @@
+# Sign up through the dialer, open a game of Reversi against the bot from the lobby (the ninth game in the
+# parlor's list), and play two moves with
+# the cursor keys and Return, then one with the joystick in port 2; then the board in monochrome.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type P
+waittext Name: 4800
+type new\r
+waittext want 300
+type cy\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap lobby
+key ret
+wait 300
+snap newgame
+arrows DDDDDDDD
+key ret
+wait 300
+snap whom
+key ret
+wait 2400
+snap reversi_start
+arrows RRRDD
+wait 60
+snap reversi_pointer
+key ret
+wait 600
+snap reversi_after
+need rv cy Swordfish 1997
+wait 600
+snap reversi_after2
+joy 2
+joy 16
+wait 600
+snap reversi_joy
+oa D
+wait 600
+snap reversi_mono
+oa D
+wait 600
+key esc
+wait 400
+snap lobby2
+exit
