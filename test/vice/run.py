@@ -28,7 +28,10 @@ VICE's binary monitor (127.0.0.1:6502), as test/mame/run.lua does in MAME. Runs 
 
 Keys are put in the program's own key queue (kq_key, kq_mod, kq_head in sys.s), as its keyboard scan
 puts them; `joy` goes through the emulated joystick port. The program's addresses come from the
-linker's label file (/xchg/labels.txt).
+linker's label file (/xchg/labels.txt). Its variables are read and written in VICE's RAM bank, not as the
+CPU sees memory: the cartridge's program copies a file out of its ROM with the ROM over $8000-$9FFF, where
+some of its variables are, and a key put there meanwhile through the CPU's view would land in the wrong
+place.
 
 usage: run.py PLAN OUTDIR XCHG
 """
@@ -98,8 +101,21 @@ class Mon:
             self.io = self.bank("io")
         return bool(self.get(0xD011, 1, self.io)[0] & 0x20)
 
-    def put(self, addr, data):
-        self.cmd(0x02, struct.pack("<BHHBH", 0, addr, addr + len(data) - 1, 0, 0) + bytes(data))
+    def put(self, addr, data, bank=0):
+        self.cmd(0x02, struct.pack("<BHHBH", 0, addr, addr + len(data) - 1, 0, bank) + bytes(data))
+
+    def ram(self):
+        """The bank for the program's variables: the RAM itself, whatever covers it (the cartridge's ROM at
+        $8000-$9FFF while the program copies a file out of it)."""
+        if not hasattr(self, "ram_bank"):
+            self.ram_bank = self.bank("ram")
+        return self.ram_bank
+
+    def var(self, addr, n):
+        return self.get(addr, n, self.ram())
+
+    def setvar(self, addr, data):
+        self.put(addr, data, self.ram())
 
     def resume(self):
         self.cmd(0xAA)
@@ -163,7 +179,7 @@ def tick():
         if now >= h[2]:
             holds.remove(h)
         else:
-            mon.put(h[0], [h[1]])
+            mon.setvar(h[0], [h[1]])
     mon.resume()
 
 
@@ -190,7 +206,7 @@ def push_key(code, mod=0):
     """A key into the program's queue, as the keyboard scan queues it (waiting while the queue is full)."""
     end = time.time() + 120
     while True:
-        head, tail = mon.get(ADDR["kq_head"], 2)
+        head, tail = mon.var(ADDR["kq_head"], 2)
         if (head + 1) & 7 != tail:
             break
         mon.resume()
@@ -198,9 +214,9 @@ def push_key(code, mod=0):
             note("the key queue stays full")
             return
         time.sleep(0.05)
-    mon.put(ADDR["kq_key"] + head, [code])
-    mon.put(ADDR["kq_mod"] + head, [mod])
-    mon.put(ADDR["kq_head"], [(head + 1) & 7])
+    mon.setvar(ADDR["kq_key"] + head, [code])
+    mon.setvar(ADDR["kq_mod"] + head, [mod])
+    mon.setvar(ADDR["kq_head"], [(head + 1) & 7])
     mon.resume()
     wait(3)
 
@@ -282,11 +298,11 @@ def run():
                 wait(8)
         elif cmd in ("click", "point"):
             ident = int(rest)
-            n = mon.get(ADDR["t_n"], 1)[0]
-            ids = mon.get(ADDR["t_id"], max(n, 1))
+            n = mon.var(ADDR["t_n"], 1)[0]
+            ids = mon.var(ADDR["t_id"], max(n, 1))
             found = [k for k in range(n) if ids[k] == ident]
             if found:
-                mon.put(ADDR["t_cur"], [found[0]])
+                mon.setvar(ADDR["t_cur"], [found[0]])
                 mon.resume()
                 if cmd == "click":
                     push_key(13)
@@ -315,7 +331,7 @@ def run():
             tick()
         elif cmd == "set":
             name, v = rest.split()
-            mon.put(ADDR[name], [int(v)])
+            mon.setvar(ADDR[name], [int(v)])
             mon.resume()
         elif cmd == "need":
             need = os.path.join(XCHG, "need")
@@ -336,8 +352,10 @@ def run():
             out = []
             for w in rest.split():
                 name, _, n = w.partition(":")
-                at = int(name[1:], 16) if name.startswith("$") else ADDR[name]
-                out.append("%s=%s" % (name, mon.get(at, int(n or 1)).hex()))
+                if name.startswith("$"):
+                    out.append("%s=%s" % (name, mon.get(int(name[1:], 16), int(n or 1)).hex()))
+                else:
+                    out.append("%s=%s" % (name, mon.var(ADDR[name], int(n or 1)).hex()))
             mon.resume()
             note("peek " + " ".join(out))
         elif cmd == "exit":

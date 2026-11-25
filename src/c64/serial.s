@@ -510,6 +510,7 @@ _ser_put:
         sta     CIA2
         lda     #$11
         sta     CIA1+$0E
+        lda     CIA1+$0D        ; (an underflow before it, now gone, would take the first bit at once)
         lda     bitlo
         sta     CIA1+4
         lda     bithi
