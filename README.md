@@ -36,7 +36,7 @@ A push to `main` whose version has no release yet runs the release (`.github/wor
 
 ## Connecting
 
-The program starts with its title screen, PARLOR over NET in outlined letters, green on a color monitor and white in monochrome. It says "Press a key" and waits for one, then goes on to the start screen. Under ProDOS and on the IIgs the settings can turn the title screen off (T), and the program remembers that in PARLOR.CFG.
+The program starts with its title screen, PARLOR over NET in solid block letters, in bands of color on a color monitor (PARLOR white, orange and violet, NET white, green and blue) and white in monochrome. It says "Press a key" and waits for one, then goes on to the start screen. Under ProDOS and on the IIgs the settings can turn the title screen off (T), and the program remembers that in PARLOR.CFG.
 
 The key legends show the Open-Apple key as its apple. On the Hi-Res screens it is a glyph of the program's own font, so every machine shows it; on the text screens it is MouseText's apple on an enhanced IIe, a IIc or a IIgs, and "OA-" on an older IIe, which has no MouseText (the program tells them apart by the processor: the enhanced machines have a 65C02 or a 65816). In Grid Words, Open-Apple-V shows the points of every letter and the blank, as the table's rules give them, until the next key. In monochrome, where the text is thin, the keys in the legends are in bold: the apple and its letter, Return, Esc and a game's own letters. In color all the text is bold already.
 
@@ -225,7 +225,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `line.c`, `setup.c`, `splash.c`: the line's settings, the start screen and the title screen.
   - `draw/`: each game's board.
 - `src/template`: a machine with every call of the interface stubbed, which the build compiles and links with the core and every game, as the start of a port (PORTING.md).
-- `art/`: the font, the title screen's letters (`splash.txt`, each a grid of blocks) and each machine's pictures (`art/apple2`, `art/c64`), as text. `tools/apple2_art.py` and `tools/c64_art.py` turn them into assembly (the Apple's title letters traced into double outlines; the C64's character set made bold).
+- `art/`: the font, the title screen's letters (`splash.txt`, each a grid of blocks) and each machine's pictures (`art/apple2`, `art/c64`), as text. `tools/apple2_art.py` and `tools/c64_art.py` turn them into assembly (the title letters as a byte a row of blocks; the C64's character set made bold).
 - `Dockerfile`, `build.sh`: the pinned toolchain (cc65 2.19, whose ca65 also assembles the 65816 parts) and the build of every program.
 - `VERSION`, `tools/release.py`: the version, and the release files with their sums.
 - `tools/`:

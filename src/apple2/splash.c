@@ -1,7 +1,9 @@
 /* ParlorNet for the Apple IIe: the title screen shown at start-up, an overlay (ovl.h). PARLOR over NET in
-   hollow letters with a double outline, drawn on Hi-Res page 1 from the runs that tools/apple2_art.py
-   traces from art/splash.txt: green on a color monitor, white in monochrome. main.c keeps it up until a
-   key is pressed. */
+   the title's block letters (art/splash.txt, tools/apple2_art.py), each block filled solid, 4 color pixels
+   across and 6 lines down. On a color monitor the rows of blocks are bands of the Hi-Res colors: PARLOR
+   white, orange and violet, NET white, green and blue. Each screen line has one color, so no screen byte
+   mixes the two palette groups. In monochrome every block is white. main.c keeps it up until a key is
+   pressed. */
 #include "machine.h"
 #include "apple2.h"
 #include "ovl.h"
@@ -15,10 +17,7 @@ static const unsigned char *const net_word[] = {sg_N, sg_E, sg_T, 0};
 
 #define GAP 2                           /* color pixels between letters */
 
-/* Each color pixel is lit in its right screen pixel only in color, which is green on an odd column,
-   and in both in monochrome. */
 static unsigned char *row;
-static unsigned char green;
 /* For each color pixel c: the byte and the bit of its left screen pixel (2c) and its right one (2c + 1). */
 static unsigned char lb[140], lm[140], rb[140], rm[140];
 
@@ -44,75 +43,66 @@ static void tables(void)
 /* The current line's address, from hgr.s's table of line addresses. */
 #define LINE(y) (((unsigned char *)&row)[0] = hgr_ylo[y], ((unsigned char *)&row)[1] = hgr_yhi[y])
 
-static unsigned char c0, x, y, n, b, m, lb2, lm2;
-static const unsigned char *g;
-
-/* One letter at color pixel c0, its top at line y0: each run across or down. */
-static void letter(unsigned char y0)
-{
-    for (++g; *g != 0xFF; g += 3) {
-        x = g[0];
-        y = y0 + g[1];
-        n = g[2];
-        if (x & 0x80) {
-            x = c0 + (x & 0x7F);
-            b = rb[x];
-            m = rm[x];
-            lb2 = lb[x];
-            lm2 = lm[x];
-            do {
-                LINE(y);
-                ++y;
 #ifdef IIGS
-                gs_scr_put(row + b, gs_scr_get(row + b) | m);
-                if (!green)
-                    gs_scr_put(row + lb2, gs_scr_get(row + lb2) | lm2);
+#define PUT(a, v) gs_scr_put(row + (a), gs_scr_get(row + (a)) | (v))
 #else
-                row[b] |= m;
-                if (!green)
-                    row[lb2] |= lm2;
+#define PUT(a, v) (row[a] |= (v))
 #endif
-            } while (--n);
-        } else {
-            LINE(y);
-            x += c0;
-            do {
-#ifdef IIGS
-                gs_scr_put(row + rb[x], gs_scr_get(row + rb[x]) | rm[x]);
-                if (!green)
-                    gs_scr_put(row + lb[x], gs_scr_get(row + lb[x]) | lm[x]);
-#else
-                row[rb[x]] |= rm[x];
-                if (!green)
-                    row[lb[x]] |= lm[x];
-#endif
-                ++x;
-            } while (--n);
-        }
-    }
-}
 
-static void word(const unsigned char *const *w, unsigned char y0)
+/* The colors: white lights both screen pixels of a color pixel, violet and blue the left one, green and
+   orange the right one; orange and blue are the second palette group (bit 7 of the byte). */
+enum { WHITE, VIOLET, GREEN, ORANGE, BLUE };
+/* Each row of blocks: the color of its top 3 lines and of its bottom 3, so a row between two bands has
+   the upper band's color in its top half and the lower band's in the rest. */
+static const unsigned char warm[9][2] = {{WHITE, WHITE}, {WHITE, WHITE}, {WHITE, ORANGE}, {ORANGE, ORANGE},
+                                         {ORANGE, ORANGE}, {ORANGE, VIOLET}, {VIOLET, VIOLET},
+                                         {VIOLET, VIOLET}, {VIOLET, VIOLET}};
+static const unsigned char cool[9][2] = {{WHITE, WHITE}, {WHITE, WHITE}, {WHITE, GREEN}, {GREEN, GREEN},
+                                         {GREEN, GREEN}, {GREEN, BLUE}, {BLUE, BLUE}, {BLUE, BLUE},
+                                         {BLUE, BLUE}};
+
+/* One word, centered, its top at line y0. A letter's data: its width in blocks, then a byte a row of 9,
+   the blocks in bits 7 down. */
+static void word(const unsigned char *const *w, unsigned char y0, const unsigned char (*colors)[2])
 {
-    unsigned char total = 0;
+    unsigned char total = 0, c0, r, l, c, k, x, bits, col;
     const unsigned char *const *p;
+    const unsigned char *g;
     for (p = w; *p; ++p)
-        total += (*p)[0] + GAP;
+        total += (*p)[0] * 4 + GAP;
     c0 = (140 - (total - GAP)) / 2;
     for (p = w; *p; ++p) {
         g = *p;
-        letter(y0);
-        c0 += (*p)[0] + GAP;
+        for (r = 0; r < 9; ++r)
+            for (l = 0; l < 6; ++l) {
+                LINE(y0 + r * 6 + l);
+                col = mono ? WHITE : colors[r][l >= 3];
+                bits = g[1 + r];
+                for (c = 0; c < g[0]; ++c, bits <<= 1) {
+                    if (!(bits & 0x80))
+                        continue;
+                    for (k = 0, x = c0 + c * 4; k < 4; ++k, ++x) {
+                        if (col == WHITE || col == VIOLET || col == BLUE)
+                            PUT(lb[x], lm[x]);
+                        if (col == WHITE || col == GREEN || col == ORANGE)
+                            PUT(rb[x], rm[x]);
+                        if (col == ORANGE || col == BLUE) {
+                            PUT(lb[x], 0x80);
+                            PUT(rb[x], 0x80);
+                        }
+                    }
+                }
+            }
+        c0 += g[0] * 4 + GAP;
     }
 }
 
 static void show(void)
 {
-    green = !mono;
     tables();
     hgr_clear();
-    word(parlor_word, 14);
-    word(net_word, 82);
+    word(parlor_word, 14, warm);
+    word(net_word, 82, cool);
     ui_ink(F_WHITE, F_BLACK);
     hg_bold = !mono;
 #ifdef IIGS
