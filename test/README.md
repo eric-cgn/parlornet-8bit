@@ -253,16 +253,18 @@ The plans in `vice/plans`:
 - `dial.txt`: the dialer (ATZ, ATDT, CONNECT), signing up, closing the connection and dialing again.
 - `dial_init.txt`: Pulse dial, which dials `ATDP`, and a number that starts with AT, sent as the whole dial
   command (`ATD"parlornet.org:6501"`).
-- `swift.txt`: the SwiftLink compatible modem at 19200, as the settings start (`swift_settings`); key 3 going round
-  its addresses, $DF00, $DF80 and $DE00 (`swift_addr_*`); key 2 going round the speeds (`swift_speed`); key 1 making the modem Supra 2400 compatible, at 2400 (`swift_to_supra`), and
+- The settings' keys are numbered in the order of their lines: with the SwiftLink compatible modem 1 Modem, 2
+  Address, 3 Speed; with the Supra 2400 compatible modem 1 Modem, 2 Speed.
+- `swift.txt`: the SwiftLink compatible modem at 19200, as the settings start (`swift_settings`); key 2 going round
+  its addresses, $DF00, $DF80 and $DE00 (`swift_addr_*`); key 3 going round the speeds (`swift_speed`); key 1 making the modem Supra 2400 compatible, at 2400 (`swift_to_supra`), and
   SwiftLink compatible again, back at 19200 (`swift_back`); then the console, the dialer, signing up and the
   lobby.
-- `swift_df00.txt` (`ACIA=0xdf00`): the SwiftLink compatible modem at $DF00, set with key 3, through the console, the
+- `swift_df00.txt` (`ACIA=0xdf00`): the SwiftLink compatible modem at $DF00, set with key 2, through the console, the
   dialer, signing up and the lobby. VICE's C64 has the 6551 only at $DE00 or $DF00, so $DF80 is not run.
-- `swift38.txt`: the SwiftLink compatible modem's 38400, set with key 2 and kept in PARLOR.CFG.
+- `swift38.txt`: the SwiftLink compatible modem's 38400, set with key 3 and kept in PARLOR.CFG.
 - `cart_supra.txt` (the cartridge as DISK, `IFACE=user`, `BAUD=2400`): the cartridge with no drive; the title screen at
   once, the settings as the cartridge starts them (SwiftLink compatible at $DF00, kept for this session only),
-  key 3 going between $DF00 and $DF80, the Supra 2400 compatible modem, then the console, the dialer, signing up and
+  key 2 going between $DF00 and $DF80, the Supra 2400 compatible modem, then the console, the dialer, signing up and
   the lobby. `cart_keep.txt` (with `SETDISK`): the cartridge with a drive and a disk, where the settings are kept.
   `end_reversi.txt` with the cartridge and `ACIA=0xdf00` plays a game to its end through the SwiftLink at $DF00.
 - `supra.txt` and `supra300.txt` (`IFACE=user`, with `BAUD=2400` and `BAUD=300`): the Supra 2400 compatible modem

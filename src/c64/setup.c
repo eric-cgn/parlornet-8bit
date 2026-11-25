@@ -21,8 +21,10 @@ static unsigned char edit_line(unsigned char row, const char *label, char *buf, 
     say(label);
     x0 = txt_x;
     for (;;) {
-        txt_goto(x0, row);
-        say(buf);
+        /* on the one row: a text longer than the room shows its end, with '<' before it */
+        txt_goto(x0 - 1, row);
+        txt_putc(n > 38 - x0 ? '<' : ' ');
+        say(n > 38 - x0 ? buf + n - (38 - x0) : buf);
         txt_cursor(0x20);
         ++txt_x;
         txt_clreol();
@@ -57,9 +59,17 @@ static void next_baud(void)
     }
 }
 
+/* A key's digit, for the settings' lines: they are numbered in the order they show. */
+static const char *key(unsigned char n)
+{
+    static char d[2];
+    d[0] = '0' + n;
+    return d;
+}
+
 static void setup_settings(void)
 {
-    unsigned char k;
+    unsigned char k, sw;
     static char b[DIAL_NUM_MAX + 1];
     txt_mode();
     txt_top = 0;
@@ -67,22 +77,24 @@ static void setup_settings(void)
     txt_clear();
     title_bar("ParlorNet settings", "");
     for (;;) {
-        setting_line(2, "1", "Modem: ", cfg_slot == SER_USER ? "Supra 2400 compatible" : "SwiftLink compatible");
+        /* the keys in the order of the lines: the SwiftLink's address (2) only for the SwiftLink, the rest
+           after it one further on (sw) */
+        sw = cfg_slot != SER_USER;
+        setting_line(2, "1", "Modem: ", sw ? "SwiftLink compatible" : "Supra 2400 compatible");
         txt_clrrow(3);
-        if (cfg_slot == SER_USER) {
+        if (sw)
+            setting_line(3, "2", "Address: ", acia_name[cfg_acia]);
+        else {
             txt_goto(3, 3);
             say("on the user port");
-        } else
-            setting_line(3, "3", "Address: ", acia_name[cfg_acia]);
-        setting_line(4, "2", "Speed: ", baud_name[cfg_baud]);
-        setting_line(6, "4", "Flow: ", cfg_flow ? "RTS/CTS" : "no flow control");
-        setting_line(8, "5", "Echo typing in the console: ", cfg_echo ? "on" : "off");
-        setting_line(10, "6", "Init string: ", cfg_init[0] ? cfg_init : "none");
-        setting_line(11, "7", "Number: ", !cfg_number[0] ? "none, no dialing" : "");
-        txt_goto(3, 12);
-        say(cfg_number);
-        txt_clreol();
-        setting_line(13, "8", cfg_pulse ? "[x] " : "[ ] ", "Pulse dial");
+        }
+        setting_line(4, key(2 + sw), "Speed: ", baud_name[cfg_baud]);
+        setting_line(6, key(3 + sw), "Flow: ", cfg_flow ? "RTS/CTS" : "no flow control");
+        setting_line(8, key(4 + sw), "Echo typing in the console: ", cfg_echo ? "on" : "off");
+        setting_line(10, key(5 + sw), "Init string: ", cfg_init[0] ? cfg_init : "none");
+        setting_line(11, key(6 + sw), "Number: ", cfg_number[0] ? cfg_number : "none, no dialing");
+        setting_line(12, key(7 + sw), cfg_pulse ? "[x] " : "[ ] ", "Pulse dial");
+        txt_clrrow(13);
         setting_line(15, "D", "Display: ", mono ? "monochrome" : "color");
         setting_line(16, "T", "Title screen at start: ", cfg_title ? "on" : "off");
         setting_line(17, "M", "1351 mouse in port 1: ", mouse_on ? "on" : "off");
@@ -108,30 +120,35 @@ static void setup_settings(void)
         case 'D': mono ^= 1; break;
         case 'T': cfg_title ^= 1; break;
         case 'M': mouse_on ^= 1; break;
-        case '1':
-            modem_set(cfg_slot == SER_USER ? SER_SWIFT : SER_USER);
-            break;
-        case '2': next_baud(); break;
-        case '3':
-            if (cfg_slot != SER_USER)
+        default:
+            if (k < '1' || k > '7' + sw)
+                break;
+            k -= '0';
+            if (k == 1)
+                modem_set(sw ? SER_USER : SER_SWIFT);
+            else if (sw && k == 2)
 #ifdef C64_CART
                 cfg_acia = cfg_acia == 1 ? 2 : 1;   /* ($DE00 is the cartridge's own) */
 #else
                 cfg_acia = cfg_acia == 2 ? 0 : cfg_acia + 1;
 #endif
-            break;
-        case '4': cfg_flow ^= 1; break;
-        case '5': cfg_echo ^= 1; break;
-        case '8': cfg_pulse ^= 1; break;
-        case '6':
-            strcpy(b, cfg_init);
-            if (edit_line(21, "Init string: ", b, DIAL_INIT_MAX))
-                strcpy(cfg_init, b);
-            break;
-        case '7':
-            strcpy(b, cfg_number);
-            if (edit_line(12, "  ", b, DIAL_NUM_MAX))
-                strcpy(cfg_number, b);
+            else
+                switch (k - sw) {
+                case 2: next_baud(); break;
+                case 3: cfg_flow ^= 1; break;
+                case 4: cfg_echo ^= 1; break;
+                case 7: cfg_pulse ^= 1; break;
+                case 5:
+                    strcpy(b, cfg_init);
+                    if (edit_line(21, "Init string: ", b, DIAL_INIT_MAX))
+                        strcpy(cfg_init, b);
+                    break;
+                case 6:
+                    strcpy(b, cfg_number);
+                    if (edit_line(21, "Number: ", b, DIAL_NUM_MAX))
+                        strcpy(cfg_number, b);
+                    break;
+                }
             break;
         }
     }

@@ -1,4 +1,4 @@
-# The SwiftLink compatible modem at 38400: key 2 takes the speed from 19200 to 38400 (swift38_settings), Return
+# The SwiftLink compatible modem at 38400: key 3 takes the speed from 19200 to 38400 (swift38_settings), Return
 # keeps it (PARLOR.CFG), and the settings show it again (swift38_saved, peek cfg_baud: 6).
 waittitle 6000
 title 3600
@@ -6,7 +6,7 @@ waittext ParlorNet: connect 600
 type S
 waittext ParlorNet settings 300
 wait 60
-type 2
+type 3
 wait 30
 snap swift38_settings
 key ret
