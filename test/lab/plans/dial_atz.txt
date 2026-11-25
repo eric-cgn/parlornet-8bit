@@ -1,0 +1,74 @@
+# The dialer through a Unix shell login (test/README.md, "Through a Unix shell"), with ParlorNet's
+# tools/ATZ installed as ATZ: no console step. P sends ATZ to the shell, which echoes it and runs ATZ, which
+# says OK; the dialer dials ATDT and the number, ATZ connects to the parlor, says CONNECT, and the program
+# signs in. Open-Apple-Q: the parlor hangs up after BYE and ATZ says NO CARRIER at once and waits for the
+# next dial, so P dials again, its ATZ answered OK. Then the Hayes escape in the console: AT gets OK
+# (atz_console); a dial gets CONNECT, and a second's quiet, +++ and a second's quiet give OK with the line
+# up (atz_escape); ATH hangs up with OK (atz_ath); Control-C ends ATZ with exit status 130 (atz_exit).
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type S
+waittext ParlorNet settings 300
+type 7
+wait 30
+arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
+wait 120
+type host.docker.internal:16501\r
+wait 60
+snap atz_settings
+key ret
+waittext ParlorNet: connect 300
+type P
+waittext Name: 900
+snap atz_dialed
+dumptext atz_dialed
+type new\r
+waittext want 300
+type pia\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap atz_lobby
+oa Q
+waittext ParlorNet: connect 1200
+snap atz_hungup
+type P
+waittext Name: 900
+snap atz_again
+dumptext atz_again
+type pia\r
+waittext assword 600
+type Swordfish 1997\r
+wait 600
+snap atz_lobby2
+oa Q
+waittext ParlorNet: connect 1200
+type C
+waittext Console 300
+wait 300
+type AT\r
+wait 120
+dumptext atz_console
+snap atz_console
+type ATDT host.docker.internal:16501\r
+waittext CONNECT 600
+wait 90
+type +++
+wait 150
+dumptext atz_escape
+snap atz_escape
+type ATH\r
+wait 120
+dumptext atz_ath
+snap atz_ath
+ctrl C
+wait 120
+type echo exit $?\r
+wait 120
+dumptext atz_exit
+snap atz_exit
+exit

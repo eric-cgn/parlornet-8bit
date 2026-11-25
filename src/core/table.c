@@ -181,11 +181,18 @@ static void load_names(void)
     }
 }
 
-/* Fetch the view: 1 if it came. */
-static unsigned char fetch(void)
+static void poll_events(void);
+
+/* Fetch the view: 1 if it came. With show (the table on the screen), events that came after the last SIN
+   and before the view are shown first, as they would have been: SIN reads them, then the view is fetched
+   again, up to show times. An opponent who moves while the player's own move is being shown (the bot
+   answers within a second or two) would otherwise be seen only in the view, their move's events
+   skipped. */
+static unsigned char __fastcall__ fetch(unsigned char show)
 {
     unsigned char i, n, asked_g = !view_g;
     char *l;
+again:
     q_set("VUE");
     q_num(g_table);
     q_add(view_g ? "T" : "GT");
@@ -195,6 +202,18 @@ static unsigned char fetch(void)
         if (r_final)
             g_message(err_text(r_final));
         return 0;
+    }
+    words(r_line[0]);                   /* the view's first line: V type seq */
+    if (wn > 2) {
+        if (show && num(w[2]) > ev_seq) {
+            --show;
+            in_view = 1;                /* (no refresh from SIN: this is one) */
+            poll_events();
+            in_view = 0;
+            goto again;
+        }
+        v_seq = num(w[2]);
+        strncpy(gtype, w[1], 15);
     }
     m_n = 0;
     mused = 0;
@@ -224,13 +243,8 @@ static unsigned char fetch(void)
         words(l);
         if (!wn)
             continue;
-        if (is(w[0], "V")) {
-            if (wn > 2)
-                v_seq = num(w[2]);
-            if (wn > 1 && strcmp(w[1], gtype) != 0)
-                strncpy(gtype, w[1], 15);
+        if (is(w[0], "V"))              /* (read above) */
             continue;
-        }
         if (is(w[0], "W") && wn > 1) {
             g_started = 1;
             g_turn = (w[1][0] == '-') ? -1 : (signed char)num(w[1]);
@@ -367,15 +381,13 @@ static void redraw(void)
 static void refresh(void)
 {
     unsigned char was = g_started, wasover = g_over;
-    if (!fetch())
+    if (!fetch(3))
         return;
     if (g_full || was != g_started || wasover != g_over)
         draw_all();
     else
         redraw();
 }
-
-static void poll_events(void);
 
 static unsigned char send_move(const char *verb, const char *tokens)
 {
@@ -595,7 +607,7 @@ static void chat(void)
     chat_tk = chat_n - 1;
     chat_pg = 0;
     if (stale)
-        fetch();
+        fetch(0);
     draw_all();
 }
 
@@ -660,7 +672,7 @@ unsigned char table_play(unsigned int id)
         }
     }
     ui_status("Fetching the table...");
-    fetch();
+    fetch(0);
     draw_all();
     /* what was said lately (the bot says hello as it sits down, before this) */
     ev_seq = v_seq > 16 ? v_seq - 16 : 0;
