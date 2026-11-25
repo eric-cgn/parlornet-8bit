@@ -1,0 +1,51 @@
+# A dialed line lost mid-game and dialed again, through the Unix shell with ParlorNet's tools/ATZ as ATZ
+# (test/README.md). The number is a bridge that hangs up the line 75 seconds after it connects to the parlor
+# (bridge.py's CUT), as when the parlor restarts. The player signs up and starts a game of Backgammon, the
+# first in the list, against the bot (al_game). When the line goes, ATZ says NO CARRIER, and the game's next
+# request finds it: "The connection to the parlor was lost." (al_lost). Return dials again (al_redialed),
+# and the player signs in again (al_lobby2), where the game is still listed.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type S
+waittext ParlorNet settings 300
+type 7
+wait 30
+arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
+wait 120
+type host.docker.internal:16602\r
+wait 60
+key ret
+waittext ParlorNet: connect 300
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type luke\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap al_lobby
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 900
+snap al_game
+waittext lost 9000
+snap al_lost
+dumptext al_lost
+key ret
+waittext Name: 1200
+snap al_redialed
+dumptext al_redialed
+type luke\r
+waittext assword 600
+type Swordfish 1997\r
+wait 600
+snap al_lobby2
+exit

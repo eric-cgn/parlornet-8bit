@@ -9,7 +9,7 @@
 # container: there test/lab/bridge.py is a WiFi modem's stand-in (LINE=modem, the default: AT commands,
 # ATDT connects to the parlor) or a plain relay to the parlor (LINE=direct, with the dialer's number
 # emptied after the title, as a player on a direct line sets it). LINE=host:port sends the line to another
-# container on c64lab instead (NET names another network), the Unix shell's for pndial.
+# container on c64lab instead (NET names another network), the Unix shell's with ATZ.
 # (VICE runs under script, on a terminal of its own: without one, its SDL interface stops at start.)
 # NTSC=1 runs an NTSC machine; C128=1 runs a C128 (x128), which boots the disk and goes to 64 mode. The 1541 is emulated in full, at its own speed;
 # FAST=1 runs the whole emulation in warp mode (for plans that do not depend on time). VICE works on a copy

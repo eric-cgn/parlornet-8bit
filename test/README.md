@@ -121,10 +121,10 @@ its letter, in color and in monochrome.
 
 ## Through a Unix shell
 
-`lab/shell/` is a container with a shell on a pty behind a TCP port, as a login over a serial line
-would be, with nc. `plans/unixshell.txt` types `stty raw -echo; nc host.docker.internal 16501; stty
-sane` in the console, presses Open-Apple-P, signs in, closes the connection from the lobby and checks
-that it is back at the shell prompt:
+`lab/shell/` is a container with a login shell (bash 5.2, with TERM=vt100) on a pty behind a TCP port, as a
+login over a serial line would be, with nc and python3. `plans/unixshell.txt` types `stty raw -echo; nc
+host.docker.internal 16501; stty sane` in the console, presses Open-Apple-P, signs in, closes the connection
+from the lobby and checks that it is back at the shell prompt:
 
 ```
 docker build -t parlornet-8bit-shell test/lab/shell
@@ -169,29 +169,37 @@ A2ROMS=~/roms test/lab/run.sh 16600 build/parlornet.dsk test/lab/plans/dial.txt 
 - `plans/dial_stay.txt` dials STAY: after Open-Apple-Q no NO CARRIER comes, so the program sends `+++`, gets
   OK and sends ATH; `modem.log` shows "escape" and "hangup", and P dials again (`ds_again`).
 
-Through a Unix shell the dialer needs no console step when pndial (`tools/pndial` in the ParlorNet
-repository) is installed as `ATZ`: the program's ATZ reaches the shell prompt, the shell echoes it and runs
-pndial, which answers OK. Install it in the shell container, then run the plans with the line on it:
+Through a Unix shell the dialer needs no console step when ATZ (`tools/ATZ` in the ParlorNet repository) is
+installed on the shell's PATH: the program's ATZ reaches the shell prompt, the shell echoes it and runs ATZ,
+which answers OK. Install it in the shell container, then run the plans with the line on it:
 
 ```
-docker cp "$PARLORNET/tools/pndial" a2shell:/usr/local/bin/pndial
-docker exec -u root a2shell sh -c 'chmod 755 /usr/local/bin/pndial; ln -sf pndial /usr/local/bin/ATZ'
-NET=a2lab LINE=a2shell:2323 A2ROMS=~/roms test/lab/run.sh 0 build/parlornet.dsk test/lab/plans/dial_pndial.txt test/out/pndial
+docker exec -i -u root a2shell sh -c 'cat > /usr/local/bin/ATZ && chmod 755 /usr/local/bin/ATZ' < "$PARLORNET/tools/ATZ"
+NET=a2lab LINE=a2shell:2323 A2ROMS=~/roms test/lab/run.sh 0 build/parlornet.dsk test/lab/plans/dial_atz.txt test/out/atz
 ```
 
-- `plans/dial_pndial.txt` sets the number to `host.docker.internal:16501` (`pn_settings`) and presses P:
-  ATZ, OK from pndial, the dial, CONNECT and the name prompt (`pn_dialed`). It signs up, closes the
-  connection and dials again (`pn_again`). The shell has OpenBSD's nc, which notices the parlor's hang-up
-  only when the program sends `+++`; pndial then says NO CARRIER and waits for the next dial. At the end the
-  console shows pndial answering AT (`pn_console`).
-- `plans/dial_pndial_lost.txt` runs in a second shell container started with `-e NC='timeout 75 nc'`, so
-  that the connection ends 75 seconds after the dial, as when the parlor restarts. The lobby's next request
-  finds NO CARRIER: "The connection to the parlor was lost." (`pl_lost`), and Return dials again and signs
-  in (`pl_redialed`, `pl_lobby2`).
-- `plans/console_close.txt`, in the same shell as `dial_pndial.txt`: going to the console closes the parlor
-  connection first. Open-Apple-C from the lobby sends BYE, the parlor hangs up and pndial says NO CARRIER, so
-  AT in the console gets pndial's OK (`cc_lobby_at`) and Control-C (the plan's `ctrl` step) gives the shell
-  prompt (`cc_lobby_shell`). Open-Apple-C at the name prompt does the same (`cc_name_at`), and so does C on the
+- `plans/dial_atz.txt` sets the number to `host.docker.internal:16501` (`atz_settings`) and presses P: ATZ,
+  OK from ATZ, the dial, CONNECT and the name prompt (`atz_dialed`). It signs up, closes the connection and
+  dials again (`atz_again`): when the parlor hangs up, ATZ says NO CARRIER at once and waits for the next
+  dial. Then the console shows ATZ answering AT (`atz_console`) and checks the Hayes escape: a dial, CONNECT,
+  a second's quiet, `+++` and a second's quiet give OK with the line up (`atz_escape`), ATH hangs up with OK
+  (`atz_ath`), and Control-C ends ATZ with exit status 130 (`atz_exit`).
+- `plans/dial_atz_lost.txt` dials port 16602, a bridge that hangs up the line 75 seconds after it connects to
+  the parlor, as when the parlor restarts. Start it beside the lab parlor (`pkill -f bridge.py` stops it, as
+  it does the lab parlor's other bridges):
+
+  ```
+  nohup python3 test/lab/bridge.py 16602 127.0.0.1 16501 bridge test/work/srv/cut.log 75 > /dev/null 2>&1 &
+  ```
+
+  The player signs up and starts a game of Backgammon, the first in the list, against the bot (`al_game`).
+  When the line goes, ATZ says NO CARRIER, and the game's next request finds it: "The connection to the
+  parlor was lost." (`al_lost`). Return dials again and signs in, where the game is still listed
+  (`al_redialed`, `al_lobby2`).
+- `plans/console_close.txt`, in the same shell: going to the console closes the parlor connection first.
+  Open-Apple-C from the lobby sends BYE, the parlor hangs up and ATZ says NO CARRIER, so AT in the console
+  gets ATZ's OK (`cc_lobby_at`) and Control-C (the plan's `ctrl` step) gives the shell prompt
+  (`cc_lobby_shell`). Open-Apple-C at the name prompt does the same (`cc_name_at`), and so does C on the
   start screen after Esc at the name prompt has left the connection open (`cc_start_at`, `cc_start_shell`).
 
 ## The IIgs program in MAME
@@ -241,7 +249,7 @@ test/vice/run.sh build/c64/parlornet.d64 test/vice/plans/reversi.txt test/out/c6
 - `vice/run.sh` starts VICE under Xvfb, with its binary monitor on 127.0.0.1:6502 inside the container, and the
   serial line to `lab/bridge.py` in the same container: the WiFi-modem stand-in (`LINE=modem`, the default) or a
   plain relay (`LINE=direct`, with the dialer's number emptied after the title). `LINE=host:port` sends the line to
-  another container on the lab network (a shell with pndial, say). `IFACE=swift` (the default, at `BAUD`, 19200 at first) or `IFACE=user` picks a SwiftLink at $DE00 (at $DF00 with
+  another container on the lab network (a shell with ATZ, say). `IFACE=swift` (the default, at `BAUD`, 19200 at first) or `IFACE=user` picks a SwiftLink at $DE00 (at $DF00 with
   `ACIA=0xdf00`), as the program's settings start (SwiftLink compatible), or the user port's RS-232 (Supra 2400
   compatible).
   `ATTACH=1` only puts the disk in drive 8, for plans that type the LOAD themselves; `C128=1` runs x128, which boots

@@ -9,9 +9,11 @@ quiet before and after it goes back to command mode (OK), where ATH hangs up and
 Some dial strings stand for a modem's other answers: a number with BUSY in it gives BUSY, NOCARRIER gives
 NO CARRIER, SILENT gives nothing until the next byte from the Apple (which, as on a modem, stops the dial
 with NO CARRIER), and STAY connects but does not notice the parlor hanging up, so that only +++ and ATH
-end the call. Everything it sees is logged.
+end the call. Everything it sees is logged. In bridge mode, CUT (seconds) hangs up the line that long after
+the connection to the parlor opens, as when the parlor restarts: the dialer at the other end (ATZ in the Unix
+shell) then says NO CARRIER.
 
-usage: bridge.py LISTENPORT PARLORHOST PARLORPORT [modem] [log]
+usage: bridge.py LISTENPORT PARLORHOST PARLORPORT [modem|bridge] [log] [CUT]
 """
 import select
 import socket
@@ -22,6 +24,7 @@ import time
 listen, phost, pport = int(sys.argv[1]), sys.argv[2], int(sys.argv[3])
 modem = len(sys.argv) > 4 and sys.argv[4] == "modem"
 logf = open(sys.argv[5] if len(sys.argv) > 5 else "/dev/null", "a", buffering=1)
+cut = float(sys.argv[6]) if len(sys.argv) > 6 else 0
 
 
 def log(what, data):
@@ -56,7 +59,17 @@ def serve(c):
             done = threading.Event()
             threading.Thread(target=relay, args=(p, c, "A2<", done), daemon=True).start()
             c.settimeout(0.2)
+            end = time.time() + cut
             while not done.is_set():
+                if cut and time.time() >= end:
+                    log("cut", b"")
+                    for x in (p, c):
+                        try:
+                            x.shutdown(socket.SHUT_RDWR)
+                        except OSError:
+                            pass
+                        x.close()
+                    return
                 try:
                     b = c.recv(4096)
                 except socket.timeout:
