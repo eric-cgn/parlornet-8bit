@@ -3,17 +3,20 @@
 # and publish a GitHub Release with the Apple IIe's self-booting disk (parlornet.dsk), the ProDOS files on a
 # ProDOS volume (parlor-files.po), the Apple IIgs disk (parlornet-gs.po), and their SHA-256 and MD5 sums
 # (SHA256SUMS, MD5SUMS, and in the release notes). A push that keeps the version does nothing.
+# Run it by hand on main to release a version whose push did not run it.
 name: Release
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 # One at a time, so two quick landings can't both release the same version
 concurrency: release
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
