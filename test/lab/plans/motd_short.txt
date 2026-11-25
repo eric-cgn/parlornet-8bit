@@ -1,0 +1,13 @@
+# A short message of the day goes on to the name prompt with no pause. Start the lab parlor with one of a
+# few lines, a blank and an indented one among them:
+#   printf 'A short message.\n\n   Indented three.\n' > /tmp/motd3.txt
+#   MOTD=/tmp/motd3.txt PARLORNET=~/src/parlornet test/lab/parlor.sh
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+snap motd_short
+dumptext motd_short
+exit

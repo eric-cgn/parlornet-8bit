@@ -1,0 +1,32 @@
+# Chat in Backgammon (run.sh): the bot's hello on the busiest board's message line, a line said in the chat
+# view, and the board again with it.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type quin\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 1200
+snap bgchat_hello
+oa T
+wait 60
+type Rolling now.\r
+wait 600
+snap bgchat_view
+key esc
+wait 600
+snap bgchat_board
+exit

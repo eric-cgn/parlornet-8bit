@@ -1,0 +1,29 @@
+# A message of the day of long lines, each wrapped to two or three rows, takes two screens: a pause
+# before a line that would not fit, then a fresh screen. The sign-up after it scrolls the text under the
+# title bar. Start the lab parlor with 20 lines of up to 73 characters (the most a parlor sends), as in
+# motd_long.motd beside this plan:
+#   MOTD=$PWD/test/lab/plans/motd_long.motd PARLORNET=~/src/parlornet test/lab/parlor.sh
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext More: press a key 900
+snap motdl_1
+dumptext motdl_1
+key ret
+waittext Name: 300
+snap motdl_2
+dumptext motdl_2
+type new\r
+waittext want 300
+type longmotd\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+snap motdl_3
+dumptext motdl_3
+type Swordfish 1997\r
+wait 400
+snap motdl_lobby
+exit

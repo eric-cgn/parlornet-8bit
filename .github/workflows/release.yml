@@ -1,0 +1,69 @@
+# Every push to main: if VERSION names a version with no release yet, build the programs with
+# tools/build_apple2.sh (cc65 in a Debian image pinned by digest), run the tests, tag the commit v<version>
+# and publish a GitHub Release with the Apple IIe's self-booting disk (parlornet.dsk), the ProDOS files on a
+# ProDOS volume (parlor-files.po), the Apple IIgs disk (parlornet-gs.po), and their SHA-256 and MD5 sums
+# (SHA256SUMS, MD5SUMS, and in the release notes). A push that keeps the version does nothing.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+# One at a time, so two quick landings can't both release the same version
+concurrency: release
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - id: version
+        name: A new version?
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=$(cat VERSION)
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+          if gh release view "v$v" >/dev/null 2>&1; then
+            echo "ParlorNet for the Apple IIe and IIgs $v is already released"
+            echo "new=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=yes" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build
+        if: steps.version.outputs.new == 'yes'
+        run: tools/build_apple2.sh
+      - name: Test
+        if: steps.version.outputs.new == 'yes'
+        run: python3 -m unittest discover test
+      - name: Release files
+        if: steps.version.outputs.new == 'yes'
+        run: python3 tools/release.py
+      - name: Release
+        if: steps.version.outputs.new == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="$RUNNER_TEMP/notes.md"
+          {
+            echo "ParlorNet for the Apple IIe and IIgs $VERSION. parlornet.dsk is the Apple IIe's self-booting disk (140K,"
+            echo "DOS 3.3 sector order); parlor-files.po is a ProDOS volume with PARLOR.SYSTEM and PARLOR.DAT, to copy to a"
+            echo "disk with your own ProDOS; parlornet-gs.po is an 800K ProDOS volume with the Apple IIgs program, PARLORNET,"
+            echo "and its PARLOR.DAT, for System 6.0.1 with Marinetti. Built from this commit by tools/build_apple2.sh; the"
+            echo "README has the details."
+            echo
+            echo "SHA-256:"
+            echo
+            echo '```'
+            cat build/release/SHA256SUMS
+            echo '```'
+            echo
+            echo "MD5:"
+            echo
+            echo '```'
+            cat build/release/MD5SUMS
+            echo '```'
+          } > "$notes"
+          gh release create "v$VERSION" build/release/* --target "$GITHUB_SHA" --title "ParlorNet for the Apple IIe and IIgs $VERSION" --notes-file "$notes"

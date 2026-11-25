@@ -1,0 +1,73 @@
+# The key legends and Grid Words (run.sh): the Open-Apple key as MouseText in the console and sign-in (an
+# enhanced IIe), as a glyph in the lobby and at the table, Grid Words' Keys and Open-Apple-V (every letter's points),
+# then tiles in color, one being laid in monochrome, and monochrome.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type C
+waittext Console 600
+wait 30
+snap oa_enhanced
+oa Q
+waittext ParlorNet: connect 600
+type P
+waittext Name: 900
+snap oa_enhanced_signin
+type new\r
+waittext want 300
+type ann\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+snap oa_enhanced_lobby
+key ret
+wait 200
+arrows DDDDD
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 200
+wait 1300
+click 247
+wait 120
+snap oa_keys
+click 247
+wait 120
+snap oa_keys2
+oa V
+wait 300
+snap gw2_values
+key ret
+wait 600
+need gwlay ann Swordfish 1997
+key ret
+wait 1500
+need gwpass ann Swordfish 1997
+wait 1500
+need gwlay ann Swordfish 1997
+key ret
+wait 1500
+need gwlay ann Swordfish 1997
+key ret
+wait 1500
+need gwlay ann Swordfish 1997
+key ret
+wait 1500
+snap gw2_color
+oa D
+wait 900
+set :a2video:a2_video_config Monitor type 5
+wait 30
+need gwlay ann Swordfish 1997
+snap gw2_mono_laying
+key ret
+wait 1500
+snap gw2_mono
+exit

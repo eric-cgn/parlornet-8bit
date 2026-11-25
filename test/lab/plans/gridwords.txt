@@ -1,0 +1,50 @@
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type eve\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+key ret
+wait 200
+arrows DDDDD
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 200
+wait 1300
+snap gw_start
+need gwlay eve Swordfish 1997
+key ret
+wait 1500
+need gwlay eve Swordfish 1997
+key ret
+wait 1500
+need gwlay eve Swordfish 1997
+key ret
+wait 1500
+snap gw_mid
+need gwhover eve Swordfish 1997
+wait 30
+snap gw_hover
+point 225
+arrows R
+wait 60
+snap gw_hover_rack
+oa D
+wait 900
+set :a2video:a2_video_config Monitor type 5
+wait 30
+snap gw_mono
+exit

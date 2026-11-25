@@ -1,0 +1,53 @@
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+snap start
+type C
+waittext Console 300
+type ATDT parlornet.org:6501\r
+waittext CONNECT 600
+snap console
+oa P
+waittext Name: 600
+snap signin
+type new\r
+waittext want 300
+type cy\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+snap lobby
+key ret
+wait 200
+snap newgame
+key ret
+wait 200
+snap whom
+key ret
+wait 900
+snap reversi_start
+arrows RRRDD
+wait 60
+snap reversi_pointer
+key ret
+wait 600
+snap reversi_after
+arrows LLD
+key ret
+wait 600
+snap reversi_after2
+oa D
+wait 500
+set :a2video:a2_video_config Monitor type 5
+wait 30
+snap reversi_mono
+oa D
+wait 500
+set :a2video:a2_video_config Monitor type 0
+key esc
+wait 400
+snap lobby2
+exit

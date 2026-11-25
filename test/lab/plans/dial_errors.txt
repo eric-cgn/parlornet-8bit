@@ -1,0 +1,68 @@
+# The dialer's error replies, on the WiFi-modem stand-in (port 16600), which answers a number with BUSY in
+# it with BUSY, one with NOCARRIER with NO CARRIER, and one with SILENT with nothing at all. BUSY, then
+# Return dials again (BUSY again); NO CARRIER; a minute of silence ends in "No CONNECT"; and Escape during
+# a dial sends a Return, which stops it, and goes back to the start screen.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type S
+waittext ParlorNet settings 300
+type 8
+wait 30
+arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
+wait 120
+type BUSY\r
+wait 60
+snap de_number
+dumptext de_number
+key ret
+waittext ParlorNet: connect 300
+type P
+waittext dial again 900
+snap de_busy
+dumptext de_busy
+key ret
+wait 120
+waittext dial again 900
+dumptext de_busy2
+key esc
+waittext ParlorNet: connect 300
+type S
+waittext ParlorNet settings 300
+type 8
+wait 30
+arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
+wait 120
+type NOCARRIER\r
+wait 60
+key ret
+waittext ParlorNet: connect 300
+type P
+waittext dial again 900
+snap de_nocarrier
+dumptext de_nocarrier
+key esc
+waittext ParlorNet: connect 300
+type S
+waittext ParlorNet settings 300
+type 8
+wait 30
+arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
+wait 120
+type SILENT\r
+wait 60
+key ret
+waittext ParlorNet: connect 300
+type P
+waittext in a minute 4800
+snap de_timeout
+dumptext de_timeout
+key ret
+wait 300
+snap de_dialing
+dumptext de_dialing
+key esc
+waittext ParlorNet: connect 600
+snap de_cancelled
+exit

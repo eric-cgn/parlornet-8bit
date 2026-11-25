@@ -1,0 +1,48 @@
+# The connected time: on the sign-in's title row ("ParlorNet  0:05"), at the right end of the lobby's and
+# the table's title row, and from 0:00 again on a new connection. The parlor gives it (TIM) every 30
+# seconds or so; a parlor without TIM leaves the count to the program's ticks.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+wait 300
+dumptext ck_name
+type new\r
+waittext want 300
+type tim\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+snap ck_lobby
+wait 1800
+snap ck_lobby30
+# a game against the bot
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 900
+snap ck_table
+wait 1800
+snap ck_table30
+key esc
+wait 400
+# close the connection, then a new one: the time starts again
+oa Q
+waittext Console 600
+wait 120
+oa P
+waittext Name: 900
+wait 120
+dumptext ck_name2
+type tim\r
+waittext assword 600
+type Swordfish 1997\r
+wait 500
+snap ck_lobby2
+exit

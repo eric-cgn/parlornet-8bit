@@ -1,0 +1,64 @@
+# Grid Words on the IIgs (test/lab/gs.sh): sign up, start a game against the bot and lay three words (the
+# orchestrator finds them; a pass lets the bot lay one when the rack has none), in color, the letters'
+# points (Open-Apple-V), then monochrome.
+wait 2400
+dclick 568 66
+wait 300
+dclick 86 49
+title 1800
+waittext Open-Apple-Q 1800
+key s
+waittext settings 300
+key 1
+wait 30
+key ctrl+x
+type parlor\r
+wait 30
+key ret
+waittext Open-Apple-Q 600
+key p
+waittext Name: 3600
+snap gs_oa
+type new\r
+waittext want 300
+type eve\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 900
+snap gs_oa_lobby
+key ret
+wait 300
+arrows DDDDD
+key ret
+wait 300
+key ret
+wait 300
+key ret
+wait 300
+key ret
+wait 300
+wait 1300
+snap gs_gridwords_start
+need gwlay eve Swordfish 1997
+key ret
+wait 1500
+need gwpass eve Swordfish 1997
+wait 1500
+need gwlay eve Swordfish 1997
+key ret
+wait 1500
+need gwlay eve Swordfish 1997
+key ret
+wait 1500
+snap gs_gridwords
+oa V
+wait 300
+snap gs_gridwords_values
+key ret
+wait 600
+oa d
+wait 900
+snap gs_gridwords_mono
+exit

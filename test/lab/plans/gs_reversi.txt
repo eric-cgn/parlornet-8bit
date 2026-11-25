@@ -1,0 +1,106 @@
+# The IIgs program over Marinetti (test/lab/gs.sh): from the Finder, open the disk and the program, set the
+# parlor to the lab's, sign up, play Reversi against the bot to the end (the orchestrator picks each move),
+# then close the connection and quit to the Finder.
+wait 2400
+snap gs_desktop
+dclick 568 66
+wait 300
+dclick 86 49
+title 1800
+waittext Open-Apple-Q 1800
+snap gs_start
+key s
+waittext settings 300
+key 1
+wait 30
+key ctrl+x
+type parlor\r
+wait 30
+snap gs_settings
+key ret
+waittext Open-Apple-Q 600
+key p
+waittext Name: 3600
+snap gs_connected
+type new\r
+waittext want 300
+type gus\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 900
+snap gs_lobby
+key ret
+wait 300
+snap gs_newgame
+arrows DDDDDDDD
+key ret
+wait 300
+snap gs_whom
+key ret
+wait 1200
+snap gs_reversi_start
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+snap gs_reversi_04
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+snap gs_reversi_12
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+snap gs_reversi_24
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+need rv gus Swordfish 1997
+wait 600
+snap gs_reversi_end
+key esc
+wait 600
+snap gs_lobby2
+oa q
+wait 900
+snap gs_closed
+oa q
+wait 900
+snap gs_finder
+exit

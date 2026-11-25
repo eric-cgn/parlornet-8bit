@@ -1,0 +1,55 @@
+# Chat at the table (run.sh): Reversi against the bot. The bot's hello on the message line as the table
+# opens, in two parts three seconds apart; the chat view (Open-Apple-T) with it; a line said there, shown
+# in the view; the board again with that line on the message line, kept through a move; then the same in
+# monochrome.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type pat\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+key ret
+wait 200
+arrows DDDDDDDD
+key ret
+wait 200
+key ret
+wait 400
+snap chat_hello
+wait 200
+snap chat_hello2
+oa T
+wait 60
+snap chat_view
+type Hello from the Apple IIe. Good luck to you too!\r
+wait 900
+snap chat_said
+key esc
+wait 400
+snap chat_board
+arrows RRRDD
+key ret
+wait 600
+snap chat_moved
+oa D
+wait 500
+set :a2video:a2_video_config Monitor type 5
+wait 30
+snap chat_mono
+oa T
+wait 60
+snap chat_view_mono
+key esc
+wait 400
+oa D
+wait 500
+set :a2video:a2_video_config Monitor type 0
+exit

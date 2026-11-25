@@ -1,0 +1,47 @@
+# Reversi's discs (run.sh): a Reversi game with the bot, a move played, then the board on a color monitor in
+# color, in monochrome on a monochrome monitor, in monochrome on a color monitor and in color on a monochrome
+# monitor. The discs are 8 color pixels (16 pixels) across and 13 lines down in color, and 15 pixels across
+# and 13 lines down in monochrome: round on a monitor, where a Hi-Res pixel is about 7/6 as tall as it is wide.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type cy\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+key ret
+wait 200
+arrows DDDDDDDD
+wait 30
+snap rvd_pick
+key ret
+wait 200
+snap rvd_whom
+key ret
+wait 900
+snap rvd_start
+arrows RRRDD
+key ret
+wait 600
+snap rvd_color
+oa D
+wait 500
+set :a2video:a2_video_config Monitor type 5
+wait 30
+snap rvd_mono
+set :a2video:a2_video_config Monitor type 0
+wait 30
+snap rvd_mono_on_color
+oa D
+wait 500
+set :a2video:a2_video_config Monitor type 5
+wait 30
+snap rvd_color_on_mono
+exit

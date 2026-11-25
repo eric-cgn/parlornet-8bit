@@ -1,0 +1,42 @@
+# A dialed line lost and dialed again, through the Unix shell with pndial as ATZ, in a shell container
+# started with NC='timeout 75 nc' (test/README.md), so that the connection ends 75 seconds after the dial,
+# as when the parlor restarts. The lobby's next request finds NO CARRIER: "The connection to the parlor was
+# lost." Return dials again (Return: dial again), and the player signs in again.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type S
+waittext ParlorNet settings 300
+type 8
+wait 30
+arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
+wait 120
+type host.docker.internal:16501\r
+wait 60
+key ret
+waittext ParlorNet: connect 300
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type luke\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap pl_lobby
+waittext lost 9000
+snap pl_lost
+dumptext pl_lost
+key ret
+waittext Name: 1200
+snap pl_redialed
+dumptext pl_redialed
+type luke\r
+waittext assword 600
+type Swordfish 1997\r
+wait 600
+snap pl_lobby2
+exit

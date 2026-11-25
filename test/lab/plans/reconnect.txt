@@ -1,0 +1,109 @@
+# The parlor goes away under a signed-in player on a Unix shell line, and the player connects again.
+# test/README.md, "Through a Unix shell": the lab parlor on 16501 and the shell container (LINE=a2shell:2323).
+# nc ends after 90 seconds (timeout 90), as it does when the parlor restarts; Return tries again, at the
+# shell; then nc to port 16509, where nothing listens, stands for the parlor still being down; then nc to
+# the parlor again.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type C
+waittext Console 300
+wait 120
+type \r
+waittext $ 600
+type stty raw 
+wait 40
+type -echo; 
+wait 40
+type timeout 90 
+wait 40
+type nc host.
+wait 40
+type docker.
+wait 40
+type internal 
+wait 40
+type 16501; 
+wait 40
+type stty sane
+wait 40
+wait 300
+oa P
+waittext Name: 900
+dumptext rc_name
+type new\r
+waittext want 300
+type rex\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap rc_lobby
+# nc ends; the lobby's next request finds the shell instead of the parlor
+waittext lost 9000
+snap rc_lost
+dumptext rc_lost
+# try again: the opening goes to the shell, which echoes it
+type \r
+waittext No answer 3000
+snap rc_retry
+dumptext rc_retry
+oa C
+waittext Console 300
+wait 60
+type \r
+wait 120
+type stty raw 
+wait 40
+type -echo; 
+wait 40
+type nc host.
+wait 40
+type docker.
+wait 40
+type internal 
+wait 40
+type 16509; 
+wait 40
+type stty sane
+wait 40
+wait 300
+oa P
+# no parlor: no greeting (the shell's echo of the opening is not one), and PRL finds none either
+waittext No answer 1800
+snap rc_noanswer
+dumptext rc_noanswer
+oa C
+waittext Console 300
+snap rc_console
+wait 60
+type \r
+wait 120
+type stty raw 
+wait 40
+type -echo; 
+wait 40
+type nc host.
+wait 40
+type docker.
+wait 40
+type internal 
+wait 40
+type 16501; 
+wait 40
+type stty sane
+wait 40
+wait 300
+oa P
+waittext Name: 900
+snap rc_back_name
+dumptext rc_back_name
+type rex\r
+waittext assword 600
+type Swordfish 1997\r
+wait 600
+snap rc_back_lobby
+dumptext rc_back_lobby
+exit

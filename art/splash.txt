@@ -1,0 +1,92 @@
+# The title screen's letters (splash.c), made for this program. Each letter is a grid of blocks, '#'
+# filled; a block is 4 color pixels (8 screen pixels) across and 6 lines down. tools/apple2_art.py
+# traces each letter's outline twice, an outer line on its edge and an inner line inside it, and
+# keeps the lines as short horizontal and vertical runs.
+
+letter P
+####.
+#####
+##.##
+##.##
+#####
+####.
+##...
+##...
+##...
+
+letter A
+.###.
+#####
+##.##
+##.##
+#####
+#####
+##.##
+##.##
+##.##
+
+letter R
+####.
+#####
+##.##
+##.##
+####.
+#####
+##.##
+##.##
+##.##
+
+letter L
+##...
+##...
+##...
+##...
+##...
+##...
+##...
+#####
+.####
+
+letter O
+.###.
+#####
+##.##
+##.##
+##.##
+##.##
+##.##
+#####
+.###.
+
+letter N
+##..##
+###.##
+######
+######
+##.###
+##..##
+##..##
+##..##
+##..##
+
+letter E
+#####
+#####
+##...
+##...
+####.
+####.
+##...
+#####
+#####
+
+letter T
+######
+######
+..##..
+..##..
+..##..
+..##..
+..##..
+..##..
+..##..

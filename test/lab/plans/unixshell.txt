@@ -1,0 +1,48 @@
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type C
+waittext Console 300
+wait 120
+type \r
+waittext $ 600
+dumptext sh_prompt
+type stty raw 
+wait 40
+type -echo; 
+wait 40
+type nc host.
+wait 40
+type docker.
+wait 40
+type internal 
+wait 40
+type 16501; 
+wait 40
+type stty sane
+wait 40
+wait 300
+snap sh_typed
+dumptext sh_typed
+oa P
+waittext Name: 900
+dumptext sh_name
+type new\r
+waittext want 300
+type sam\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap sh_lobby
+oa Q
+wait 600
+type \r
+wait 120
+type echo back in the shell\r
+wait 200
+dumptext sh_after
+snap sh_after
+exit

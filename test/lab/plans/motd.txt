@@ -1,0 +1,26 @@
+# The live message of the day (19 lines) a screen at a time. Start the lab parlor with it:
+#   MOTD=deploy/motd.txt PARLORNET=~/src/parlornet test/lab/parlor.sh
+# The first screen shows all of it and " More: press a key " on the bottom row, since the name prompt
+# does not fit below it; a key gives a fresh screen with the name prompt.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext More: press a key 900
+snap motd_more
+dumptext motd_more
+key ret
+waittext Name: 300
+snap motd_name
+dumptext motd_name
+type new\r
+waittext want 300
+type motd\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+snap motd_lobby
+exit

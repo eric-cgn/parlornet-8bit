@@ -1,0 +1,34 @@
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type ivy\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+key ret
+wait 200
+arrows DDD
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 200
+wait 1300
+snap fr_start
+need frplay ivy Swordfish 1997
+wait 120
+snap fr_frplay
+oa D
+wait 900
+set :a2video:a2_video_config Monitor type 5
+wait 30
+snap fr_mono
+exit

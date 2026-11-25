@@ -1,0 +1,48 @@
+# Who joined, and with what: pat waits at a Reversi table; bob sits down from GameMaster on a Macintosh
+# Plus (lab/joinopp.py, started just before the plan), and the message line says so, in two parts; later
+# bob chats from RSCARDS on an IBM PC, and the line says bob now plays with it, then the chat line.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type pat\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+snap lobby
+key ret
+wait 200
+arrows DDDDDDDD
+key ret
+wait 200
+snap whom
+arrows D
+key ret
+wait 400
+snap waiting
+wait 600
+snap join_1
+wait 180
+snap join_2
+oa T
+wait 60
+snap join_view
+key esc
+wait 1500
+snap change_1
+wait 180
+snap change_2
+wait 180
+snap change_3
+oa T
+wait 60
+snap change_view
+key esc
+wait 60
+exit

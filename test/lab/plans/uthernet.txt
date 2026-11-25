@@ -1,0 +1,28 @@
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type S
+waittext settings 600
+type C
+wait 60
+snap eth_settings
+dumptext eth_settings
+type \r
+waittext ParlorNet: connect 600
+wait 60
+snap eth_start
+type P
+waittext Name: 1200
+snap eth_connected
+dumptext eth_connected
+type new\r
+waittext want 300
+type net\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap eth_lobby
+exit

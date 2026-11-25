@@ -1,0 +1,107 @@
+# The IIgs program's title screen (test/lab/gs.sh): in color at the first start, then with the display
+# set to monochrome in the settings (kept in PARLOR.CFG), then turned off with T, which is kept too.
+wait 2400
+dclick 568 66
+wait 300
+dclick 86 49
+wait 60
+snap gs_splash_4
+wait 60
+snap gs_splash_5
+wait 60
+snap gs_splash_6
+wait 60
+snap gs_splash_7
+wait 60
+snap gs_splash_8
+wait 60
+snap gs_splash_9
+wait 60
+snap gs_splash_10
+wait 60
+snap gs_splash_11
+wait 60
+snap gs_splash_12
+wait 60
+snap gs_splash_13
+wait 60
+snap gs_splash_14
+wait 60
+snap gs_splash_15
+title 1800
+waittext Open-Apple-Q 1800
+key s
+waittext settings 300
+key d
+wait 30
+snap gs_settings_mono
+key ret
+waittext Open-Apple-Q 600
+key cmd+q
+wait 900
+dclick 86 49
+wait 60
+snap gs_splash_mono_4
+wait 60
+snap gs_splash_mono_5
+wait 60
+snap gs_splash_mono_6
+wait 60
+snap gs_splash_mono_7
+wait 60
+snap gs_splash_mono_8
+wait 60
+snap gs_splash_mono_9
+wait 60
+snap gs_splash_mono_10
+wait 60
+snap gs_splash_mono_11
+wait 60
+snap gs_splash_mono_12
+wait 60
+snap gs_splash_mono_13
+wait 60
+snap gs_splash_mono_14
+wait 60
+snap gs_splash_mono_15
+title 1800
+waittext Open-Apple-Q 1800
+key s
+waittext settings 300
+key t
+wait 30
+snap gs_settings_notitle
+key ret
+waittext Open-Apple-Q 600
+key cmd+q
+wait 900
+dclick 86 49
+wait 60
+snap gs_notitle_4
+wait 60
+snap gs_notitle_5
+wait 60
+snap gs_notitle_6
+wait 60
+snap gs_notitle_7
+wait 60
+snap gs_notitle_8
+wait 60
+snap gs_notitle_9
+wait 60
+snap gs_notitle_10
+wait 60
+snap gs_notitle_11
+wait 60
+snap gs_notitle_12
+wait 60
+snap gs_notitle_13
+wait 60
+snap gs_notitle_14
+wait 60
+snap gs_notitle_15
+waittext Open-Apple-Q 1800
+key s
+waittext settings 300
+dumptext gs_settings_kept
+exit

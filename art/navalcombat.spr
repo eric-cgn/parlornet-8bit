@@ -1,0 +1,232 @@
+# Naval Combat: the squares of the large grid, 2 bytes by 13 lines. In color: blue water, a miss (a
+# white spot), a hit (orange with a white spot), a sunk ship (white with an orange spot), and a ship
+# of the player's own; in monochrome the same as outlines, spots and crosses. Made for this program.
+
+color nc_water
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+.......
+
+color nc_miss
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBWWBB.
+BBWWBB.
+BBWWBB.
+BBWWBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+.......
+
+color nc_hit
+OOOOOO.
+OOOOOO.
+OOOOOO.
+OOOOOO.
+OOWWOO.
+OOWWOO.
+OOWWOO.
+OOWWOO.
+OOOOOO.
+OOOOOO.
+OOOOOO.
+OOOOOO.
+.......
+
+color nc_sunk
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWOOWW.
+WWOOWW.
+WWOOWW.
+WWOOWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+.......
+
+color nc_ship
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+WWWWWW.
+.......
+
+color nc_mark
+WWBBWW.
+WBBBBW.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+BBBBBB.
+WBBBBW.
+WWBBWW.
+.......
+
+mono nc_m_water
+..............
+..............
+..............
+..............
+..............
+......##......
+..............
+..............
+..............
+..............
+..............
+..............
+..............
+
+mono nc_m_miss
+..............
+..............
+..............
+....#####.....
+....#...#.....
+....#...#.....
+....#...#.....
+....#####.....
+..............
+..............
+..............
+..............
+..............
+
+mono nc_m_hit
+##.........##.
+###.......###.
+.###.....###..
+..###...###...
+...###.###....
+....#####.....
+.....###......
+....#####.....
+...###.###....
+..###...###...
+.###.....###..
+###.......###.
+..............
+
+mono nc_m_sunk
+..#########...
+...#######....
+#...#####...#.
+##...###...##.
+###...#...###.
+####.....####.
+#####...#####.
+####.....####.
+###...#...###.
+##...###...##.
+#...#####...#.
+...#######....
+..............
+
+mono nc_m_ship
+#############.
+#############.
+##.........##.
+##.........##.
+##.........##.
+##.........##.
+##.........##.
+##.........##.
+##.........##.
+##.........##.
+#############.
+#############.
+..............
+
+mono nc_m_mark
+##.........##.
+#...........#.
+..............
+..............
+..............
+..............
+..............
+..............
+..............
+..............
+#...........#.
+##.........##.
+..............
+
+# The small grid's squares, 1 byte by 7 lines (6 lines and 6 pixels, then black), in either look: water,
+# a ship, a hit, a sunk ship's square and a miss.
+
+mono nc_m_s_water
+......
+......
+..##..
+..##..
+......
+......
+.......
+
+mono nc_m_s_ship
+######
+######
+######
+######
+######
+######
+.......
+
+mono nc_m_s_hit
+##..##
+.####.
+..##..
+..##..
+.####.
+##..##
+.......
+
+mono nc_m_s_sunk
+######
+#.##.#
+##..##
+##..##
+#.##.#
+######
+.......
+
+mono nc_m_s_miss
+......
+.####.
+.#..#.
+.#..#.
+.####.
+......
+.......
+

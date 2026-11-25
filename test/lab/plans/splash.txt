@@ -1,0 +1,6 @@
+wait 600
+snap splash
+title 1800
+waittext ParlorNet: connect 1200
+snap start
+exit

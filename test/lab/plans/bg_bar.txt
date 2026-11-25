@@ -1,0 +1,55 @@
+# Backgammon's bar and tall stacks (run.sh): play on, hitting, until a checker is on the bar, and point at
+# the bar (from point 7 with the up arrow), with the home board on the right and on the left; then play
+# on without hitting until one of ours is on the bar, and point at it the same way. The pointer sits on our
+# own checkers on the bar, below the cube; a point with more than five checkers shows four and +n.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type wes\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 1200
+need bgplay wes Swordfish 1997
+wait 60
+point 7
+arrows U
+wait 30
+snap bar_any
+type h
+wait 600
+snap bar_any_left
+type h
+wait 600
+need bgbarme wes Swordfish 1997
+wait 60
+point 7
+arrows U
+wait 30
+snap bar_me
+type h
+wait 600
+snap bar_me_left
+oa D
+wait 600
+set :a2video:a2_video_config Monitor type 5
+wait 30
+snap bar_me_left_mono
+oa D
+wait 600
+set :a2video:a2_video_config Monitor type 0
+type h
+wait 600
+exit

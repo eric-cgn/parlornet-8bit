@@ -1,0 +1,72 @@
+# The pointer on a square's middle (run.sh): Five in a Row, Naval Combat and Grid Words against the bot,
+# the pointer at the first point or square and one along and one down from it (each square is two bytes
+# wide, so its target is in the middle of its 14 pixels).
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type yul\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+click 200
+wait 200
+arrows DDDD
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 1200
+point 0
+arrows RL
+wait 30
+snap finger_fr
+arrows RD
+wait 30
+snap finger_fr2
+key esc
+wait 600
+click 200
+wait 200
+arrows DDDDDDD
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 1200
+point 0
+arrows RL
+wait 30
+snap finger_nc
+arrows RD
+wait 30
+snap finger_nc2
+key esc
+wait 600
+click 200
+wait 200
+arrows DDDDD
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 1500
+point 0
+arrows RL
+wait 30
+snap finger_gw
+arrows RD
+wait 30
+snap finger_gw2
+exit

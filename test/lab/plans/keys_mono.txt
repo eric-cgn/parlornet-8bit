@@ -1,0 +1,54 @@
+# Key legends in monochrome (run.sh): the keys in the legends (the Open-Apple glyph and its letter, Return,
+# Esc, a game's letters) in bold, so that they stand out from the thin monochrome text. The lobby, the list
+# of games, Backgammon's two pages of Keys, the question before resigning and the chat view. In color all
+# text is bold, as before.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type sal\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+oa D
+wait 600
+set :a2video:a2_video_config Monitor type 5
+wait 30
+snap mkeys_lobby
+key ret
+wait 200
+snap mkeys_choose
+key ret
+wait 200
+key ret
+wait 1200
+click 247
+wait 120
+snap mkeys_table
+click 247
+wait 120
+snap mkeys_game
+oa R
+wait 60
+snap mkeys_resign
+type n
+wait 120
+oa T
+wait 60
+snap mkeys_chat
+key esc
+wait 400
+oa D
+wait 600
+set :a2video:a2_video_config Monitor type 0
+wait 30
+click 247
+wait 120
+snap ckeys_table
+exit

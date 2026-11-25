@@ -1,0 +1,32 @@
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type gus\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+key ret
+wait 200
+arrows D
+key ret
+wait 200
+key ret
+wait 200
+wait 1300
+snap ck_start
+need ckplay gus Swordfish 1997
+wait 60
+snap ck_mid
+oa D
+wait 900
+set :a2video:a2_video_config Monitor type 5
+wait 30
+snap ck_mono
+exit

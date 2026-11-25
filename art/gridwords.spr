@@ -1,0 +1,47 @@
+# Grid Words: the premium squares in color (2 bytes by 9 lines; the square's tenth line and last
+# color pixel stay black, so squares side by side stay apart). Word squares are orange and letter
+# squares violet; a triple is a full square and a double a diamond. Made for this program.
+
+color gw_3w
+OOOOOO.
+OOOOOO.
+OOOOOO.
+OOOOOO.
+OOOOOO.
+OOOOOO.
+OOOOOO.
+OOOOOO.
+OOOOOO.
+
+color gw_2w
+..OO...
+.OOOO..
+.OOOO..
+OOOOOO.
+OOOOOO.
+OOOOOO.
+.OOOO..
+.OOOO..
+..OO...
+
+color gw_3l
+VVVVVV.
+VVVVVV.
+VVVVVV.
+VVVVVV.
+VVVVVV.
+VVVVVV.
+VVVVVV.
+VVVVVV.
+VVVVVV.
+
+color gw_2l
+..VV...
+.VVVV..
+.VVVV..
+VVVVVV.
+VVVVVV.
+VVVVVV.
+.VVVV..
+.VVVV..
+..VV...

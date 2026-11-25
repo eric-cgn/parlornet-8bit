@@ -1,0 +1,8 @@
+hold mono 1 900
+set :a2video:a2_video_config Monitor type 5
+wait 600
+snap splash
+title 1800
+waittext ParlorNet: connect 1200
+snap start
+exit
