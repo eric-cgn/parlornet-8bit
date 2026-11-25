@@ -169,9 +169,8 @@ static void draw_square(unsigned char x, unsigned char y, unsigned char c)
         return;
     }
     if (c == 1 || c == 2) {
-        hg_x = cx;
-        hg_y = cy + 1;
-        hgr_text(c == 1 ? "->" : "|v");
+        /* the start of play: > across or v down, alone in the middle of the square, in an outline */
+        tile_draw(cx * 7, cy, 14, c == 1 ? '>' : 'v', T_PLAIN, 0);
         ui_box(cx * 7, cy, 14, 10);
         return;
     }
