@@ -37,19 +37,6 @@ void sayln(const char *s)
     txt_putc(13);
 }
 
-/* A setting on the text screen's row: its key in inverse, then what it is and its value (the settings screens). */
-void setting_line(unsigned char row, const char *key, const char *what, const char *value)
-{
-    txt_goto(1, row);
-    txt_inv = 1;
-    say(key);
-    txt_inv = 0;
-    say(" ");
-    say(what);
-    say(value);
-    txt_clreol();
-}
-
 void title_bar(const char *left, const char *right)
 {
     unsigned char n;

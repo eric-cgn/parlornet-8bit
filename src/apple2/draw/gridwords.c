@@ -248,7 +248,8 @@ static void draw_panel(void)
         hg_y = Y0 + s * 9;
         hgr_char(g_turn == s && !g_over ? '>' : ' ');
         ui_textn(31, Y0 + s * 9, g_name(s), 5);
-        strcpy(b, utoa10(g_score[s]));
+        b[0] = '-';                     /* (a score can end below 0: the tiles left on the rack) */
+        strcpy(b + (g_score[s] < 0), utoa10(g_score[s] < 0 ? -g_score[s] : g_score[s]));
         ui_textn(36, Y0 + s * 9, "    ", 4);
         ui_textn(40 - strlen(b), Y0 + s * 9, b, strlen(b));
     }

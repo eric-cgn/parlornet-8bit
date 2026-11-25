@@ -8,6 +8,9 @@ extern unsigned char r_n;               /* data lines */
 extern char *r_line[MAXL];
 extern char *r_final;                   /* 0 when no final line came */
 extern unsigned char net_lost;          /* the connection went away (or the session ended) */
+extern unsigned char net_again;         /* requests sent again after a broken reply, counted (for the labs) */
+extern unsigned char net_unsure;        /* the last request changes something and its reply came broken: it
+                                           may have taken, so read the table or the list again */
 
 enum { R_NONE, R_OK, R_ERR, R_ASK };
 unsigned char net_req(void);            /* send q (below), read the reply */

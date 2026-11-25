@@ -26,6 +26,6 @@ wait 2400
 snap end_fiveinarow_start
 need frplay+ fay Swordfish 1997
 wait 120
-peek net_lost
+peek net_lost net_again
 snap end_fiveinarow_over
 exit

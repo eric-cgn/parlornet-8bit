@@ -9,8 +9,8 @@
 
 struct gam {
     char type[16];
-    char rules[13];
-    char name[20];
+    char rules[10];
+    unsigned char name;                 /* its name in gnames: one for each game, whatever its rules */
     unsigned char min, max;
 };
 struct tab {
@@ -30,6 +30,9 @@ struct inv {
 #define MAXI 6
 static struct gam gams[MAXG];
 static unsigned char ngam;
+#pragma bss-name (push, "LOWBSS")
+static char gnames[160];                /* (in low memory with the reply buffer) */
+#pragma bss-name (pop)
 /* The tables and invitations share the language card's RAM above the overlays with a table's moves and
    chat (LOBBY and TABLE in parlor.cfg), so they are read again after a table. */
 #pragma bss-name (push, "LOBBY")
@@ -56,35 +59,49 @@ static const char *nice_name(const char *type)
         n = p - type;
     for (i = 0; i < ngam; ++i)
         if (strncmp(gams[i].type, type, n) == 0 && gams[i].type[n] == '/')
-            return gams[i].name;
+            return gnames + gams[i].name;
     return type;
 }
 
 static void load_gam(void)
 {
-    unsigned char i;
-    char *p;
+    static unsigned char i, k;
+    static struct gam *g, *h;
+    static char *p;
     q_set("GAM");
     if (net_req() != R_OK)
         return;
     ngam = 0;
+    k = 0;
     for (i = 0; i < r_n && ngam < MAXG; ++i) {
         words(r_line[i]);
         if (wn < 6 || !is(w[0], "GAM"))
             continue;
-        strncpy(gams[ngam].type, w[1], 15);
-        strncpy(gams[ngam].rules, w[2], 12);
-        strncpy(gams[ngam].name, w[3], 19);
-        for (p = gams[ngam].name; *p; ++p)
-            if (*p == '_')
-                *p = ' ';
-        gams[ngam].min = num(w[4]);
-        gams[ngam].max = num(w[5]);
+        g = gams + ngam;
+        strncpy(g->type, w[1], 15);
+        strncpy(g->rules, w[2], 9);
+        for (h = gams; h < g && strcmp(h->type, w[1]); ++h)
+            ;
+        if (h < g)
+            g->name = h->name;          /* the same game with other rules */
+        else {
+            if (k + 20 > sizeof gnames)
+                continue;
+            g->name = k;
+            p = gnames + k;
+            strncpy(p, w[3], 19);
+            p[19] = 0;
+            for (; *p; ++p, ++k)
+                if (*p == '_')
+                    *p = ' ';
+            ++k;
+        }
+        g->min = num(w[4]);
+        g->max = num(w[5]);
         ++ngam;
     }
 }
 
-/* Does this comma-separated list of names hold mine? Also writes the others into who. */
 static unsigned char names_have_me(char *names, char *who)
 {
     unsigned char mine = 0;
@@ -301,7 +318,7 @@ again:
                 break;
         if (j < n)
             continue;
-        items[n] = gams[i].name;
+        items[n] = gnames + gams[i].name;
         item_gam[n++] = i;
     }
     if (!n) {
@@ -357,6 +374,8 @@ again:
         q_cat(utoa10(players));
     }
     if (net_req() != R_OK) {
+        if (net_unsure)
+            return 0;                   /* (the list, read again, shows the table if it was made) */
         ui_status(r_final ? err_text(r_final) : "No answer.");
         ui_wait_key();
         return 0;
@@ -373,7 +392,7 @@ again:
             if (bots > 1)
                 strcat(b, utoa10(bots - 1));
             q_add(b);
-            if (net_req() != R_OK) {
+            if (net_req() != R_OK && !net_unsure) {
                 ui_status(r_final ? err_text(r_final) : "No answer.");
                 ui_wait_key();
                 break;
@@ -383,7 +402,7 @@ again:
         q_set("INV");
         q_num(id);
         q_add(invitee);
-        if (net_req() != R_OK) {
+        if (net_req() != R_OK && !net_unsure) {
             ui_status(r_final ? err_text(r_final) : "No answer.");
             ui_wait_key();
         }
@@ -449,7 +468,7 @@ refresh:
                 i = k - ID_ACC;
                 q_set("JON");
                 q_num(invs[i].id);
-                if (net_req() != R_OK) {
+                if (net_req() != R_OK && !net_unsure) {   /* (unsure: the table's view says) */
                     ui_status(r_final ? err_text(r_final) : "No answer.");
                     continue;
                 }
@@ -461,7 +480,7 @@ refresh:
                 if (!tabs[k].mine) {
                     q_set("JON");
                     q_num(tabs[k].id);
-                    if (net_req() != R_OK) {
+                    if (net_req() != R_OK && !net_unsure) {
                         ui_status(r_final ? err_text(r_final) : "No answer.");
                         continue;
                     }

@@ -28,6 +28,6 @@ need ncplace nan Swordfish 1997
 wait 300
 need ncplay+ nan Swordfish 1997
 wait 120
-peek net_lost
+peek net_lost net_again
 snap end_navalcombat_over
 exit

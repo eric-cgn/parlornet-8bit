@@ -44,7 +44,7 @@ A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammo
 `plans/table_entry.txt` starts each of the ten games against the bot from the lobby, one after another on
 one connection, and shows its first view (`te_NAME.png`); the lobby comes back after each. A crash would
 show as the title screen and clicks with no target in `run.log`. `plans/table_entry_long.txt` does the same
-for a player whose table list is longer than the program's reply buffer (3328 bytes), as for a player with
+for a player whose table list is longer than the program's reply buffer (2944 bytes), as for a player with
 many tables and invitations on a busy parlor; make that player first with `lab/longlist.py olga 16501`. A
 reply that overran the buffer used to lose its final OK, and the program took the connection as lost, in
 the lobby or on entering a new table; now it keeps what fits, and a table asks for its own line
@@ -262,8 +262,8 @@ The plans in `vice/plans`:
   (`end_GAME_over`). In `GAME+` the orchestrator also takes a snapshot on its twelfth turn (`mid.png`), and when it
   would make the same move a fifth time in a row on a table whose view has not moved on, which means the program
   did not take it, it shows the screen (`stuck.png`, `stuck.txt`) and stops on the tenth. Each plan peeks
-  `net_lost` before its end shot. On the user port, VICE now and then (about once in a thousand replies at
-  `FAST` speed, most often while the program polls after a game) loses the first byte of a reply: no start bit
-  reaches the program, the reply has no final line, and the program says the connection was lost, as it would
-  for a dropped line. The same polling over the SwiftLink (`IFACE=swift`) loses nothing, so a game that ends
-  that way is played again. Run them with `FAST=1`, which runs VICE at full speed.
+  `net_lost` and `net_again` before its end shot. On the user port, VICE now and then (about once in a
+  thousand replies at `FAST` speed, most often while the program polls after a game) loses the first byte of a
+  reply: no start bit reaches the program, and the reply has no final line. The same polling over the
+  SwiftLink (`IFACE=swift`) loses nothing. The program sends such a request again (`net_again` counts them),
+  so the game goes on. Run them with `FAST=1`, which runs VICE at full speed.

@@ -1,5 +1,5 @@
 # As table_entry.txt, for a player whose table list (LST: their own tables and invitations, all of them, and
-# twenty others) is longer than the program's reply buffer (3328 bytes), as on a busy parlor. With the
+# twenty others) is longer than the program's reply buffer (2944 bytes), as on a busy parlor. With the
 # lab parlor running, make the player first with lab/longlist.py:
 #   python3 test/lab/longlist.py olga 16501
 # Each list takes some 7 seconds at 9600 baud, hence the long waits. The lobby shows the start of the

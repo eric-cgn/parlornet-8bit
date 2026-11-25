@@ -138,7 +138,8 @@ static void draw_panel(void)
         hg_y = Y0 + s * 8;
         hgr_char(g_turn == s && !g_over ? '>' : ' ');
         ui_textn(PX + 1, Y0 + s * 8, g_name(s), 13);
-        strcpy(b, utoa10(g_score[s]));
+        b[0] = '-';                     /* (a score can end below 0: the tiles left on the rack) */
+        strcpy(b + (g_score[s] < 0), utoa10(g_score[s] < 0 ? -g_score[s] : g_score[s]));
         ui_textn(PX + 14, Y0 + s * 8, b, 6);
     }
     strcpy(b, "Bag ");

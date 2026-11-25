@@ -24,6 +24,7 @@ void settings(void);                    /* the settings screen (the setup overla
 void title_bar(const char *left, const char *right);
 void say(const char *s);                /* txt_puts */
 void sayln(const char *s);
+/* (src/common/setting_line.c, in the setup overlay) a setting on a text row: its key, what it is, its value */
 void setting_line(unsigned char row, const char *key, const char *what, const char *value);
 
 /* ParlorNet mode (parlor.c): returns 1 for the console, 0 for the start screen. */

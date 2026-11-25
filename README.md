@@ -62,7 +62,7 @@ Settings kept by an older version of the program are reset to the defaults.
 
 Under ProDOS the program keeps these in PARLOR.CFG with the other settings. The self-booting disk keeps its settings only until the Apple is switched off, as it does the others.
 
-When you close the connection (Open-Apple-Q), the program says goodbye to the parlor, which hangs up, and the modem says NO CARRIER. A modem that does not notice gets the Hayes escape, `+++` with a second of quiet before and after it, then `ATH`. That escape is sent only then, never during a session. Then the start screen comes back. If the connection is lost while you play, the program says so and Return dials again.
+When you close the connection (Open-Apple-Q), the program says goodbye to the parlor, which hangs up, and the modem says NO CARRIER. A modem that does not notice gets the Hayes escape, `+++` with a second of quiet before and after it, then `ATH`. That escape is sent only then, never during a session. Then the start screen comes back. If the connection is lost while you play, the program says so and Return dials again. A reply that comes back with a byte missing (noise on the line, say) is not a lost connection: the program asks again, or looks at the table again after a move, and goes on.
 
 - **A WiFi modem or a modem emulator** (tcpser, or a computer's modem emulation): press P.
 - **A Unix shell:** see Through a Unix shell, below.

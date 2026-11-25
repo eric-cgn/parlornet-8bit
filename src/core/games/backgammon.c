@@ -100,7 +100,7 @@ static void panel_offer(void)
         if (ca[view])
             offer_b = "Double";
     } else if (strcmp(phase, "move") == 0) {
-        offer_a = nd ? "" : "Done";
+        offer_a = nd && m_n ? "" : "Done";     /* (a die no step can use leaves the turn complete) */
         offer_b = "Undo";
     } else if (strcmp(phase, "take") == 0) {
         offer_a = "Take";

@@ -1,20 +1,31 @@
 /* ParlorNet: PARLORNET/1 over the serial line (net.h).
    The client sends CR LF as its line ending, from its opening line on, so the server ends its lines with CR LF too; a line is read
    up to either byte, and empty lines are skipped. The server sends only in reply to a request, so a
-   reply is read whole into rbuf before anything is drawn. */
+   reply is read whole into rbuf before anything is drawn.
+
+   A reply that comes but has no final line has lost a byte on the line (noise, a modem's buffer, an interrupt
+   held off too long): the line itself is still there, since a line that has gone says NO CARRIER or
+   nothing at all. net_req then waits for the line to be quiet and sends a request that changes nothing
+   (SIN, LST, VUE, TIM and the like) again, up to twice, with nothing on the screen; a request that changes
+   something (MOV, CHT, NEW and the like) is not sent again, since it may have taken: net_unsure says so,
+   and the caller reads the table or the list again to see. */
 #include <string.h>
 #include "machine.h"
 #include "net.h"
 
-#define RBUF 3328
+/* The reply buffer and its lines' places, in low memory (LOWBSS) with the lobby's game names; a view takes
+   about 2K at most, and a longer reply keeps what fits (split). */
+#define RBUF 2944
 #pragma bss-name (push, "LOWBSS")
 static char rbuf[RBUF];
+char *r_line[MAXL];
 #pragma bss-name (pop)
 
 unsigned char r_n;
-char *r_line[MAXL];
 char *r_final;
 unsigned char net_lost;
+unsigned char net_unsure;
+unsigned char net_again;                /* requests sent again after a broken reply (the labs read it) */
 char q[84];
 char *w[MAXW];
 unsigned char wn;
@@ -82,12 +93,15 @@ unsigned char net_line(unsigned int t)
     unsigned int n;
     sr_buf = rbuf;
     sr_max = RBUF;
-    sr_ticks = t;
+    sr_ticks = sr_gap = t;
     sr_any = 1;
     n = ser_reply();
     split(n);
     return n != 0;
 }
+
+static unsigned int got;                /* the bytes of the last reply */
+static unsigned int gap;                /* for the next reply, sr_gap; 0: as long as sr_ticks */
 
 unsigned char net_reply(unsigned int secs)
 {
@@ -95,8 +109,10 @@ unsigned char net_reply(unsigned int secs)
     sr_buf = rbuf;
     sr_max = RBUF;
     sr_ticks = secs * 60;
+    sr_gap = gap ? gap : sr_ticks;
+    gap = 0;
     sr_any = 0;
-    split(ser_reply());
+    split(got = ser_reply());
     if (!sr_final || !r_final || strncmp(r_final, "NO CARRIER", 10) == 0) {
         net_lost = 1;
         r_final = 0;
@@ -109,13 +125,56 @@ unsigned char net_reply(unsigned int secs)
     return k;
 }
 
+#if MACHINE_SERIAL
+/* The verbs, four characters each: the first AGAIN change nothing and are sent again after a broken reply;
+   after the others, which change something, the caller looks again. The rest (signing in and out) count a
+   broken reply as the line lost. */
+static const char verbs[] = "SIN LST VUE TIM MOTDPRL GAM CHK IVL WHO MOV END UND RES CHT NEW JON INV UNV PRF ";
+#define AGAIN 10
+
+static unsigned char verb(void)
+{
+    static unsigned char i;
+    for (i = 0; verbs[i]; i += 4)
+        if (strncmp(verbs + i, q, 3) == 0 && (verbs[i + 3] == q[3] || verbs[i + 3] == ' '))
+            return i / 4 + 1;
+    return 0;
+}
+#endif
+
 unsigned char net_req(void)
 {
+#if MACHINE_SERIAL
+    static unsigned char k, n;
+    net_unsure = 0;
+    n = 3;
+again:
+#endif
     if (net_lost)
         return R_NONE;
     ser_drop();
     net_send_line(q);
-    return net_reply(30);
+#if !MACHINE_SERIAL
+    return net_reply(30);               /* (TCP alone: a reply comes whole or not at all) */
+#else
+    gap = 4 * 60;                       /* 30 seconds for the parlor; 4 without a byte once it answers */
+    k = net_reply(30);
+    if (k != R_NONE || !got || sr_final == 'N')
+        return k;
+    net_lost = 0;                       /* the reply came broken, not the line */
+    while (net_line(30))                /* on until half a second of quiet */
+        ;
+    k = verb();
+    if (k && k <= AGAIN && --n) {
+        ++net_again;
+        goto again;
+    }
+    if (k > AGAIN)
+        net_unsure = 1;
+    else
+        net_lost = 1;
+    return R_NONE;
+#endif
 }
 
 void __fastcall__ q_set(const char *s)

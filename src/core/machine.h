@@ -56,13 +56,14 @@ const char *line_desc(void);
 
 /* The reply reader (net.c's net_reply): read lines from ser_get into sr_buf, at most sr_max bytes, each ended
    by a 0, until a final line (OK, ERR, ASK, or a modem's NO CARRIER) has ended, or with sr_any any line, or
-   until sr_ticks ticks pass with no byte. Returns the bytes stored; sr_final is the final line's first
-   letter (O, E, A, N) or 0. It must keep up with the line at its full speed, so on the 6502 machines it is
+   until sr_ticks ticks pass with no byte (sr_gap ticks once part of the reply has come). Returns the bytes
+   stored; sr_final is the final line's first letter (O, E, A, N) or 0. It must keep up with the line at its full speed, so on the 6502 machines it is
    assembly shared by both (src/common/6502/reply.inc, which each sys.s includes); a machine on another
    processor writes its own. */
 unsigned int ser_reply(void);
 extern char *sr_buf;
 extern unsigned int sr_max, sr_ticks;
+extern unsigned int sr_gap;             /* ticks without a byte that end a reply once part of it has come */
 extern unsigned char sr_any, sr_final;
 
 /* A network connection (the Apple's Uthernet II, the IIgs's Marinetti; none on the C64 yet). While eth_on is

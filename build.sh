@@ -37,11 +37,12 @@ python3 tools/apple2_art.py "$OBJ"
 
 # An overlay's sources: the sign-in is the core's parlor.c and the machine's signin_net.c (its network), a
 # game is the core's or (not yet split into its rules and the machine's drawing) the machine's games/NAME.c,
-# the rest are the machine's own. A game with neither (not yet on that machine) is an empty overlay.
+# the setup overlay is the machine's setup.c with src/common's setting_line.c, the rest are the machine's own. A game with neither (not yet on that machine) is an empty overlay.
 ovl_src() {
 	case $2 in
 	signin) echo "$CORE/parlor.c $1/signin_net.c" ;;
-	setup|splash) echo "$1/$2.c" ;;
+	setup) echo "$1/setup.c $COMMON/setting_line.c" ;;
+	splash) echo "$1/splash.c" ;;
 	*) if [ -f "$CORE/games/$2.c" ]; then echo "$CORE/games/$2.c"
 	   elif [ -f "$1/games/$2.c" ]; then echo "$1/games/$2.c"; fi ;;
 	esac

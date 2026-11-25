@@ -410,7 +410,13 @@ static unsigned char send_move(const char *verb, const char *tokens)
             g_message("No legal move, so the turn passed.");
         return 1;
     }
-    if (r_final)
+    if (net_unsure) {
+        /* the reply came broken: the events and the view say whether the move took */
+        stale = 1;
+        poll_events();
+        if (stale)
+            refresh();
+    } else if (r_final)
         g_message(err_text(r_final));
     return 0;
 }

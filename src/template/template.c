@@ -47,7 +47,7 @@ const char *line_desc(void)
 /* The reply reader, in C: what src/common/6502/reply.inc does in assembly on the 6502 machines. A machine
    whose ser_get keeps up (an interrupt-driven ring, a fast processor) can use it as it is. */
 char *sr_buf;
-unsigned int sr_max, sr_ticks;
+unsigned int sr_max, sr_ticks, sr_gap;
 unsigned char sr_any, sr_final;
 
 static unsigned char is_final(const char *kw)
@@ -75,7 +75,7 @@ unsigned int ser_reply(void)
         c = ser_get();
         if (c < 0) {
             tick_poll();
-            if ((unsigned int)(ticks - t0) > sr_ticks)
+            if ((unsigned int)(ticks - t0) > (cnt ? sr_gap : sr_ticks))
                 return cnt;
             continue;
         }

@@ -4,21 +4,24 @@
 ; unsigned int ser_reply(void): read a reply into sr_buf (at most sr_max bytes), as lines ended by a 0,
 ; until a line that starts with OK, ERR, ASK or NO C (a modem's NO CARRIER) has ended, or, with sr_any
 ; set, any line; or until sr_ticks pass without a byte. Empty lines are skipped, a line is kept to 80
-; characters, and what does not fit is dropped. sr_final is the final line's first character (O, E, A or
+; characters, and what does not fit is dropped. Once part of the reply has come, sr_gap ticks without a
+; byte end it too (a reply comes in one piece, so a pause in it means a byte was lost on the line). sr_final is the final line's first character (O, E, A or
 ; N) when one came, 0 when none did, so the kind is known even if the line did not fit. Returns the
 ; bytes stored. A tight loop, so that a card without its interrupt switch keeps up.
-        .export         _ser_reply, _sr_buf, _sr_max, _sr_ticks, _sr_any, _sr_final
+        .export         _ser_reply, _sr_buf, _sr_max, _sr_ticks, _sr_gap, _sr_any, _sr_final
 
         .segment "DATA"
 _sr_buf:        .word   0
 _sr_max:        .word   0
 _sr_ticks:      .word   0
+_sr_gap:        .word   0
 _sr_any:        .byte   0
 _sr_final:      .byte   0
 sr_len: .byte   0               ; the current line's length
 sr_kw:  .byte   0,0,0,0         ; its first four characters
 sr_cnt: .word   0
 sr_t0:  .word   0
+sr_lim: .word   0               ; sr_ticks, or sr_gap once a byte is kept
 
         .segment "CODE"
 _ser_reply:
@@ -40,16 +43,26 @@ sr_loop:
         cpx     #0
         beq     sr_byte
         jsr     _tick_poll
-        lda     _ticks          ; ticks - t0 > sr_ticks: give up
+        lda     _sr_ticks       ; the limit: sr_ticks, or sr_gap once a byte is kept
+        ldx     _sr_ticks+1
+        ldy     sr_cnt
+        bne     :+
+        ldy     sr_cnt+1
+        beq     :++
+:       lda     _sr_gap
+        ldx     _sr_gap+1
+:       sta     sr_lim
+        stx     sr_lim+1
+        lda     _ticks          ; ticks - t0 > the limit: give up
         sec
         sbc     sr_t0
         tax
         lda     _ticks+1
         sbc     sr_t0+1
-        cmp     _sr_ticks+1
+        cmp     sr_lim+1
         bcc     sr_loop
         bne     sr_done
-        cpx     _sr_ticks
+        cpx     sr_lim
         bcc     sr_loop
         beq     sr_loop
         jmp     sr_done
