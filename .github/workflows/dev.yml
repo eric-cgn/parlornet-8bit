@@ -24,7 +24,7 @@ jobs:
           v=$(cat VERSION)-dev-$(git rev-parse --short=7 HEAD)
           echo "VERSION=$v" >> "$GITHUB_ENV"
       - name: Build
-        run: tools/build_apple2.sh
+        run: tools/build.sh
       - name: Test
         run: python3 -m unittest discover test
       - name: Release files
@@ -46,5 +46,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete dev --cleanup-tag --yes || true
-          gh release create dev dist/* --prerelease --target "$GITHUB_SHA" --title "ParlorNet for the Apple IIe and IIgs $VERSION" \
+          gh release create dev dist/* --prerelease --target "$GITHUB_SHA" --title "ParlorNet for the Apple IIe, IIgs and C64 $VERSION" \
             --notes "A build of the dev branch, not a release. It is replaced by every change to dev."

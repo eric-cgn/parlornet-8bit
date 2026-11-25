@@ -1,0 +1,12 @@
+# The title screen, then the start screen, the settings, and the start screen again.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+snap start
+dumptext start
+type S
+waittext ParlorNet settings 300
+snap settings
+key ret
+waittext ParlorNet: connect 300
+exit

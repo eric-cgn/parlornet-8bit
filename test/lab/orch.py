@@ -2,7 +2,8 @@
 """The lab's orchestrator: when the MAME runner asks (xchg/need: "GAME NAME PASSWORD"), it signs in to the
 lab parlor as that player on a connection of its own, reads the view of the player's running table with its
 legal moves, and writes the runner's next steps (xchg/steps.txt): clicks on the targets that make one
-legal move, as the Apple program numbers them. Runs until killed.
+legal move, as the Apple program numbers them (the C64 program numbers them the same). A game's name with + after
+it (ckplay+) plays on until the game is over, where the name alone stops after a few moves. Runs until killed.
 usage: orch.py XCHG_DIR [port]"""
 import os
 import socket
@@ -29,6 +30,9 @@ class Conn:
             ln = self.f.readline().decode().rstrip("\r\n")
             out.append(ln)
             if ln.startswith(("OK", "ERR", "ASK")):
+                if line.startswith("VUE "):
+                    # the view's V line (its type and event number), to tell a table that has moved on
+                    STATE["vseq"] = ([l for l in out if l.startswith("V ")] or [""])[0]
                 return out
 
 
@@ -45,6 +49,19 @@ def view(name, pw, typ):
 
 
 def steps_for(game, name, pw):
+    if game == "rv" and STATE.get("nmax"):
+        # rv+: our moves (the first legal square) until the game is over
+        t, v = view(name, pw, "reversi")
+        again = "need rv+ %s %s" % (name, pw)
+        turn = ([l.split()[1] for l in v if l.startswith("W ")] or ["-"])[0]
+        m = [l[2:] for l in v if l.startswith("M ")]
+        STATE["n"] = STATE.get("n", 0) + 1
+        if turn in ("-", "-1") or STATE["n"] > STATE["nmax"]:
+            return []
+        if turn != "0" or not m:
+            return ["wait 200", again]
+        sq = m[0]
+        return ["click %d" % ((int(sq[1:]) - 1) * 16 + ord(sq[0]) - 97), "wait 300", again]
     if game == "rv":
         t, v = view(name, pw, "reversi")
         m = [l[2:] for l in v if l.startswith("M ")]
@@ -104,13 +121,15 @@ def steps_for(game, name, pw):
                     pts[b + k] = int(c)
         bar = [int(x) for x in ([l.split()[1:3] for l in v if l.startswith("B ")] or [["0", "0"]])[0]]
         seat = STATE.setdefault("seat", 0)
-        if STATE["n"] > (200 if game == "bgbarme" else 60) or turn == "-":
+        if STATE["n"] > STATE.get("nmax", 200 if game == "bgbarme" else 60) or turn == "-":
             return []
         if turn != str(seat):
             return ["wait 300", again]
         dr = ([l.split()[1:] for l in v if l.startswith("DR ")] or [[]])[0]
         dl = ([l.split()[1:] for l in v if l.startswith("D")and l.split()[0] == "D"] or [[]])[0]
-        if game == "bgplay" and bar[0] + bar[1] > 0 and STATE.get("steps", 0) >= MINSTEPS and q == "move":
+        playon = STATE.get("nmax", 0) >= 10 ** 6         # bgplay+: on to the end of the game
+        if game == "bgplay" and not playon and bar[0] + bar[1] > 0 and STATE.get("steps", 0) >= MINSTEPS \
+                and q == "move":
             return []
         if game == "bgbarme" and bar[seat] > 0 and q == "move":
             return []
@@ -140,7 +159,7 @@ def steps_for(game, name, pw):
         turn = ([l.split()[1] for l in v if l.startswith("W ")] or ["-"])[0]
         seat = STATE.setdefault("seat", 0)
         STATE["n"] = STATE.get("n", 0) + 1
-        if turn == "-" or STATE["n"] > 80:
+        if turn == "-" or STATE["n"] > STATE.get("nmax", 80):
             return []
         if turn != str(seat):
             return ["wait 240", again]
@@ -164,7 +183,7 @@ def steps_for(game, name, pw):
         again = "need %s %s %s" % (game, name, pw)
         turn = ([l.split()[1] for l in v if l.startswith("W ")] or ["-"])[0]
         STATE["n"] = STATE.get("n", 0) + 1
-        if turn in ("-", "-1") or STATE["n"] > 60:
+        if turn in ("-", "-1") or STATE["n"] > STATE.get("nmax", 60):
             return []
         if turn != "0":
             return ["wait 200", again]
@@ -221,7 +240,7 @@ def steps_for(game, name, pw):
         again = "need %s %s %s" % (game, name, pw)
         turn = ([l.split()[1] for l in v if l.startswith("W ")] or ["-"])[0]
         STATE["n"] = STATE.get("n", 0) + 1
-        if turn in ("-", "-1") or STATE["n"] > 80:
+        if turn in ("-", "-1") or STATE["n"] > STATE.get("nmax", 80):
             return []
         m = [l[2:] for l in v if l.startswith("M ")]
         if game == "ncplace":
@@ -268,7 +287,7 @@ def steps_for(game, name, pw):
         again = "need %s %s %s" % (game, name, pw)
         turn = ([l.split()[1] for l in v if l.startswith("W ")] or ["-"])[0]
         STATE["n"] = STATE.get("n", 0) + 1
-        if turn in ("-", "-1") or STATE["n"] > 60:
+        if turn in ("-", "-1") or STATE["n"] > STATE.get("nmax", 60):
             return []
         if turn != "0":
             return ["wait 200", again]
@@ -392,6 +411,17 @@ def steps_for(game, name, pw):
         tiles = [l for l in v if l.startswith("X ")]
         if game == "gwswap":
             return ["click 234", "wait 60", "click 225", "wait 60", "click 226", "wait 60", "click 234", "wait 600"]
+        if game == "gwpass" and STATE.get("nmax"):
+            # gwpass+: pass on each of our turns until the game is over
+            again = "need gwpass+ %s %s" % (name, pw)
+            turn = ([l.split()[1] for l in v if l.startswith("W ")] or ["-"])[0]
+            c.s.close()
+            STATE["n"] = STATE.get("n", 0) + 1
+            if turn in ("-", "-1") or STATE["n"] > STATE["nmax"]:
+                return []
+            if turn != "0":
+                return ["wait 300", again]
+            return ["click 235", "wait 30", "type y", "wait 600", again]
         if game == "gwpass":
             return ["click 235", "wait 30", "type y", "wait 600"]
         letters = [ch for ch in rack if ch != "_"]
@@ -412,11 +442,34 @@ while True:
     if os.path.exists(p):
         words = open(p).read().split()
         os.remove(p)
+        plus = words[0].endswith("+")
+        if plus:
+            # GAME+: the same play, on until the game is over
+            words[0] = words[0][:-1]
+            STATE["want"] = STATE["nmax"] = 10 ** 6
         try:
             st = steps_for(words[0], words[1], " ".join(words[2:]))
         except Exception as e:
             st = ["wait 60"]
             print("orch:", e, flush=True)
+        if plus or STATE.get("nmax"):
+            # a snapshot in the middle of the game (mid.png), on the 12th turn's steps of each player's game
+            # (GAME+ asks again as GAME+ or as GAME, with nmax set)
+            k = "plus " + words[1]
+            STATE[k] = STATE.get(k, 0) + 1
+            if STATE[k] == 12:
+                st = ["snap mid"] + st
+            # the same clicks again and again on a table whose view has not moved on: the move is not taken;
+            # show the screen (stuck.png, stuck.txt) on the fifth time and stop on the tenth
+            clicks = [s for s in st if s.startswith(("click", "type"))]
+            r = "repeat " + words[1]
+            key = (clicks, STATE.get("vseq"))   # the same clicks on a table that has not moved on
+            n = STATE[r][1] + 1 if clicks and STATE.get(r, (None,))[0] == key else 1
+            STATE[r] = (key, n)
+            if clicks and n == 5:
+                st = ["snap stuck", "dumptext stuck"] + st
+            if clicks and n >= 10:
+                st = []
         print("orch:", words[0], st, flush=True)
         with open(os.path.join(X, "steps.tmp"), "w") as f:
             f.write("\n".join(st) + "\n")

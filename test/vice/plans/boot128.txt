@@ -1,0 +1,10 @@
+# A C128 (C128=1) with the disk in drive 8 at power-on: it boots the disk, goes to 64 mode and starts the
+# program, with no key pressed.
+wait 200
+snap boot128_booting
+waittitle 7200
+snap boot128_title
+title 3600
+waittext ParlorNet: connect 600
+snap boot128_start
+exit
