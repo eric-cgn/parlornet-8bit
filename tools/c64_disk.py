@@ -7,7 +7,11 @@ C128 boots the disk and goes to 64 mode to start the program) and
                 idle-loop vector), and LOAD"*",8 then RUN starts it too
   PN.BOOT       the loader (loader.bin, at $C800)
   PN.CHARS      the character set (chars.bin, at $C000)
-  PN.MAIN       the program (parlor.main, for $1500)
+  PN.MAIN       the program (parlor.main up to its zeroed data, for $1500): what starts it and runs the start
+                screen, the settings and the console
+  PN.PARLOR     the lobby, the tables, the parlor's protocol, the catalog and the bitmap's buttons and
+                pointer (the rest of parlor.main, from PCODE, after the zeroed data), loaded before the
+                first sign-in
   PN.<NAME>     each overlay (parlor.<name>, for the overlay address), in the order of overlays.txt
   PARLOR.CFG    the settings as they start (a SEQ file; the program writes it again when they change)
 
@@ -169,8 +173,19 @@ def default_cfg():
     return bytes(b)
 
 
+def labels(path):
+    """ld65's label file (-Ln): name to address."""
+    out = {}
+    for line in open(path):
+        parts = line.split()
+        if len(parts) == 3:
+            out[parts[2].lstrip(".")] = int(parts[1], 16)
+    return out
+
+
 def main():
     d = sys.argv[1] if len(sys.argv) > 1 else "build/c64"
+    syms = labels(os.path.join(d, "parlor.lbl"))
     names = open(os.path.join(d, "overlays.txt")).read().split()
     ovl = int(open(os.path.join(d, "ovl_addr.txt")).read().strip(), 16)
     disk = Disk("PARLORNET", "PN")
@@ -182,7 +197,14 @@ def main():
     add("PARLORNET", prg(0x02A7, open(os.path.join(d, "stub.bin"), "rb").read()))
     add("PN.BOOT", prg(0xC800, open(os.path.join(d, "loader.bin"), "rb").read()))
     add("PN.CHARS", prg(0xC000, open(os.path.join(d, "chars.bin"), "rb").read()))
-    add("PN.MAIN", packed(open(os.path.join(d, "parlor.main"), "rb").read(), 0x1500, 0xC000))
+    # parlor.main: the program to its zeroed data, then (the zeroed data not in the file) PCODE and PRODATA
+    prog = open(os.path.join(d, "parlor.main"), "rb").read()
+    cut = syms["__BSS_RUN__"] - 0x1500
+    late = syms["__PCODE_RUN__"]
+    assert late == syms["__BSS_RUN__"] + syms["__BSS_SIZE__"]
+    assert len(prog) == cut + syms["__PRODATA_RUN__"] + syms["__PRODATA_SIZE__"] - late
+    add("PN.MAIN", packed(prog[:cut], 0x1500, 0xC000))
+    add("PN.PARLOR", packed(prog[cut:], late, 0xC000))
     for n in names:
         p = os.path.join(d, "parlor." + n)
         if os.path.exists(p) and os.path.getsize(p):

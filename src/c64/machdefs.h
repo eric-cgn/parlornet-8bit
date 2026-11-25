@@ -26,7 +26,7 @@
 
 /* Where overlays are loaded (ovl.h). build.sh sets it (C64_OVL) for the linker too. */
 #ifndef OVL_ADDR
-#define OVL_ADDR 0x9800
+#define OVL_ADDR 0x9900
 #endif
 
 /* The table screen's frame (game.h), on whole rows of 8 lines: the title on row 0, the game on rows 1 to

@@ -70,7 +70,7 @@ Only the resident program and one overlay are in memory at a time. The overlays 
 
 On the Apple IIe the program is at $4000-$BFFF and the overlays run in the language card's RAM at $D000. The self-booting disk has its own sector reader in the boot block, and under ProDOS the overlays come from PARLOR.DAT. The reply buffer and the serial ring are in low memory.
 
-On the C64, BASIC and the KERNAL are switched out. The program is at $1500, the overlays at $9800-$BFFF, the character set at $C000, the screens in the VIC's bank 3, and the bitmap under the KERNAL at $E000. The KERNAL is switched back in only to load from the disk. The overlays are packed files (`tools/c64_pack.py`), loaded at the top of their space and unpacked in place, and a bar on the bottom row fills as each loads. The README has both machines' full memory maps.
+On the C64, BASIC and the KERNAL are switched out. The program is at $1500, the overlays at $9900-$BFFF, the character set at $C000, the screens in the VIC's bank 3, and the bitmap under the KERNAL at $E000. The KERNAL is switched back in only to load from the disk. The overlays are packed files (`tools/c64_pack.py`), loaded at the top of their space and unpacked in place, and a bar on the bottom row fills as each loads. The start-up loads only what the title, the start screen, the settings and the console need (PN.MAIN). The lobby, the tables and the protocol are linked after the program's variables and cut off into a file of their own (PN.PARLOR), which is loaded once, before the first sign-in. A machine with a slow drive can do the same with `PLATE` in `build.sh`. The README has both machines' full memory maps.
 
 ## Connecting
 

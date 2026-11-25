@@ -262,7 +262,8 @@ The plans in `vice/plans`:
 - `swift38.txt`: the SwiftLink compatible modem's 38400, set with key 3 and kept in PARLOR.CFG.
 - `supra.txt` and `supra300.txt` (`IFACE=user`, with `BAUD=2400` and `BAUD=300`): the Supra 2400 compatible modem
   on the user port at 2400 and at 300, through the console, the dialer, signing up and the lobby.
-- `progress.txt`: the progress bars, at the start, for the sign-in and for a game.
+- `progress.txt`: the progress bars, at the start, for the lobby (PN.PARLOR) and the sign-in when the console first
+  opens, and for a game.
 - `reversi.txt`: a game of Reversi against the bot, with moves by the cursor keys, the orchestrator and the joystick,
   and the board in monochrome.
 - `table_entry.txt`: the first view of each of the ten games, as `plans/table_entry.txt` does for the Apple II, by

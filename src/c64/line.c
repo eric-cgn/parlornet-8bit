@@ -5,6 +5,7 @@
 #include "app.h"
 #include "ovl.h"
 #include "c64.h"
+#include "gfx.h"
 
 /* As a fresh settings file has them: SwiftLink compatible at 19200, no flow control, as the modem of a
    Commodore 64 Ultimate or an Ultimate 64 is at its default mapping ($DE00). */
@@ -21,6 +22,29 @@ const char *const baud_name[] = {"300", "1200", "2400", "4800", "9600", "19200",
    6551. */
 const char *const acia_name[] = {"$DE00", "$DF00", "$DF80"};
 static const unsigned int acia_addr[] = {0xDE00, 0xDF00, 0xDF80};
+
+/* The settings from PARLOR.CFG (setup.c has its layout), read at the start without the setup overlay, into
+   cfg_saved; when the file is not there or not of this version, cfg_saved[0] is 0 and the settings stay as
+   they start. */
+void cfg_load(void)
+{
+    if (k_readfile("PARLOR.CFG,S,R", cfg_saved, CFG_LEN) != CFG_LEN || cfg_saved[0] != 'P' || cfg_saved[1] != 'C'
+        || cfg_saved[2] != CFG_VER) {
+        cfg_saved[0] = 0;
+        return;
+    }
+    cfg_slot = cfg_saved[3];
+    cfg_baud = cfg_saved[4];            /* (serial_open puts a modem or speed it cannot use right) */
+    cfg_flow = cfg_saved[5] & 1;
+    cfg_echo = cfg_saved[6] & 1;
+    mono = cfg_saved[7] & 1;
+    cfg_title = cfg_saved[8] & 1;
+    cfg_pulse = cfg_saved[9] & 1;
+    memcpy(cfg_init, cfg_saved + 10, DIAL_INIT_MAX);
+    memcpy(cfg_number, cfg_saved + 10 + DIAL_INIT_MAX + 1, DIAL_NUM_MAX);
+    mouse_on = cfg_saved[70] & 1;
+    cfg_acia = cfg_saved[71];           /* (serial_open puts one it cannot use right) */
+}
 
 /* The speeds each modem can do: Supra 2400 compatible 300 to 2400, SwiftLink compatible 300 to 38400. */
 unsigned char __fastcall__ baud_ok(unsigned char iface, unsigned char b)
@@ -69,8 +93,7 @@ void sys_init(void)
     if (k_device < 8)
         k_device = 8;
     txt_mode();
-    if (ovl_load(OVL_SETUP))
-        SETUP->load();
+    cfg_load();
     ui_mouse_init();
     serial_open();
 }

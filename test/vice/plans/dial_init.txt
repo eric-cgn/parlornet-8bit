@@ -12,7 +12,7 @@ snap di_pulse_settings
 key ret
 waittext ParlorNet: connect 2400
 type P
-waittext Name: 2400
+waittext Name: 4800
 snap di_pulse
 oa Q
 waittext ParlorNet: connect 1200
@@ -28,7 +28,7 @@ snap di_atd_settings
 key ret
 waittext ParlorNet: connect 2400
 type P
-waittext Name: 2400
+waittext Name: 4800
 snap di_atd
 oa Q
 waittext ParlorNet: connect 1200

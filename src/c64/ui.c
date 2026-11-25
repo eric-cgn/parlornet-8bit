@@ -4,7 +4,11 @@
 
    The screen is white text on blue, as the C64's own colors suggest; F_BLACK and F_WHITE (machine.h) are these
    two, so "inverse" text (the title rows, buttons) is blue on white. In monochrome (a monochrome monitor or
-   a black and white TV) every color is a gray of about its brightness and the screen is white on black. */
+   a black and white TV) every color is a gray of about its brightness and the screen is white on black.
+
+   What the title screen and the start-up use (the colors, the status row, the pointer's shapes) is in the
+   program; the rest, which the lobby, the tables and the games use, is in PN.PARLOR with them (PCODE: ovl.c),
+   loaded before the first sign-in. */
 #include <string.h>
 #include "machine.h"
 #include "c64.h"
@@ -28,6 +32,7 @@ unsigned char __fastcall__ ui_col(unsigned char c)
     return mono ? grey_of[c] : c;
 }
 
+#pragma code-name (push, "PCODE")
 unsigned char __fastcall__ ui_fcol(unsigned char f)
 {
     return fill_col[mono][f];
@@ -37,6 +42,8 @@ void __fastcall__ ui_fill(unsigned char f)
 {
     hg_bg = fill_col[mono][f];
 }
+
+#pragma code-name (pop)
 
 void __fastcall__ ui_ink(unsigned char fg, unsigned char bg)
 {
@@ -51,6 +58,7 @@ void __fastcall__ ui_inkc(unsigned char fg, unsigned char bg)
     hg_bg = ui_col(bg);
 }
 
+#pragma code-name (push, "PCODE")
 /* A fill: whole cells take the color; on lines that are not whole cells, the lines are set in it. */
 void ui_rect(unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char f)
 {
@@ -91,11 +99,14 @@ void ui_cls(void)
     hg_bold = 0;
 }
 
+#pragma code-name (pop)
+
 void ui_status(const char *s)
 {
     ui_textn(0, STATUS_Y, s, 40);
 }
 
+#pragma code-name (push, "PCODE")
 void ui_msg(const char *s)
 {
     ui_textn(0, MSG_Y, s, 40);
@@ -145,6 +156,7 @@ void __fastcall__ ui_point(unsigned char i)
 
 /* ------------------------------------------------------------------------------------------------ */
 /* The 1351 mouse (read by the interrupt, sys.s): the pointer follows it, onto the target under it. */
+#pragma code-name (pop)
 
 void ui_mouse_init(void)
 {
@@ -169,6 +181,7 @@ void ui_mouse_init(void)
     ui_hasmouse = 0;
 }
 
+#pragma code-name (push, "PCODE")
 static unsigned char poll_mouse(void)
 {
     static unsigned int mx;
@@ -271,3 +284,4 @@ unsigned char ui_input(unsigned char x, unsigned char y, unsigned char w, char *
         }
     }
 }
+#pragma code-name (pop)

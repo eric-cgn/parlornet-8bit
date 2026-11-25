@@ -4,7 +4,7 @@ waittitle 6000
 title 3600
 waittext ParlorNet: connect 600
 type C
-waittext Console 300
+waittext Line: 4800
 type AT\r
 waittext OK 300
 snap console_at

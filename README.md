@@ -127,7 +127,7 @@ So far it has been played in VICE (x64sc, and x128 for the C128's start), with V
 
 The disk can be written to a real 1541 or 1571 with OpenCBM and a ZoomFloppy or a similar cable, or used as it is on an SD2IEC, a Pi1541, a 1541 Ultimate or an Ultimate 64. The program needs the disk in the drive while it runs, since each game is loaded from it when it is played, and the drive it was loaded from is the one it uses.
 
-A 1541 is slow, so the files on the disk are packed: the program itself loads in about 70 seconds on a stock 1541, and a game in 5 to 25 seconds; a bar on the screen's bottom row fills as each loads. On an SD2IEC, a Pi1541 or a drive with a faster DOS it takes less.
+A 1541 is slow, so the files on the disk are packed, and the start-up loads only what the title, the start screen, the settings and the console need. On a stock 1541 the title screen is up about 37 seconds after `LOAD"*",8,1` and the start screen about 10 seconds after that. The lobby and the tables load once, in about 30 seconds, the first time P or C is pressed, and the sign-in follows in about 11; a game loads in 4 to 17 seconds. A bar on the screen's bottom row fills as each loads. On an SD2IEC, a Pi1541 or a drive with a faster DOS it takes less.
 
 ### Keys, joystick and mouse
 
@@ -169,9 +169,9 @@ The user port's driver (`src/c64/serial.s`) receives by CIA 2's NMI: the start b
 |---|---|
 | $0400-$07FF | the serial line's receive and send rings, the C stack |
 | $0800-$14FF | the reply buffer (the loader before it) |
-| $1500-$91FF | the program |
-| $9200-$97FF | a table's moves and chat, or the lobby's lists |
-| $9800-$BFFF | one overlay: the sign-in, a game, the start screen and settings, or the title screen |
+| $1500-$92FF | the program (PN.MAIN), its variables, then the lobby and the tables (PN.PARLOR) |
+| $9300-$98FF | a table's moves and chat, or the lobby's lists |
+| $9900-$BFFF | one overlay: the sign-in, a game, the start screen and settings, or the title screen |
 | $C000-$C7FF | the character set, and the same inverted |
 | $C800-$CFFF | the text screen and the bitmap's colors (the loader, PN.BOOT, at start-up) |
 | $D000-$DFFF | the sprites' shapes, under the I/O |
@@ -182,7 +182,8 @@ The disk (`tools/c64_disk.py`) holds:
 - PARLORNET, which starts the rest;
 - PN.BOOT, the loader;
 - PN.CHARS, the character set's first half;
-- PN.MAIN, the program;
+- PN.MAIN, the program: what the title, the start screen, the settings and the console need;
+- PN.PARLOR, the lobby, the tables and the parlor's protocol, loaded once, before the first sign-in;
 - one PN.<NAME> file for each overlay;
 - PARLOR.CFG with the settings as they start.
 

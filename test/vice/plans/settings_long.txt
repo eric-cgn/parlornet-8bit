@@ -19,7 +19,7 @@ snap long_settings
 key ret
 waittext ParlorNet: connect 2400
 type P
-waittext Dialing 2400
+waittext Dialing 4800
 wait 300
 snap long_dial
 dumptext long_dial

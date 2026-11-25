@@ -1,5 +1,5 @@
 /* ParlorNet: overlays. The sign-in and each game are loaded from the disk into memory at OVL_ADDR (machdefs.h:
-   the Apple's language card RAM at $D000, $9800 on the C64) by the machine's ovl_load (machine.h) when they
+   the Apple's language card RAM at $D000, $9900 on the C64) by the machine's ovl_load (machine.h) when they
    are needed; one is in memory at a time. Each overlay starts with its header, below. */
 #ifndef OVL_H
 #define OVL_H
