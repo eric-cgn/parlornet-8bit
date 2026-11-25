@@ -27,6 +27,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ART = os.path.join(ROOT, "art")
+A2ART = os.path.join(ART, "apple2")
 
 
 def font(path):
@@ -221,9 +222,9 @@ def main():
         f.write(font(os.path.join(ART, "font.txt")))
     with open(os.path.join(outdir, "splash_art.s"), "w") as f:
         f.write(splash(os.path.join(ART, "splash.txt")))
-    for spr in sorted(p for p in os.listdir(ART) if p.endswith(".spr")):
+    for spr in sorted(p for p in os.listdir(A2ART) if p.endswith(".spr")):
         with open(os.path.join(outdir, spr[:-4] + "_art.s"), "w") as f:
-            f.write(sprites([os.path.join(ART, spr)]))
+            f.write(sprites([os.path.join(A2ART, spr)]))
 
 
 if __name__ == "__main__":

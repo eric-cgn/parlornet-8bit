@@ -1,0 +1,37 @@
+# The line on the user port's UP9600 wiring at 9600 baud (run.sh with IFACE=up9600): the settings
+# choose it (key 1, pressed 1 time(s)) and PARLOR.CFG is written; the console talks to the modem stand-in;
+# then P dials and signs up, and C=-Q closes the connection.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type S
+waittext ParlorNet settings 300
+type 1
+wait 30
+snap up9600_settings
+key ret
+waittext ParlorNet: connect 2400
+snap up9600_start
+type C
+waittext Line: 2400
+type AT\r
+waittext OK 300
+snap up9600_console
+oa Q
+waittext ParlorNet: connect 600
+type P
+waittext Name: 2400
+snap up9600_dialed
+type new\r
+waittext want 300
+type una\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap up9600_lobby
+oa Q
+waittext ParlorNet: connect 2400
+snap up9600_hungup
+exit

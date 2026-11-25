@@ -1,0 +1,35 @@
+# The dialer's choices on the modem stand-in: Pulse dial (key 8) on, so P dials ATDPparlornet.org:6501; then
+# the number ATD"parlornet.org:6501", which starts with AT and is sent as the whole dial command, Pulse dial
+# or not (modem.log shows both dials).
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type S
+waittext ParlorNet settings 300
+type 8
+wait 60
+snap di_pulse_settings
+key ret
+waittext ParlorNet: connect 2400
+type P
+waittext Name: 2400
+snap di_pulse
+oa Q
+waittext ParlorNet: connect 1200
+type S
+waittext ParlorNet settings 300
+type 7
+wait 30
+arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
+wait 60
+type ATD"parlornet.org:6501"\r
+wait 300
+snap di_atd_settings
+key ret
+waittext ParlorNet: connect 2400
+type P
+waittext Name: 2400
+snap di_atd
+oa Q
+waittext ParlorNet: connect 1200
+exit

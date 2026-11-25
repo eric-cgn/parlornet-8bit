@@ -1,0 +1,4 @@
+# The title screen as it comes up, after the program has loaded at the 1541's own speed.
+waittitle 6000
+snap title
+exit

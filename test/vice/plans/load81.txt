@@ -1,0 +1,9 @@
+# Starting the program with LOAD"*",8,1 alone (ATTACH=1): it starts by itself, with no RUN.
+wait 300
+basic LOAD"*",8,1\r
+waittitle 7200
+snap load81_title
+title 3600
+waittext ParlorNet: connect 600
+snap load81_start
+exit

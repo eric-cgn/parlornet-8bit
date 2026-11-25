@@ -1,5 +1,5 @@
 """The client's disk tools (tools/apple2_disk.py, tools/apple2gs.py): the ProDOS volume they write reads
-back as ProDOS would read it, a built client (tools/build_apple2.sh, when build/ is there) fits its disk
+back as ProDOS would read it, a built client (tools/build.sh, when build/ is there) fits its disk
 and, under ProDOS, below ProDOS's global page, and the IIgs program's load file is OMF as the System
 Loader reads it."""
 import importlib.util

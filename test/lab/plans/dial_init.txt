@@ -1,8 +1,9 @@
-# The dialer's reset and init string, on the WiFi-modem stand-in (port 16600). With reset first off and
-# the init string AT&F, P sends AT&F (OK) and dials, with no ATZ (modem.log shows the commands). An init
-# string the modem answers with ERROR (the stand-in answers ERROR to a line that does not start with AT)
-# stops the dial: "The modem says ERROR to X1." Then reset first on again, with the init string, dials too.
-# Last, a number that starts with AT is the whole dial command: ATD"parlornet.org:6501", as for a Zimodem.
+# The dialer's init string, on the WiFi-modem stand-in (port 16600). It starts as ATZ; changed to AT&F, P
+# sends AT&F (OK) and dials, with no ATZ (modem.log shows the commands). An init string the modem answers
+# with ERROR (the stand-in answers ERROR to a line that does not start with AT) stops the dial: "The modem
+# says ERROR to X1." An empty init string sends nothing before the dial. Then Pulse dial (key 8) on: P
+# dials ATDPparlornet.org:6501 instead of ATDT. Last, a number that starts with AT is the whole dial
+# command, Pulse dial or not: ATD"parlornet.org:6501", as for a Zimodem.
 wait 120
 caps
 title 1800
@@ -11,8 +12,7 @@ type S
 waittext ParlorNet settings 300
 type 6
 wait 30
-type 7
-wait 30
+arrows LLL
 type AT&F\r
 wait 60
 snap di_settings
@@ -27,7 +27,7 @@ oa Q
 waittext ParlorNet: connect 1200
 type S
 waittext ParlorNet settings 300
-type 7
+type 6
 wait 30
 arrows LLLL
 type X1\r
@@ -44,22 +44,36 @@ type S
 waittext ParlorNet settings 300
 type 6
 wait 30
-type 7
-wait 30
 arrows LL
-type AT&F\r
+key ret
 wait 60
+snap di_none_settings
+dumptext di_none_settings
 key ret
 waittext ParlorNet: connect 300
 type P
 waittext Name: 900
-snap di_both
-dumptext di_both
+snap di_none
+dumptext di_none
 oa Q
 waittext ParlorNet: connect 1200
 type S
 waittext ParlorNet settings 300
 type 8
+wait 60
+snap di_pulse_settings
+dumptext di_pulse_settings
+key ret
+waittext ParlorNet: connect 300
+type P
+waittext Name: 900
+snap di_pulse
+dumptext di_pulse
+oa Q
+waittext ParlorNet: connect 1200
+type S
+waittext ParlorNet settings 300
+type 7
 wait 30
 arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
 wait 60

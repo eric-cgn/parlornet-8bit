@@ -1,7 +1,7 @@
 # Tests
 
 `test_disk.py` checks the disk tools: the ProDOS volume they write reads back as ProDOS would read it,
-and a built client (`tools/build_apple2.sh`) fits its disk and, under ProDOS, ends below ProDOS's
+and a built client (`tools/build.sh`) fits its disk and, under ProDOS, ends below ProDOS's
 global page. Run it with `python3 -m unittest discover test`.
 
 ## Playing in MAME
@@ -13,7 +13,7 @@ which you supply: no ROMs are part of this repository.
 
 ```
 PARLORNET=~/src/parlornet test/lab/parlor.sh
-tools/build_apple2.sh
+tools/build.sh
 A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammon.txt test/out/backgammon
 ```
 
@@ -136,7 +136,7 @@ player back in (`rc_back_lobby`).
 
 ## The dialer
 
-P on the start screen dials the modem: ATZ (when the settings' Reset first is on), the init string, then
+P on the start screen dials the modem: the init string (ATZ as the settings start; nothing when it is empty), then
 ATDT and the number, and on CONNECT the opening. These plans dial the WiFi-modem stand-in on port 16600:
 
 ```
@@ -148,11 +148,12 @@ A2ROMS=~/roms test/lab/run.sh 16600 build/parlornet.dsk test/lab/plans/dial.txt 
   It signs up, closes the connection with Open-Apple-Q, which the stand-in ends with NO CARRIER when the
   parlor hangs up (so no `+++` in `modem.log`), and is back at the start screen (`dial_hungup`), where P
   dials again and signs in.
-- `plans/dial_init.txt` turns Reset first off and sets the init string `AT&F`: P sends AT&F and dials, with
-  no ATZ (`di_dialed`). The init string `X1`, which the stand-in answers with ERROR, stops the dial: "The
-  modem says ERROR to X1." (`di_error`). Then both on: ATZ, AT&F, the dial (`di_both`). Last, the number
-  `ATD"parlornet.org:6501"`, which starts with AT, is sent as the whole dial command (`di_atd_settings`,
-  `di_atd`), as a Zimodem needs for a plain connection.
+- `plans/dial_init.txt` changes the init string from ATZ to `AT&F`: P sends AT&F and dials, with no ATZ
+  (`di_dialed`). The init string `X1`, which the stand-in answers with ERROR, stops the dial: "The modem says
+  ERROR to X1." (`di_error`). An empty init string sends nothing before the dial (`di_none`). Then Pulse dial on
+  (`di_pulse_settings`): P dials `ATDPparlornet.org:6501` (`di_pulse`). Last, the number
+  `ATD"parlornet.org:6501"`, which starts with AT, is sent as the whole dial command even with Pulse dial on
+  (`di_atd_settings`, `di_atd`), as a Zimodem needs for a plain connection.
 - `plans/dial_errors.txt` dials BUSY (`de_busy`), and Return dials again; NOCARRIER (`de_nocarrier`); and
   SILENT, which ends after a minute in "No CONNECT from the modem in a minute." (`de_timeout`). Return dials
   SILENT again (`de_dialing`), and Escape sends a Return, which stops the dial (the stand-in's NO CARRIER),
@@ -195,7 +196,7 @@ these are part of this repository. The plan runs on a copy of the disk. MAME's I
 at 19200 baud, so the line runs at 9600.
 
 ```
-tools/build_apple2.sh
+tools/build.sh
 GSROMS=~/roms GSHD=~/gs/marinetti.2mg PARLORNET=~/src/parlornet test/lab/gs.sh test/lab/plans/gs_reversi.txt test/out/gs
 ```
 
@@ -206,3 +207,63 @@ GSROMS=~/roms GSHD=~/gs/marinetti.2mg PARLORNET=~/src/parlornet test/lab/gs.sh t
   end, closes the connection and quits to the Finder. `plans/gs_splash.txt` shows the title screen in
   color, then in monochrome and then not at all, each set in the settings and kept in PARLOR.CFG across a
   quit and a new start. `plans/gs_gridwords.txt` plays some words of Grid Words, in color and monochrome.
+
+## The C64 program in VICE
+
+`vice/` plays the C64 program in VICE's x64sc (or x128) against a lab parlor, in the same way: plans of steps,
+screenshots, and the orchestrator for the other side's moves. Everything runs in Docker on a network of its own
+with no way out (`c64lab`, made `--internal`), every container with its capabilities dropped. You build the VICE
+image yourself from VICE's upstream source tarball, which has the C64's, the C128's and the 1541's ROMs in it
+(`vice/Dockerfile` says where to put the tarball and checks its SHA-256); no ROMs are part of this repository.
+
+```
+docker build -t parlornet-8bit-vice test/vice
+PARLORNET=~/src/parlornet test/vice/parlor.sh
+tools/build.sh
+test/vice/run.sh build/c64/parlornet.d64 test/vice/plans/reversi.txt test/out/c64-reversi
+```
+
+- `vice/parlor.sh` starts the lab parlor as the container `c64-parlor`: parlord on port 16501 (listening on the lab
+  network), the bot, and `lab/orch.py`, which answers the plans' `need` steps through `test/work/c64xchg`.
+- `vice/run.sh` starts VICE under Xvfb, with its binary monitor on 127.0.0.1:6502 inside the container, and the
+  serial line to `lab/bridge.py` in the same container: the WiFi-modem stand-in (`LINE=modem`, the default) or a
+  plain relay (`LINE=direct`, with the dialer's number emptied after the title). `LINE=host:port` sends the line to
+  another container on the lab network (a shell with pndial, say). `IFACE=user` (the default, at `BAUD`, 2400 at
+  first), `IFACE=up9600` or `IFACE=swift` picks the user port, its UP9600 wiring or a SwiftLink at $DE00.
+  `ATTACH=1` only puts the disk in drive 8, for plans that type the LOAD themselves; `C128=1` runs x128, which boots
+  the disk. `NTSC=1` runs an NTSC machine. VICE emulates the 1541 in full, at its own speed. VICE works on a copy
+  of the disk, left in the output directory as `disk-after.d64`.
+- `vice/run.py` is the step runner. It speaks VICE's binary monitor: it reads the text screen and the program's
+  variables (by the linker's label file, `build/c64/parlor.lbl`), puts keys in the program's key queue as its
+  keyboard scan does, moves the joystick in port 2 through VICE's simulated port, and takes screenshots. Its steps
+  are those of `mame/run.lua` (wait, waittext, title, type, key, oa, arrows, click, point, snap, dumptext, hold,
+  set, need, exit), plus `waittitle` (until the title screen is up, after the load), `basic` (typing into BASIC
+  before the program runs), `joy` and `peek`.
+
+The plans in `vice/plans`:
+- `title.txt`, `start.txt`: the title screen after the load at a 1541's speed, the start screen and the settings.
+- `load81.txt`, `load8.txt` (with `ATTACH=1`): `LOAD"*",8,1`, which starts the program with no RUN; and
+  `LOAD"*",8` with RUN.
+- `boot128.txt` (with `C128=1`): a C128 boots the disk, goes to 64 mode and starts the program.
+- `console.txt`: the console through the modem stand-in at 2400 baud, AT and ATDT, then Commodore-P to the name
+  prompt.
+- `dial.txt`: the dialer (ATZ, ATDT, CONNECT), signing up, closing the connection and dialing again.
+- `dial_init.txt`: Pulse dial, which dials `ATDP`, and a number that starts with AT, sent as the whole dial
+  command (`ATD"parlornet.org:6501"`).
+- `up9600.txt` (`IFACE=up9600`) and `swift.txt` (`IFACE=swift`): the faster lines, chosen in the settings (and
+  written to PARLOR.CFG), the console, the dialer and signing up.
+- `progress.txt`: the progress bars, at the start, for the sign-in and for a game.
+- `reversi.txt`: a game of Reversi against the bot, with moves by the cursor keys, the orchestrator and the joystick,
+  and the board in monochrome.
+- `table_entry.txt`: the first view of each of the ten games, as `plans/table_entry.txt` does for the Apple II, by
+  the same target ids.
+- `end_GAME.txt`, one for each of the ten games: signed up, a new game against the bot from the lobby, and the
+  orchestrator's moves (`GAME+`) until the game is over, with the first view (`end_GAME_start`) and the end
+  (`end_GAME_over`). In `GAME+` the orchestrator also takes a snapshot on its twelfth turn (`mid.png`), and when it
+  would make the same move a fifth time in a row on a table whose view has not moved on, which means the program
+  did not take it, it shows the screen (`stuck.png`, `stuck.txt`) and stops on the tenth. Each plan peeks
+  `net_lost` before its end shot. On the user port, VICE now and then (about once in a thousand replies at
+  `FAST` speed, most often while the program polls after a game) loses the first byte of a reply: no start bit
+  reaches the program, the reply has no final line, and the program says the connection was lost, as it would
+  for a dropped line. The same polling over the SwiftLink (`IFACE=swift`) loses nothing, so a game that ends
+  that way is played again. Run them with `FAST=1`, which runs VICE at full speed.
