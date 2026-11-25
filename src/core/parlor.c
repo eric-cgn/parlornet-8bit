@@ -236,8 +236,9 @@ static void modem_cmd(const char *s)
     ser_put(13);
 }
 
-/* The modem's answer within a second's quiet: its first line that is not an echo, or 0. With keys set,
-   Escape or C first stops the wait (cancel). */
+/* The modem's answer within a second's quiet, or 0: OK when it came, else the first line that is a modem's
+   word (capitals) and not the echo. Anything else is skipped, such as the escape codes a Unix shell sends
+   after the echoed line (bash's ESC [?2004l). With keys set, Escape or C first stops the wait (cancel). */
 static char *modem_read(unsigned char keys)
 {
     unsigned char i;
@@ -246,14 +247,16 @@ static char *modem_read(unsigned char keys)
         return 0;
     net_reply(1);
     net_lost = 0;
+    if (r_final)
+        return r_final;
     for (i = 0; i < r_n; ++i) {
         l = r_line[i];
-        if (((l[0] | 0x20) != 'a' || (l[1] | 0x20) != 't') && strcmp(l, sent))
+        if (l[0] >= 'A' && l[0] <= 'Z' && (l[0] != 'A' || (l[1] | 0x20) != 't') && strcmp(l, sent))
             return l;
     }
     if (sr_final == 'N')
         return "NO CARRIER";            /* (net_reply takes it as the end of the connection) */
-    return r_final;
+    return 0;
 }
 
 /* A command before the dial, shown with the modem's OK, waiting up to three seconds; a line that says

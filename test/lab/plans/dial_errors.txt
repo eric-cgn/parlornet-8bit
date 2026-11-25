@@ -8,7 +8,7 @@ title 1800
 waittext ParlorNet: connect 1200
 type S
 waittext ParlorNet settings 300
-type 8
+type 7
 wait 30
 arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
 wait 120
@@ -30,7 +30,7 @@ key esc
 waittext ParlorNet: connect 300
 type S
 waittext ParlorNet settings 300
-type 8
+type 7
 wait 30
 arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
 wait 120
@@ -46,7 +46,7 @@ key esc
 waittext ParlorNet: connect 300
 type S
 waittext ParlorNet settings 300
-type 8
+type 7
 wait 30
 arrows LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
 wait 120
