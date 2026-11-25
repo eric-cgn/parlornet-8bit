@@ -22,7 +22,7 @@ VICE's binary monitor (127.0.0.1:6502), as test/mame/run.lua does in MAME. Runs 
   dumptext NAME      write the text screen to /out/NAME.txt
   hold NAME V N      keep the byte at the program's variable NAME at V for the next N frames
   set NAME V         write the byte at the program's variable NAME once
-  peek NAME[:N]...   log the bytes at the program's labels (or at $ADDR, in hex)
+  peek NAME[:N]...   log the bytes at the program's labels
   need GAME NAME PW  ask the lab's orchestrator (orch.py) for the next steps
   exit
 
@@ -336,8 +336,7 @@ def run():
             out = []
             for w in rest.split():
                 name, _, n = w.partition(":")
-                at = int(name[1:], 16) if name.startswith("$") else ADDR[name]
-                out.append("%s=%s" % (name, mon.get(at, int(n or 1)).hex()))
+                out.append("%s=%s" % (name, mon.get(ADDR[name], int(n or 1)).hex()))
             mon.resume()
             note("peek " + " ".join(out))
         elif cmd == "exit":

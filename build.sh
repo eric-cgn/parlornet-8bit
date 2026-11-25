@@ -28,7 +28,7 @@ CORE=src/core
 COMMON=src/common
 COMMON6502=src/common/6502
 OVERLAYS="signin reversi backgammon gridwords checkers mancala fiveinarow dotsandboxes navalcombat cannonfire rummytile setup splash"
-rm -rf "$OBJ" "$GS" "$OUT/c64" "$OUT/c64cart" "$OUT/template"
+rm -rf "$OBJ" "$GS" "$OUT/c64" "$OUT/template"
 mkdir -p "$OBJ" "$GOBJ"
 # the version, from VERSION, for the title screens
 printf '#define PN_VERSION "%s"\n' "$(cat VERSION)" > "$OBJ/version.h"
@@ -129,48 +129,37 @@ program "$A2" "$GOBJ" "$GS/parlor.map" "$GS/parlor" "$A2/parlorgs.cfg" "$A2FLAGS
 	"sys hgr" gs.o "$LIB" '$D000' '$2900'
 cp "$OUT/overlays.txt" "$GS/overlays.txt"
 
-# The Commodore 64, built twice, each the program and its overlays: for the disk (build/c64) and for the
-# cartridge (build/c64cart, with C64_CART defined).
-#   The disk: PARLORNET (stub.s, which LOAD"*",8,1 starts by itself), the loader PN.BOOT, the C128's boot
-#   sector, the character set, the program and its overlays, which tools/c64_disk.py puts on parlornet.d64.
-#   The cartridge: its first bank (cart.s: the start, and the loader that copies the program out of ROM), the
-#   character set, the program and its overlays, which tools/c64_crt.py puts in parlornet.crt.
-# The overlays are loaded at C64_OVL; a table's moves and chat, or the lobby's lists, are in the $600 below
-# it; the program ends below those.
+# The Commodore 64 (build/c64): PARLORNET (stub.s, which LOAD"*",8,1 starts by itself), the loader PN.BOOT,
+# the C128's boot sector, the character set, the program and its overlays, which
+# tools/c64_disk.py puts on parlornet.d64. The overlays are loaded at C64_OVL; a table's moves and chat, or
+# the lobby's lists, are in the $600 below it; the program ends below those.
 C64=src/c64
+COUT=$OUT/c64
+COBJ=$COUT/obj
 C64_OVL=9800
-c64_program() {
-	COUT=$1
-	cdef=$2
-	COBJ=$COUT/obj
-	mkdir -p "$COBJ"
-	python3 tools/c64_art.py "$COBJ"
-	cp "$COBJ/chars.bin" "$COUT/chars.bin"
-	ca65 --cpu 6502 -o "$COBJ/crt0.o" "$C64/crt0.s"
-	high=$(printf '%04X' $((0x$C64_OVL - 0x600)))
-	mainsize=$(printf '%04X' $((0x$high - 0x1500)))
-	sed -e "s/@HIGH@/\$$high/g" -e "s/@MAINSIZE@/\$$mainsize/" -e "s/@OVL@/\$$C64_OVL/" "$C64/parlor.cfg" > "$COBJ/c64.cfg"
-	pdef="-D C64 $cdef -g"
-	LDEXTRA="-Ln $COUT/parlor.lbl"
-	PFONT=
-	PART=$COBJ
-	program "$C64" "$COBJ" "$COUT/parlor.map" "$COUT/parlor" "$COBJ/c64.cfg" \
-		"-t none --cpu 6502 -O -Oirs -Cl -D C64 $cdef -D OVL_ADDR=0x$C64_OVL -I $C64 -I $CORE -I $OBJ" \
-		"$CORE/games.c $C64/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $C64/ovl.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $C64/ui.c" \
-		"sys serial gfx disk" crt0.o "$LIB" "\$$C64_OVL" "\$$(printf '%04X' $((0xC000 - 0x$C64_OVL)))"
-	echo "$OVERLAYS" > "$COUT/overlays.txt"
-	echo "$C64_OVL" > "$COUT/ovl_addr.txt"
-}
-c64_program "$OUT/c64" ""
+mkdir -p "$COBJ"
+python3 tools/c64_art.py "$COBJ"
+cp "$COBJ/chars.bin" "$COUT/chars.bin"
 ca65 --cpu 6502 -I "$C64" -o "$COBJ/loader.o" "$C64/loader.s"
 ld65 -C "$C64/loader.cfg" -o "$COUT/loader.bin" "$COBJ/loader.o"
 for f in stub boot128; do
 	ca65 --cpu 6502 -o "$COBJ/$f.o" "$C64/$f.s"
 	ld65 -C "$C64/$f.cfg" -o "$COUT/$f.bin" "$COBJ/$f.o"
 done
-c64_program "$OUT/c64cart" "-D C64_CART"
-ca65 --cpu 6502 -I "$C64" -o "$COBJ/cart.o" "$C64/cart.s"
-ld65 -C "$C64/cart.cfg" -o "$COUT/cart.bin" "$COBJ/cart.o"
+ca65 --cpu 6502 -o "$COBJ/crt0.o" "$C64/crt0.s"
+high=$(printf '%04X' $((0x$C64_OVL - 0x600)))
+mainsize=$(printf '%04X' $((0x$high - 0x1500)))
+sed -e "s/@HIGH@/\$$high/g" -e "s/@MAINSIZE@/\$$mainsize/" -e "s/@OVL@/\$$C64_OVL/" "$C64/parlor.cfg" > "$COBJ/c64.cfg"
+pdef="-D C64 -g"
+LDEXTRA="-Ln $COUT/parlor.lbl"
+PFONT=
+PART=$COBJ
+program "$C64" "$COBJ" "$COUT/parlor.map" "$COUT/parlor" "$COBJ/c64.cfg" \
+	"-t none --cpu 6502 -O -Oirs -Cl -D C64 -D OVL_ADDR=0x$C64_OVL -I $C64 -I $CORE -I $OBJ" \
+	"$CORE/games.c $C64/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $C64/ovl.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $C64/ui.c" \
+	"sys serial gfx disk" crt0.o "$LIB" "\$$C64_OVL" "\$$(printf '%04X' $((0xC000 - 0x$C64_OVL)))"
+echo "$OVERLAYS" > "$COUT/overlays.txt"
+echo "$C64_OVL" > "$COUT/ovl_addr.txt"
 
 # The template machine (src/template, PORTING.md): every call of the machine interface stubbed, built and
 # linked here so that the interface and the template keep to each other. Nothing runs it.

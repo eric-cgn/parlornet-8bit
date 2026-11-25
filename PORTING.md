@@ -103,10 +103,6 @@ What the program says on the screen stays in the voice of its period. It talks a
 
 The setup overlay keeps the settings in a file on the program's disk (PARLOR.CFG). The file starts with a version byte. A file of another version or size is left alone, and the settings start as they always do until the player saves them again. There is no conversion of old files. The settings the core shares are in `app.h`, and the machine adds its own line settings.
 
-## A cartridge
-
-A machine whose players have cartridge slots can add a cartridge build beside its disk, as the C64 does (`parlornet.crt`). The C64's is the same source built again with `C64_CART` defined. Its `ovl_load` copies each overlay out of ROM, by number, instead of loading a file, and its first bank (`src/c64/cart.s`) starts the machine and copies the program into RAM as the disk's loader would. Choose a cartridge type whose I/O does not clash with the modems the machine uses: the C64's Magic Desk banks only through writes to $DE00, which leaves a SwiftLink at $DF00 or $DF80 and the user port free. A cartridge has nowhere to keep settings, so keep them on a drive if there is one and otherwise for the session, and say so on the settings screen.
-
 ## The build
 
 `tools/build.sh` builds the toolchain image and runs `build.sh` in it, which builds every machine into `build/`. To add a machine:
