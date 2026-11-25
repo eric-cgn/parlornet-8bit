@@ -56,8 +56,10 @@ static unsigned char edit_line(unsigned char row, const char *label, char *buf, 
     say(label);
     x0 = txt_x;
     for (;;) {
-        txt_goto(x0, row);
-        say(buf);
+        /* on the one row: a text longer than the room shows its end, with '<' before it */
+        txt_goto(x0 - 1, row);
+        txt_putc(n > 38 - x0 ? '<' : ' ');
+        say(n > 38 - x0 ? buf + n - (38 - x0) : buf);
         txt_cursor(0x20);
         ++txt_x;
         txt_clreol();
@@ -187,11 +189,9 @@ static void setup_settings(void)
             setting_line(10, "4", "Flow: ", flow_name[cfg_flow]);
             setting_line(12, "5", "Echo typing in the console: ", cfg_echo ? "on" : "off");
             setting_line(13, "6", "Init string: ", cfg_init[0] ? cfg_init : "none");
-            setting_line(14, "7", "Number: ", !cfg_number[0] ? "none, no dialing" : "");
-            txt_goto(3, 15);
-            say(cfg_number);
-            txt_clreol();
-            setting_line(16, "8", cfg_pulse ? "[x] " : "[ ] ", "Pulse dial");
+            setting_line(14, "7", "Number: ", cfg_number[0] ? cfg_number : "none, no dialing");
+            setting_line(15, "8", cfg_pulse ? "[x] " : "[ ] ", "Pulse dial");
+            txt_clrrow(16);
         } else {
             txt_clrrow(13);
             txt_clrrow(16);
@@ -243,7 +243,7 @@ static void setup_settings(void)
                         strcpy(cfg_init, b);
                 } else {
                     strcpy(b, cfg_number);
-                    if (edit_line(15, "  ", b, DIAL_NUM_MAX))
+                    if (edit_line(21, "Number: ", b, DIAL_NUM_MAX))
                         strcpy(cfg_number, b);
                 }
                 edit_space = 0;

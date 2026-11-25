@@ -1,4 +1,4 @@
-# The SwiftLink compatible modem at $DF00 (run.sh with ACIA=0xdf00): key 3 sets its address to $DF00; then the
+# The SwiftLink compatible modem at $DF00 (run.sh with ACIA=0xdf00): key 2 sets its address to $DF00; then the
 # console, the dialer, signing up, the lobby and Commodore-Q.
 waittitle 6000
 title 3600
@@ -6,7 +6,7 @@ waittext ParlorNet: connect 600
 type S
 waittext ParlorNet settings 300
 wait 60
-type 3
+type 2
 wait 30
 snap swdf_settings_set
 key ret

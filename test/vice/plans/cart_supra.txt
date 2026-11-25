@@ -1,7 +1,7 @@
 # The cartridge (parlornet.crt) with the Supra 2400 compatible modem on the user port at 2400 (run.sh with the
 # cartridge as DISK, IFACE=user and BAUD=2400) and no drive: the title screen at once (cart_title), the
 # settings as the cartridge starts them, SwiftLink compatible at $DF00 and kept for this session only
-# (cart_settings); key 3 goes between $DF00 and $DF80, never $DE00, the cartridge's own (cart_addr); key 1
+# (cart_settings); key 2 goes between $DF00 and $DF80, never $DE00, the cartridge's own (cart_addr); key 1
 # makes the modem Supra 2400 compatible, at 2400 (cart_supra); then the console, the dialer, signing up, the
 # lobby and Commodore-Q.
 waittitle 600
@@ -12,10 +12,10 @@ type S
 waittext ParlorNet settings 300
 wait 60
 snap cart_settings
-type 3
+type 2
 wait 30
 snap cart_addr
-type 3
+type 2
 wait 30
 type 1
 wait 30

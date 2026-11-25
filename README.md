@@ -144,18 +144,20 @@ The Commodore key does what Open-Apple does on the Apple II, and the key legends
 
 ### Connecting
 
-The start screen offers P (dial and sign in), C (the line console), S (the settings) and D (color or monochrome, for a monochrome monitor or a black-and-white TV, where the colors become grays). The dialer works as on the Apple II: P sends the init string, `ATZ` at first, and waits for OK, dials `ATDT` (or `ATDP`) and the number, `parlornet.org:6501` at first, and on CONNECT signs in at once. The settings are:
+The start screen offers P (dial and sign in), C (the line console), S (the settings) and D (color or monochrome, for a monochrome monitor or a black-and-white TV, where the colors become grays). The dialer works as on the Apple II: P sends the init string, `ATZ` at first, and waits for OK, dials `ATDT` (or `ATDP`) and the number, `parlornet.org:6501` at first, and on CONNECT signs in at once. The settings are numbered in the order they show, so with the SwiftLink compatible modem, which has an address, they are 1 to 8, and with the Supra 2400 compatible modem 1 to 7, Speed being 2. With the SwiftLink they are:
 
 - **1 Modem**, pressed to switch between the two:
   - **SwiftLink compatible**, as the settings start: a 6551 on the expansion port. That's a SwiftLink or Turbo232 cartridge, or the modem built into a Commodore 64 Ultimate or an Ultimate 64 (its ACIA mapping set to DE00/NMI or DF80/NMI). It runs at 300, 1200, 2400, 4800, 9600, 19200 or 38400 baud, and choosing it sets 19200.
   - **Supra 2400 compatible**: a modem on the user port, wired as the C64's own RS-232 is, which is how most WiFi modems for the C64 connect. The program has its own driver, which sends and receives at once without losing bits, at 300, 1200 or 2400 baud; choosing it sets 2400. Set the modem to the same speed.
-- **2 Speed**, pressed to go round the speeds the modem can do.
-- **3 Address**, shown for the SwiftLink compatible modem: $DE00 as the settings start, $DF00 or $DF80, pressed to go round them. Set it to where the modem is: a cartridge's jumper gives $DE00 or $DF00, and the Ultimate's ACIA mapping $DE00 or $DF80 ($DF80 keeps clear of an REU, a GeoRAM or an IDE64). The program does not look for the modem; it uses the address set here.
+- **2 Address**, shown for the SwiftLink compatible modem only: $DE00 as the settings start, $DF00 or $DF80, pressed to go round them. Set it to where the modem is: a cartridge's jumper gives $DE00 or $DF00, and the Ultimate's ACIA mapping $DE00 or $DF80 ($DF80 keeps clear of an REU, a GeoRAM or an IDE64). The program does not look for the modem; it uses the address set here.
+- **3 Speed**, pressed to go round the speeds the modem can do.
 - **4 Flow**: no flow control, or RTS/CTS for a modem that holds its data while the program cannot take it.
 - **5 Echo** typing in the console.
 - **6 Init string**, `ATZ` at first: a command sent before the dial and answered with OK, such as `ATZ` to reset the modem or `AT&F`. An empty init string sends nothing.
 - **7 Number**, `parlornet.org:6501` at first, dialed as `ATDTparlornet.org:6501`. An empty number means a line with no modem, where P sends the first line straight away.
 - **8 Pulse dial**, off at first: on, the program dials with `ATDP` in place of `ATDT`.
+
+Each setting's value is on its own line beside its name; a number too long for the line shows its start and `>`, and while it is typed the line shows its end.
 
 A number that starts with AT is sent as the whole dial command; with a Zimodem, set the number to `ATD"parlornet.org:6501"` and leave Pulse dial off, as Connecting, above, explains.
 - **D Display**, **T** the title screen at start, and **M** a 1351 mouse in port 1.
