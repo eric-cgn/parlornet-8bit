@@ -117,7 +117,7 @@ Marinetti is called as tool set 54 through the Tool Locator (`src/apple2/mt.c`),
 
 ## The Commodore 64
 
-The C64 program plays the same games of a ParlorNet parlor, with the same lobby, tables, chat and dialer, on the C64's own screen: a 320 by 200 bitmap, with color in each 8 by 8 cell, and sprites for the pointer and for what moves. It runs on any C64, PAL or NTSC, and on a C128, which starts it in 64 mode by itself. It reaches the parlor over a serial line: a modem (most often a WiFi modem) on the user port, or a SwiftLink or Turbo232 cartridge.
+The C64 program plays the same games of a ParlorNet parlor, with the same lobby, tables, chat and dialer, on the C64's own screen: a 320 by 200 bitmap, with color in each 8 by 8 cell, and sprites for the pointer and for what moves. It runs on any C64, PAL or NTSC, and on a C128, which starts it in 64 mode by itself. It reaches the parlor through a modem: a SwiftLink-compatible one on the expansion port (a SwiftLink or Turbo232 cartridge, or the modem of a Commodore 64 Ultimate or an Ultimate 64), or a Supra 2400-compatible one on the user port (most WiFi modems for the C64).
 
 So far it has been played in VICE (x64sc, and x128 for the C128's start), with VICE's user-port RS-232 and SwiftLink emulation (test/README.md), not yet on a real C64 or a real modem.
 
@@ -137,11 +137,11 @@ The Commodore key does what Open-Apple does on the Apple II, and the key legends
 
 The start screen offers P (dial and sign in), C (the line console), S (the settings) and D (color or monochrome, for a monochrome monitor or a black-and-white TV, where the colors become grays). The dialer works as on the Apple II: P sends the init string, `ATZ` at first, and waits for OK, dials `ATDT` (or `ATDP`) and the number, `parlornet.org:6501` at first, and on CONNECT signs in at once. The settings are:
 
-- **1 Line**, the way the serial line is connected, pressed to go round them:
-  - **User port (RS-232)**: the user port wired as the C64's own RS-232 is, which is how most WiFi modems for the C64 connect. The program has its own driver, which sends and receives at once without losing bits, at 300, 1200 or 2400 baud. Set the modem to the same speed (most such modems start at 2400 or 1200).
-  - **User port, UP9600**: the UP9600 wiring, which some user-port modems and interfaces have, at 9600 baud.
-  - **SwiftLink at $DE00** or **at $DF00**: a SwiftLink or Turbo232 cartridge, at 300 to 38400 baud.
-- **2 Speed**, pressed to go round the speeds the line can do.
+- **1 Modem**, pressed to switch between the two:
+  - **SwiftLink compatible**, as the settings start: a 6551 on the expansion port. That's a SwiftLink or Turbo232 cartridge, or the modem built into a Commodore 64 Ultimate or an Ultimate 64 (its ACIA mapping set to DE00/NMI or DF80/NMI). It runs at 300, 1200, 2400, 4800, 9600, 19200 or 38400 baud, and choosing it sets 19200.
+  - **Supra 2400 compatible**: a modem on the user port, wired as the C64's own RS-232 is, which is how most WiFi modems for the C64 connect. The program has its own driver, which sends and receives at once without losing bits, at 300, 1200 or 2400 baud; choosing it sets 2400. Set the modem to the same speed.
+- **2 Speed**, pressed to go round the speeds the modem can do.
+- **3 Address**, shown for the SwiftLink compatible modem: $DE00 as the settings start, $DF00 or $DF80, pressed to go round them. Set it to where the modem is: a cartridge's jumper gives $DE00 or $DF00, and the Ultimate's ACIA mapping $DE00 or $DF80 ($DF80 keeps clear of an REU, a GeoRAM or an IDE64). The program does not look for the modem; it uses the address set here.
 - **4 Flow**: no flow control, or RTS/CTS for a modem that holds its data while the program cannot take it.
 - **5 Echo** typing in the console.
 - **6 Init string**, `ATZ` at first: a command sent before the dial and answered with OK, such as `ATZ` to reset the modem or `AT&F`. An empty init string sends nothing.
@@ -151,7 +151,7 @@ The start screen offers P (dial and sign in), C (the line console), S (the setti
 A number that starts with AT is sent as the whole dial command; with a Zimodem, set the number to `ATD"parlornet.org:6501"` and leave Pulse dial off, as Connecting, above, explains.
 - **D Display**, **T** the title screen at start, and **M** a 1351 mouse in port 1.
 
-The settings are kept in PARLOR.CFG on the program's disk, which is written only when they change (so the disk must not be write-protected for them to be kept). Settings kept by an older version of the program are reset to the defaults.
+The settings are kept in PARLOR.CFG on the program's disk, which is written only when they change (so the disk must not be write-protected for them to be kept). Settings kept by an older version of the program, or by one before the two modems, are reset to the defaults.
 
 The console, the line lost and dialed again, the connected time and the chat work as they do on the Apple II (Connecting, above). An Ethernet connection (ip65 with an RR-Net or an ETH64, or the Ultimate 64's own network) is not there yet; it would go in `signin_net.c` and behind the serial calls, as the machine interface's network calls describe (`src/core/machine.h`).
 
@@ -161,7 +161,7 @@ The C64 program is the core's C (`src/core`) built with cc65 for the C64's own m
 
 Each game's rules are in `src/core/games`, as on the Apple II, and its board is drawn for the C64 in `src/c64/draw` (included by the core's file for the game). The boards are made of whole 8 by 8 cells wherever two colors meet: Reversi's squares in two greens, Checkers in green and buff with a sprite frame round the chosen piece, Backgammon's points as lanes of red and green with a sprite for the checker that glides, Grid Words a letter to a cell, Naval Combat's sea and ships, and Cannon Fire's arena with a sprite for the shell. A C64 pixel is near enough square on a PAL screen (about 0.94 as wide as it is tall) and narrower on NTSC (about 0.75), so the squares are square in pixels and a little tall on NTSC.
 
-The user port's driver (`src/c64/serial.s`) receives by CIA 2's NMI: the start bit's edge on FLAG starts timer B, whose underflows sample each bit near its middle. It sends by CIA 1's timer A on the IRQ, each bit made ready before its time and sent 0.4 of a bit early, with two stop bits, so that an interrupt held up by the other one still puts each bit on the line in time. The UP9600 driver shifts bytes through the two CIAs' serial ports, and the SwiftLink driver reads its 6551 by NMI. A 60 Hz tick (on PAL too) comes from the raster interrupt, which also reads the keyboard, the joysticks and the mouse and moves the sprites.
+The user port's driver (`src/c64/serial.s`) receives by CIA 2's NMI: the start bit's edge on FLAG starts timer B, whose underflows sample each bit near its middle. It sends by CIA 1's timer A on the IRQ, each bit made ready before its time and sent 0.4 of a bit early, with two stop bits, so that an interrupt held up by the other one still puts each bit on the line in time. The SwiftLink driver reads its 6551 by NMI. A 60 Hz tick (on PAL too) comes from the raster interrupt, which also reads the keyboard, the joysticks and the mouse and moves the sprites.
 
 | Address | What |
 |---|---|

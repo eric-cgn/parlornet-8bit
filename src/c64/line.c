@@ -6,41 +6,58 @@
 #include "ovl.h"
 #include "c64.h"
 
-/* The user port, 2400 baud, no flow control: what most WiFi modems for the user port start with. */
-unsigned char cfg_slot = SER_USER, cfg_baud = 2, cfg_flow;
+/* As a fresh settings file has them: SwiftLink compatible at 19200, no flow control, as the modem of a
+   Commodore 64 Ultimate or an Ultimate 64 is at its default mapping ($DE00). */
+#define BAUD_SWIFT 5                    /* 19200, when the modem becomes SwiftLink compatible */
+#define BAUD_USER 2                     /* 2400, when it becomes Supra 2400 compatible */
+unsigned char cfg_slot = SER_SWIFT, cfg_baud = BAUD_SWIFT, cfg_flow, cfg_acia;
 unsigned char cfg_conn;
 unsigned char eth_on;
 unsigned char cfg_saved[CFG_LEN];      /* the settings as PARLOR.CFG has them (setup.c) */
 
 const char *const baud_name[] = {"300", "1200", "2400", "4800", "9600", "19200", "38400"};
-static const char *const iface_name[] = {"user port", "UP9600", "SwiftLink", "SwiftLink $DF00"};
+/* The SwiftLink compatible modem's three addresses: $DE00 and $DF00 as a SwiftLink's or Turbo232's jumper sets
+   them, $DE00 and $DF80 as the Commodore 64 Ultimate's ACIA mapping does. Nothing looks for which one holds a
+   6551. */
+const char *const acia_name[] = {"$DE00", "$DF00", "$DF80"};
+static const unsigned int acia_addr[] = {0xDE00, 0xDF00, 0xDF80};
 
-/* The speeds each way of connecting can do: the user port bit by bit 300 to 2400, UP9600 9600, the 6551
-   300 to 38400 (with the SwiftLink's crystal). */
+/* The speeds each modem can do: Supra 2400 compatible 300 to 2400, SwiftLink compatible 300 to 38400. */
 unsigned char __fastcall__ baud_ok(unsigned char iface, unsigned char b)
 {
-    if (iface == SER_USER)
-        return b <= 2;
-    if (iface == SER_UP9600)
-        return b == 4;
-    return 1;
+    return b <= (iface == SER_USER ? 2 : 6);
+}
+
+/* The modem chosen: its speed as each starts. */
+void __fastcall__ modem_set(unsigned char iface)
+{
+    cfg_slot = iface;
+    cfg_baud = iface == SER_USER ? BAUD_USER : BAUD_SWIFT;
 }
 
 const char *line_desc(void)
 {
     static char b[24];
-    strcpy(b, baud_name[cfg_baud]);
-    strcat(b, " ");
-    strcat(b, iface_name[cfg_slot & 3]);
+    if (cfg_slot == SER_USER)
+        strcpy(b, "Supra 2400, ");
+    else {
+        strcpy(b, "SwiftLink ");
+        strcat(b, acia_name[cfg_acia]);
+        strcat(b, ", ");
+    }
+    strcat(b, baud_name[cfg_baud]);
     return b;
 }
 
 void serial_open(void)
 {
-    if (cfg_slot > SER_SWIFT_DF)
-        cfg_slot = SER_USER;
+    if (cfg_slot != SER_USER && cfg_slot != SER_SWIFT)
+        modem_set(SER_SWIFT);
     if (!baud_ok(cfg_slot, cfg_baud))
-        cfg_baud = cfg_slot == SER_UP9600 ? 4 : 2;
+        modem_set(cfg_slot);
+    if (cfg_acia > 2)
+        cfg_acia = 0;
+    ser_acia = acia_addr[cfg_acia];
     ser_flow = cfg_flow;
     ser_open(cfg_slot, cfg_baud);
 }
