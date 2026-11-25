@@ -49,7 +49,8 @@ ovl_src() {
 }
 
 # program MACHINEDIR OBJDIR MAPOUT PROGRAMOUT CONFIG CFLAGS CSRC ASM CRT0 LIB OVLSTART OVLSIZE
-#   compiles the C files in CSRC (paths, in link order), assembles the files in ASM (in MACHINEDIR) and the
+#   compiles the C files in CSRC (paths, in link order; those named in $PLATE with their code and read-only
+#   data in the segments PCODE and PRODATA), assembles the files in ASM (in MACHINEDIR) and the
 #   font ($PFONT, when set), then the overlays with their art ($PART/NAME_art.s), and links them after CRT0
 #   (an object in OBJDIR) with ld65 and CONFIG (a path; its #OVLMEM and #OVLSEG lines get the overlays).
 program() {
@@ -59,7 +60,9 @@ program() {
 	objs=""
 	for c in $pcsrc; do
 		b=$(basename "$c" .c)
-		cc65 $pcflags -o "$pobj/$b.s" "$c"
+		late=
+		case " $PLATE " in *" $b "*) late="--code-name PCODE --rodata-name PRODATA" ;; esac
+		cc65 $pcflags $late -o "$pobj/$b.s" "$c"
 		ca65 --cpu 6502 -o "$pobj/$b.o" "$pobj/$b.s"
 		objs="$objs $pobj/$b.o"
 	done
@@ -114,6 +117,7 @@ pdef=""
 LDEXTRA=
 PFONT=$OBJ/font.s
 PART=$OBJ
+PLATE=
 program "$A2" "$OBJ" "$OUT/parlor.map" "$OUT/parlor" "$A2/parlor.cfg" "$A2FLAGS" \
 	"$A2/eth.c $CORE/games.c $A2/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
 	"sys hgr disk mli w5100" crt0.o "$LIB" '$D000' '$2900'
@@ -132,11 +136,15 @@ cp "$OUT/overlays.txt" "$GS/overlays.txt"
 # The Commodore 64 (build/c64): PARLORNET (stub.s, which LOAD"*",8,1 starts by itself), the loader PN.BOOT,
 # the C128's boot sector, the character set, the program and its overlays, which
 # tools/c64_disk.py puts on parlornet.d64. The overlays are loaded at C64_OVL; a table's moves and chat, or
-# the lobby's lists, are in the $600 below it; the program ends below those.
+# the lobby's lists, are in the $600 below it; the program ends below those. The lobby, the tables, the
+# parlor's protocol, the catalog and the bitmap's buttons (PLATE, and the parts of ui.c marked PCODE) are
+# linked after the program's zeroed data, and tools/c64_disk.py makes them a file of their own, PN.PARLOR,
+# which the program loads before the first sign-in (ovl.c): the start-up loads only what the title, the
+# start screen, the settings and the console need.
 C64=src/c64
 COUT=$OUT/c64
 COBJ=$COUT/obj
-C64_OVL=9800
+C64_OVL=9900
 mkdir -p "$COBJ"
 python3 tools/c64_art.py "$COBJ"
 cp "$COBJ/chars.bin" "$COUT/chars.bin"
@@ -154,6 +162,7 @@ pdef="-D C64 -g"
 LDEXTRA="-Ln $COUT/parlor.lbl"
 PFONT=
 PART=$COBJ
+PLATE="games lobby net table ui_targets"
 program "$C64" "$COBJ" "$COUT/parlor.map" "$COUT/parlor" "$COBJ/c64.cfg" \
 	"-t none --cpu 6502 -O -Oirs -Cl -D C64 -D OVL_ADDR=0x$C64_OVL -I $C64 -I $CORE -I $OBJ" \
 	"$CORE/games.c $C64/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $C64/ovl.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $C64/ui.c" \
@@ -172,6 +181,7 @@ pdef=""
 LDEXTRA=
 PFONT=
 PART=$TOBJ
+PLATE=
 program "$TPL" "$TOBJ" "$TOUT/parlor.map" "$TOUT/parlor" "$TPL/template.cfg" \
 	"-t none --cpu 6502 -O -Oirs -Cl -I $TPL -I $CORE -I $OBJ" \
 	"$CORE/games.c $CORE/lobby.c $CORE/main.c $CORE/net.c $CORE/table.c $COMMON/ui_targets.c $TPL/template.c" \

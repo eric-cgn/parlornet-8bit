@@ -15,14 +15,14 @@ key ret
 waittext ParlorNet: connect 2400
 snap supra300_start
 type C
-waittext Line: 2400
+waittext Line: 4800
 type AT\r
 waittext OK 300
 snap supra300_console
 oa Q
 waittext ParlorNet: connect 600
 type P
-waittext Name: 2400
+waittext Name: 4800
 snap supra300_dialed
 type new\r
 waittext want 300

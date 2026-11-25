@@ -15,9 +15,12 @@ A sprite is drawn at a byte column; on an odd column the colors of a color sprit
 so `both` also makes the version for odd columns (NAME_o). The data is the width in bytes, the height,
 then the rows, top first.
 
-Title letters (splash.txt): a line `letter X`, then its rows of blocks ('#' filled). splash.c fills each
-block solid, 4 color pixels across and 6 lines down. A letter's data (_sg_X) is its width in blocks, then a
-byte a row, the blocks in bits 7 down.
+Title letters (splash.txt): a line `letter X`, then its rows of blocks ('#' filled), each block 4 color
+pixels across and 6 lines down. The letter's outline is traced twice: the outer line is the shape's own
+edge, one color pixel wide and one line high, and the inner line runs inside it, one color pixel and
+two lines further in. The lines become runs, across where a run is 2 or more pixels long and down for
+the rest. A letter's data (_sg_X) is its width in color pixels, then 3 bytes a run: x (color pixels,
+bit 7 set for a run down), y (lines) and the length; $FF ends it.
 """
 import os
 import sys
@@ -144,6 +147,50 @@ def sprites(paths):
     return "\n".join(out + body) + "\n"
 
 
+CELL_W, CELL_H = 4, 6
+
+
+def erode(mask, rx, ry):
+    h, w = len(mask), len(mask[0])
+    return [[all(0 <= y + dy < h and 0 <= x + dx < w and mask[y + dy][x + dx]
+                 for dy in range(-ry, ry + 1) for dx in range(-rx, rx + 1)) for x in range(w)] for y in range(h)]
+
+
+def letter_strokes(rows):
+    """Block rows -> the outline's pixels (color pixels across, lines down), as a set of (x, y)."""
+    mask = [[r[x // CELL_W] == "#" for x in range(len(r) * CELL_W)] for r in rows for _ in range(CELL_H)]
+    e1, e2, e3 = erode(mask, 1, 1), erode(mask, 2, 3), erode(mask, 3, 4)
+    return {(x, y) for y in range(len(mask)) for x in range(len(mask[0]))
+            if (mask[y][x] and not e1[y][x]) or (e2[y][x] and not e3[y][x])}
+
+
+def runs(pixels):
+    """Pixels -> [(x, y, length, down)]: runs across of 2 or more, then runs down for what is left."""
+    left, out = set(pixels), []
+    for y in sorted({y for _, y in pixels}):
+        x = 0
+        xs = sorted(x for x, yy in left if yy == y)
+        i = 0
+        while i < len(xs):
+            j = i
+            while j + 1 < len(xs) and xs[j + 1] == xs[j] + 1:
+                j += 1
+            if j > i:
+                out.append((xs[i], y, j - i + 1, False))
+                for x in xs[i:j + 1]:
+                    left.discard((x, y))
+            i = j + 1
+    for x, y in sorted(left, key=lambda p: (p[0], p[1])):
+        if (x, y) not in left:
+            continue
+        n = 0
+        while (x, y + n) in left:
+            left.discard((x, y + n))
+            n += 1
+        out.append((x, y, n, True))
+    return out
+
+
 def splash(path):
     letters, lines, i = {}, [ln.rstrip("\n") for ln in open(path)], 0
     while i < len(lines):
@@ -160,9 +207,11 @@ def splash(path):
     out = ["; Made by tools/apple2_art.py from art/splash.txt; do not edit.",
            "        .export " + ", ".join("_sg_" + k for k in letters), '        .segment "RODATA"']
     for k, rows in letters.items():
-        assert len({len(r) for r in rows}) == 1 and len(rows[0]) <= 8, k
-        out.append("_sg_%s:  .byte   %d," % (k, len(rows[0])) + ",".join(
-            "$%02X" % sum(0x80 >> j for j, c in enumerate(r) if c == "#") for r in rows))
+        assert len({len(r) for r in rows}) == 1, k
+        out.append("_sg_%s:  .byte   %d" % (k, len(rows[0]) * CELL_W))
+        for x, y, n, down in runs(letter_strokes(rows)):
+            out.append("        .byte   %d,%d,%d" % (x | (0x80 if down else 0), y, n))
+        out.append("        .byte   $FF")
     return "\n".join(out) + "\n"
 
 

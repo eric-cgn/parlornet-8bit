@@ -111,8 +111,9 @@ def unpack(p):
 
 
 def place(p, start, end):
-    """Where packed data p must be loaded so that unpacking it to start, in place, is safe: at most end
-    minus its length, and low enough that the output never passes the input still to be read."""
+    """Where packed data p is loaded so that unpacking it to start, in place, is safe: at the top, end minus
+    its length (so that it ends at end, as the C64's progress bar counts on), which must be high enough that
+    the output never passes the input still to be read."""
     load = end - len(p)
     # walk the tokens: before each is read, the output so far must end at or before where it starts
     out = 0
@@ -134,7 +135,9 @@ def place(p, start, end):
             out += (t & 0x3F) + 3
         worst = max(worst, out - i)
     # input byte k is at load + k; output byte o at start + o; need start + out <= load + i at all times
-    return min(load, start + worst + 1)
+    if load < start + worst + 1:
+        raise ValueError("no room to unpack in place: %d bytes short" % (start + worst + 1 - load))
+    return load
 
 
 if __name__ == "__main__":

@@ -7,7 +7,8 @@
      $0400-$05FF  the serial line's receive and send rings
      $0600-$07FF  cc65's C stack
      $0800-$14FF  the reply buffer (net.c), and the loader (PARLORNET) before it
-     $1500-       the program (PN.MAIN), then its zeroed data
+     $1500-       the program (PN.MAIN), then its zeroed data, then the lobby and the tables (PN.PARLOR,
+                 loaded before the first sign-in: ovl.c)
      OVL_ADDR-$600  a table's moves and chat (TABLE), or the lobby's lists (LOBBY)
      OVL_ADDR-$BFFF one overlay at a time: the sign-in, a game, the start screen or the title screen
      $C000-$C7FF  the character set: the program's font, then the same inverted (PN.CHARS, made at start)
@@ -45,6 +46,7 @@ extern unsigned char pal;               /* 1 on a PAL machine (50 frames a secon
 /* The disk (disk.s) */
 extern unsigned char k_device;          /* the drive: 8 up */
 extern unsigned char k_bar;             /* 1: the next k_load shows a progress bar as it loads */
+extern unsigned char k_barup;           /* 1: the bitmap's bar on row 22, not the status row (23) */
 unsigned char __fastcall__ k_load(const char *name, void *addr);    /* 0 when loaded; 0 addr: its own */
 void __fastcall__ k_unpack(void *dst);  /* the packed file just loaded, unpacked (tools/c64_pack.py) */
 unsigned char __fastcall__ k_cmd(const char *cmd);
@@ -53,7 +55,9 @@ unsigned char __fastcall__ k_writefile(const char *name, const unsigned char *bu
 
 /* The settings as kept in PARLOR.CFG (setup.c), and as last read or written (line.c). */
 #define CFG_LEN 72
+#define CFG_VER 4                       /* PARLOR.CFG's version (setup.c) */
 extern unsigned char cfg_saved[CFG_LEN];
+void cfg_load(void);                    /* the settings from PARLOR.CFG, if it has them (line.c) */
 unsigned char __fastcall__ baud_ok(unsigned char iface, unsigned char b);
 void __fastcall__ modem_set(unsigned char iface);   /* the modem, at the speed it starts with */
 

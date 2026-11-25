@@ -146,8 +146,12 @@ static void setup_settings(void)
     }
 }
 
+static void pack(unsigned char *b);
+
 static void start_screen(void)
 {
+    if (!cfg_saved[0])
+        pack(cfg_saved);                /* (no PARLOR.CFG read: the settings as they start) */
     txt_mode();
     txt_top = 0;
     txt_bot = 24;
@@ -189,8 +193,9 @@ static void start_screen(void)
    modem (SER_USER or SER_SWIFT), its speed and flow control, the echo, the display, the title screen, pulse dialing, then the init string and the
    number, each with
    its 0 and room to spare, whether a mouse is in port 1 (byte 70) and the SwiftLink's address (byte 71). A file of another version or size is
-   left alone: the settings stay as they start until they are saved again. */
-#define CFG_VER 4
+   left alone: the settings stay as they start until they are saved again. The start-up reads the file
+   (line.c, cfg_load) without this overlay; when it had none, cfg_saved is packed here the first time the
+   start screen shows, before anything can change the settings. */
 static void pack(unsigned char *b)
 {
     memset(b, 0, CFG_LEN);
@@ -208,27 +213,6 @@ static void pack(unsigned char *b)
     memcpy(b + 10 + DIAL_INIT_MAX + 1, cfg_number, DIAL_NUM_MAX + 1);
     b[70] = mouse_on;
     b[71] = cfg_acia;
-}
-
-static void cfg_load(void)
-{
-    static unsigned char b[CFG_LEN];
-    if (k_readfile("PARLOR.CFG,S,R", b, CFG_LEN) != CFG_LEN || b[0] != 'P' || b[1] != 'C' || b[2] != CFG_VER) {
-        pack(cfg_saved);                /* (none yet: the settings as they start) */
-        return;
-    }
-    cfg_slot = b[3];
-    cfg_baud = b[4];                    /* (serial_open puts a modem or speed it cannot use right) */
-    cfg_flow = b[5] & 1;
-    cfg_echo = b[6] & 1;
-    mono = b[7] & 1;
-    cfg_title = b[8] & 1;
-    cfg_pulse = b[9] & 1;
-    memcpy(cfg_init, b + 10, DIAL_INIT_MAX);
-    memcpy(cfg_number, b + 10 + DIAL_INIT_MAX + 1, DIAL_NUM_MAX);
-    mouse_on = b[70] & 1;
-    cfg_acia = b[71];                   /* (serial_open puts one it cannot use right) */
-    memcpy(cfg_saved, b, CFG_LEN);
 }
 
 /* After the settings: PARLOR.CFG written again when they changed. */

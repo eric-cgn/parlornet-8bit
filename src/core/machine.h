@@ -34,7 +34,7 @@
      STATUS_Y         the status line.
      BUTTON_Y         the row of buttons (Lobby, Resign, Chat, Keys).
    Overlays
-     OVL_ADDR         where an overlay is loaded and runs ($D000 in the Apple's language card, $9800 on the
+     OVL_ADDR         where an overlay is loaded and runs ($D000 in the Apple's language card, $9900 on the
                       C64). */
 #include "machdefs.h"
 

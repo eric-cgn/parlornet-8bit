@@ -7,7 +7,7 @@ waittitle 6000
 title 3600
 waittext ParlorNet: connect 600
 type P
-waittext Name: 2400
+waittext Name: 4800
 snap dial_dialed
 dumptext dial_dialed
 type new\r
@@ -23,7 +23,7 @@ oa Q
 waittext ParlorNet: connect 2400
 snap dial_hungup
 type P
-waittext Name: 2400
+waittext Name: 4800
 type dora\r
 waittext assword 600
 type Swordfish 1997\r
