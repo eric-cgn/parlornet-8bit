@@ -168,6 +168,7 @@ cia2_idle:
         lda     #$7F
         sta     CIA2+$0D
         lda     CIA2+$0D
+        lda     #$7F
         sta     CIA1+$0D
         lda     CIA1+$0D
         lda     #$81
