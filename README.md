@@ -24,7 +24,8 @@ It builds the toolchain image (cc65 2.19 on Debian, pinned by digest, from `Dock
 - `parlornet.dsk`, a 140K disk in DOS 3.3 sector order that boots by itself;
 - `prodos/` with `PARLOR.SYSTEM` and `PARLOR.DAT` for ProDOS;
 - `gs/` with the IIgs application, `PARLORNET`, its `PARLOR.DAT`, and `parlornet-gs.po`, an 800K disk holding the two;
-- `c64/parlornet.d64`, the C64's 1541 disk.
+- `c64/parlornet.d64`, the C64's 1541 disk;
+- `c64cart/parlornet.crt`, the C64's cartridge.
 
 The same source always gives the same disks. `APPLE2_IMAGE` names another image with cc65 2.19 and Python 3 to use instead.
 
@@ -32,7 +33,7 @@ The same source always gives the same disks. `APPLE2_IMAGE` names another image 
 
 The version is in `VERSION`, one for the whole repository. Changes go into `dev` by pull request, squashed; `main` takes only merges from `dev`, which is how a release is made. Every pull request and every push to `main` builds and runs `python3 -m unittest discover test` (`.github/workflows/ci.yml`); the MAME and VICE labs need ROMs and run only by hand (test/README.md). A pull request into `main` fails unless it comes from `dev`. Every push to `dev` publishes a `dev` pre-release that replaces the last one, with files named for the version, `-dev-` and the commit, such as `parlornet-1.0-dev-46a0304.dsk` (`.github/workflows/dev.yml`).
 
-A push to `main` whose version has no release yet runs the release (`.github/workflows/release.yml`): it builds, runs the tests, tags the commit `v<version>` and publishes a GitHub Release with `parlornet.dsk` (the Apple IIe's self-booting disk), `parlor-files.po` (the ProDOS files, on a ProDOS volume), `parlornet-gs.po` (the Apple IIgs disk) and `parlornet.d64` (the Commodore 64's disk), with their SHA-256 and MD5 sums. `tools/release.py` gathers those files from `build/` into `build/release/`.
+A push to `main` whose version has no release yet runs the release (`.github/workflows/release.yml`): it builds, runs the tests, tags the commit `v<version>` and publishes a GitHub Release with `parlornet.dsk` (the Apple IIe's self-booting disk), `parlor-files.po` (the ProDOS files, on a ProDOS volume), `parlornet-gs.po` (the Apple IIgs disk), `parlornet.d64` (the Commodore 64's disk) and `parlornet.crt` (the Commodore 64's cartridge), with their SHA-256 and MD5 sums. `tools/release.py` gathers those files from `build/` into `build/release/`.
 
 ## Connecting
 
@@ -129,6 +130,14 @@ The disk can be written to a real 1541 or 1571 with OpenCBM and a ZoomFloppy or 
 
 A 1541 is slow, so the files on the disk are packed: the program itself loads in about 70 seconds on a stock 1541, and a game in 5 to 25 seconds; a bar on the screen's bottom row fills as each loads. On an SD2IEC, a Pi1541 or a drive with a faster DOS it takes less.
 
+### The cartridge
+
+`parlornet.crt` is the same program as a cartridge: the program and all ten games in a 128K Magic Desk cartridge (the CRT file's hardware type 19), which starts at once when the C64 is switched on and loads each game from its ROM, with no wait and no disk. It can be written to a Magic Desk-compatible cartridge, or run as a CRT file on a device that runs them (an Ultimate 64, a Commodore 64 Ultimate, a 1541 Ultimate) or in an emulator. So far it has been run in VICE, not yet on a real C64 or an Ultimate.
+
+A Magic Desk cartridge switches its banks with a write to $DE00. A SwiftLink-compatible modem at $DE00 would get that write too, so the cartridge's settings offer the SwiftLink only at $DF00 (as they start) or $DF80, and a modem on the user port as ever. A modem cartridge goes beside it through a port expander with its jumper at $DF00; on an Ultimate, set the modem's ACIA mapping to DF80/NMI (or DF00) and choose that address. A modem on the user port needs nothing more.
+
+With a drive at device 8, the cartridge keeps its settings in PARLOR.CFG on the disk in it, as the disk's program does. With no drive, it keeps them only until the C64 is switched off, and the settings screen says "Settings are kept for this session only."
+
 ### Keys, joystick and mouse
 
 The Commodore key does what Open-Apple does on the Apple II, and the key legends show its logo: Commodore-C goes to the console, Commodore-Q closes the connection, Commodore-T opens a table's chat, and so on. The left-arrow key and RUN/STOP are Esc, INST/DEL deletes, and the cursor keys move the pointer from one place to the next, as the arrows do on the Apple II. A joystick in either port moves the pointer too, and its fire button is Return. A 1351 mouse in port 1 moves the pointer freely and its left button clicks; it is on when the settings say so (M), since an empty port 1 reads as noise. Commodore-Q on the start screen ends the program and starts the C64 afresh.
@@ -219,6 +228,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `serial.s`: the user port's and the SwiftLink's drivers.
   - `gfx.s`, `ui.c`: the bitmap and sprites.
   - `disk.s`, `ovl.c`: the KERNAL's disk, the overlays and the progress bar.
+  - `cart.s`, `cartcopy.inc`: the cartridge's first bank (its start and loader) and the copying of a file out of its ROM, for the cartridge's build (C64_CART).
   - `line.c`, `setup.c`, `splash.c`: the line's settings, the start screen and the title screen.
   - `draw/`: each game's board.
 - `src/template`: a machine with every call of the interface stubbed, which the build compiles and links with the core and every game, as the start of a port (PORTING.md).
@@ -228,7 +238,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
 - `tools/`:
   - `build.sh` runs the build;
   - `apple2_disk.py` and `apple2gs.py` make the Apple's disks;
-  - `c64_disk.py` and `c64_pack.py` make the C64's disk.
+  - `c64_disk.py` and `c64_pack.py` make the C64's disk, and `c64_crt.py` its cartridge.
 - `test/`: tests of the disk tools, and runners that play the programs in MAME (the Apple II) and VICE (the C64) against a lab parlor (test/README.md).
 
 ## Memory

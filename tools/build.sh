@@ -10,6 +10,7 @@
 #                                  PARLOR.DAT, and parlornet-gs.po, an 800K ProDOS volume holding
 #                                  just those two files
 #   build/c64/parlornet.d64        the C64 program's disk (a 1541's, 170K; tools/c64_disk.py)
+#   build/c64cart/parlornet.crt    the C64 program's cartridge (Magic Desk, 128K; tools/c64_crt.py)
 #
 # The compiler is cc65 2.19 in a Debian image pinned by digest (Dockerfile), built here and
 # tagged by the hash of the Dockerfile's instructions; build.sh compiles and links in it, and tools/apple2_disk.py
@@ -30,3 +31,4 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/src" -w /src "$IMAGE" sh build.
 python3 tools/apple2_disk.py build
 python3 tools/apple2gs.py build/gs
 python3 tools/c64_disk.py build/c64
+python3 tools/c64_crt.py build/c64cart

@@ -92,6 +92,10 @@ static void setup_settings(void)
         say("done. The parlor's native port is 6501.");
         txt_goto(1, 21);
         txt_clreol();
+        if (k_nodrive) {
+            txt_goto(0, 22);
+            say("Settings are kept for this session only.");
+        }
         do
             k = kbd_get();
         while (!k);
@@ -110,7 +114,11 @@ static void setup_settings(void)
         case '2': next_baud(); break;
         case '3':
             if (cfg_slot != SER_USER)
+#ifdef C64_CART
+                cfg_acia = cfg_acia == 1 ? 2 : 1;   /* ($DE00 is the cartridge's own) */
+#else
                 cfg_acia = cfg_acia == 2 ? 0 : cfg_acia + 1;
+#endif
             break;
         case '4': cfg_flow ^= 1; break;
         case '5': cfg_echo ^= 1; break;

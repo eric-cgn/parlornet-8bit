@@ -15,6 +15,8 @@
 # FAST=1 runs the whole emulation in warp mode (for plans that do not depend on time). VICE works on a copy
 # of the disk, which is left in OUTDIR afterwards (disk-after.d64), with what the program wrote on it.
 #
+# DISK may be the cartridge, parlornet.crt (see below).
+#
 # usage: test/vice/run.sh DISK PLAN OUTDIR
 set -eu
 DISK=$1
@@ -54,6 +56,14 @@ EMU=x64sc
 # LOAD itself (basic steps) or for a C128, which boots the disk by itself
 START="-autostart /tmp/disk.d64"
 [ -n "${ATTACH:-}${C128:-}" ] && START="-8 /tmp/disk.d64"
+# A cartridge (DISK a .crt file) starts by itself; drive 8 is off unless SETDISK names a disk (in the same
+# folder) to keep the settings on.
+CART=
+case "$DISK" in
+	*.crt)	CART=1
+		START="-cartcrt /tmp/disk.d64 -drive8type 0"
+		[ -n "${SETDISK:-}" ] && START="-cartcrt /tmp/disk.d64 -8 /tmp/set.d64" ;;
+esac
 MODEL=
 [ -n "${NTSC:-}" ] && MODEL="-ntsc"
 DRIVE="-drive8truedrive +autostart-warp"
@@ -66,6 +76,7 @@ docker run --rm --network "${NET:-c64lab}" --cap-drop ALL --security-opt no-new-
 	sleep 1
 	export DISPLAY=:1 SDL_AUDIODRIVER=dummy XDG_RUNTIME_DIR=/tmp
 	cp /disk/$(basename "$DISK") /tmp/disk.d64
+	${SETDISK:+cp /disk/$SETDISK /tmp/set.d64}
 	script -qfc \"$EMU $MODEL -sounddev dummy -binarymonitor -binarymonitoraddress ip4://127.0.0.1:6502 \
 		-rsdev1 $DEV -rsdev1baud $BAUD $SER $DRIVE $START\" /dev/null \
 		> /out/vice.log 2>&1 &

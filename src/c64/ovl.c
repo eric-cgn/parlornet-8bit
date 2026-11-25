@@ -22,6 +22,7 @@ static const char *const ovl_what[] = {
     "the sign-in", "Reversi", "Backgammon", "Grid Words", "Checkers", "Mancala", "Five in a Row",
     "Dots and Boxes", "Naval Combat", "Cannon Fire", "Rummy Tile", "the settings", "the title screen"};
 
+#ifndef C64_CART
 /* "Loading Backgammon..." on the screen's bottom row, which the progress bar then fills (disk.s): the text
    screen's spare 25th row, or the bitmap's status row. */
 static void loading(unsigned char k)
@@ -56,6 +57,22 @@ static void ask_disk(void)
         ui_status("");
 }
 
+#endif
+
+#ifdef C64_CART
+/* The cartridge: each overlay copied out of its ROM by number (disk.s, c_load), at once, with no bar. */
+unsigned char __fastcall__ ovl_load(unsigned char k)
+{
+    if (k == loaded)
+        return 1;
+    loaded = 255;
+    if (k >= sizeof ovl_name / sizeof ovl_name[0] || c_load(k))
+        return 0;
+    k_unpack((void *)OVL_ADDR);
+    loaded = k;
+    return 1;
+}
+#else
 unsigned char __fastcall__ ovl_load(unsigned char k)
 {
     unsigned char tries, e;
@@ -81,3 +98,4 @@ unsigned char __fastcall__ ovl_load(unsigned char k)
     }
     return 0;
 }
+#endif
