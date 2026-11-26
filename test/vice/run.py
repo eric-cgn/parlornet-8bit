@@ -31,6 +31,11 @@ VICE's binary monitor (127.0.0.1:6502), as test/mame/run.lua does in MAME. Runs 
   hold NAME V N      keep the byte at the program's variable NAME at V for the next N frames
   set NAME V         write the byte at the program's variable NAME once
   peek NAME[:N]...   log the bytes at the program's labels
+  track NAME N [S [F]]  for N frames, read sprite 2's place from the VIC each frame and write it to
+                     /out/NAME.csv (the frame, the clock's time, whether it is on, and its X and Y as the
+                     VIC has them) while it is on or as it goes off; with S (not 0), also a screenshot
+                     every S frames while it is on (NAME_001.png on); with F, stop sooner, when the sprite
+                     has gone off F times
   need GAME NAME PW  ask the lab's orchestrator (orch.py) for the next steps
   exit
 
@@ -419,6 +424,36 @@ def run():
                 out.append("%s=%s" % (name, mon.get(ADDR[name], int(n or 1)).hex()))
             mon.resume()
             note("peek " + " ".join(out))
+        elif cmd == "track":
+            # sprite 2 (a game's own: Cannon Fire's shell, Backgammon's gliding checker), as the VIC shows it
+            parts = rest.split()
+            name, n = parts[0], int(parts[1])
+            every = int(parts[2]) if len(parts) > 2 else 0
+            stop = int(parts[3]) if len(parts) > 3 else 0
+            if not hasattr(mon, "io"):
+                mon.io = mon.bank("io")
+            out = open(os.path.join(OUT, name + ".csv"), "w")
+            out.write("frame,time,on,x,y\n")
+            end = time.time() + n * FRAME
+            was, shots, last_snap, rows, flights = 0, 0, -1, 0, 0
+            while time.time() < end and not (stop and flights >= stop):
+                d = mon.get(0xD000, 0x16, mon.io)  # (not $D019 up, which reading would change)
+                f = frame()
+                on = (d[0x15] >> 2) & 1
+                x = d[4] | (((d[0x10] >> 2) & 1) << 8)
+                if on or was:
+                    out.write("%d,%.3f,%d,%d,%d\n" % (f, time.time(), on, x, d[5]))
+                    rows += 1
+                if on and every and (last_snap < 0 or f - last_snap >= every):
+                    shots += 1
+                    last_snap = f
+                    mon.snap(os.path.join(OUT, "%s_%03d.png" % (name, shots)))
+                mon.resume()
+                flights += was and not on
+                was = on
+                time.sleep(FRAME)
+            out.close()
+            note("track %s: %d flights, %d rows, %d snaps" % (name, flights, rows, shots))
         elif cmd == "exit":
             note("exit")
             return

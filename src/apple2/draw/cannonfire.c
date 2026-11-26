@@ -391,8 +391,11 @@ static void fly(unsigned char hit, unsigned char hx, unsigned char hy, unsigned 
         } else
             break;
         for (k = 1; k <= 3; ++k) {
-            x = sx + (ex - sx) * k / 3;
-            y = sy + (ey - sy) * k / 3;
+            /* k as an int: cc65 makes an int times an unsigned char unsigned, and then a shell going left
+               or up the screen, whose distance is negative, is divided as a large unsigned number and
+               lands far from its path */
+            x = sx + (ex - sx) * (int)k / 3;
+            y = sy + (ey - sy) * (int)k / 3;
             shell(x, y);
             nap(2);
             shell(x, y);
