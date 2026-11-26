@@ -15,8 +15,8 @@ A sprite is drawn at a byte column; on an odd column the colors of a color sprit
 so `both` also makes the version for odd columns (NAME_o). The data is the width in bytes, the height,
 then the rows, top first.
 
-Title letters (splash.txt): a line `letter X`, then its rows of blocks ('#' filled). splash.c fills each
-block solid, 4 color pixels across and 6 lines down. A letter's data (_sg_X) is its width in blocks, then a
+Title letters (splash.txt): a line `letter X`, then its rows of blocks ('#' filled). splash.c draws each
+block 4 color pixels across and 6 lines down, with a black gap on its right and bottom edge. A letter's data (_sg_X) is its width in blocks, then a
 byte a row, the blocks in bits 7 down.
 """
 import os

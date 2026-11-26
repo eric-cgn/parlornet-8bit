@@ -1,6 +1,7 @@
 # The title screen's letters (splash.c), made for this program. Each letter is a grid of blocks, '#'
-# filled. Each block is drawn solid, in bands of color a row of blocks: on the Apple II 4 color pixels
-# (8 screen pixels) across and 6 lines down, on the C64 a character cell.
+# filled. Each block is drawn with a black gap on its right and bottom edge, each row of blocks in a color
+# of its own: on the Apple II 4 color pixels (8 screen pixels) across and 6 lines down, on the C64 a
+# character cell.
 
 letter P
 ####.
