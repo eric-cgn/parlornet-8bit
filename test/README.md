@@ -264,7 +264,8 @@ test/vice/run.sh build/c64/parlornet.d64 test/vice/plans/reversi.txt test/out/c6
   are those of `mame/run.lua` (wait, waittext, title, type, key, oa, arrows, click, point, snap, dumptext, hold,
   set, need, exit), plus `waittitle` (until the title screen is up, after the load), `basic` (typing into BASIC
   before the program runs), `joy`, `peek`, `bitmap` (until the bitmap is up, as the lobby is after a sign-in),
-  `log`, and `memfind` (where a text is in the program's memory, such as a password typed into its field).
+  `log`, `memfind` (where a text is in the program's memory, such as a password typed into its field), and
+  `track` (sprite 2's place, read from the VIC each frame, with screenshots while it is on).
 - The keys that `type`, `key`, `oa`, `arrows`, `click` and `title` put in the key queue never go through the
   program's keyboard scan, so a plan made of them alone cannot show a fault in the scan. `press` and `xtype` press
   real keys on VICE's window with xdotool, as a player does: `press` takes chords of X key names
@@ -311,6 +312,13 @@ The plans in `vice/plans`:
   the same target ids.
 - `cannonfire_incoming.txt` (`THINK=0.5,2` for `parlor.sh`): the bot's shot flying in after the player's, as
   `plans/cannonfire_incoming.txt` shows on the Apple II.
+- `cannonfire_path.txt`: the shell against its path. The player fires four shots, high and low, to the right
+  and to the left, and the bot answers each from the other side; `track` follows the shell's sprite through
+  each pair (`cfp_N.csv`, with a screenshot every 12 frames, `cfp_N_NNN.png`). Then `vice/cftrack.py OUTDIR`
+  works out from the parlor's lines in `modem.log` where the program should put the shell at each step of each
+  shot, as `draw/cannonfire.c` does, and checks every place the VIC showed it in: each flight gets a line, and a
+  drawing of the shot's steps and the sprite's places (`cfp_N_F_path.png`). It exits with 1 when the shell
+  was more than a pixel off its path.
 - `end_GAME.txt`, one for each of the ten games: signed up, a new game against the bot from the lobby, and the
   orchestrator's moves (`GAME+`) until the game is over, with the first view (`end_GAME_start`) and the end
   (`end_GAME_over`). In `GAME+` the orchestrator also takes a snapshot on its twelfth turn (`mid.png`), and when it

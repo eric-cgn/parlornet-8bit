@@ -1,0 +1,63 @@
+# Cannon Fire's shell against its path (cftrack.py checks it): four of the player's shots, high and low, to
+# the right and to the left, and the bot's answer to each from the other side. For each shot, `track` reads
+# the shell's sprite from the VIC every frame (cfp_N.csv) and takes a screenshot every 12 frames while it
+# flies (cfp_N_NNN.png), until both shells have flown. The aim is set with the keys: the angle down to 0
+# first, since the tank starts at 45 or 135 by its side, and from each shot's angle after that. The waits
+# are long, so that the plan also runs on a busy host, where VICE falls behind.
+waittitle 12000
+title 7200
+waittext ParlorNet: connect 1800
+type P
+waittext Name: 12000
+type new\r
+waittext want 1200
+type flo\r
+waittext password 1200
+type Swordfish 1997\r
+waittext again 1200
+type Swordfish 1997\r
+bitmap 6000
+wait 300
+click 200
+wait 600
+click 1
+wait 600
+click 0
+wait 600
+click 0
+wait 600
+wait 3600
+snap cfp_start
+log shot 1, high to the right: angle 70, power 95
+type .......................................................................................................................................
+type ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+type =============================================
+wait 60
+snap cfp_1_aim
+type F
+track cfp_1 9000 12 2
+wait 900
+log shot 2, high to the left: angle 110, power 95
+type ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+wait 60
+snap cfp_2_aim
+type F
+track cfp_2 9000 12 2
+wait 900
+log shot 3, low to the right: angle 25, power 60
+type .....................................................................................
+type -----------------------------------
+wait 60
+snap cfp_3_aim
+type F
+track cfp_3 9000 12 2
+wait 900
+log shot 4, low to the left: angle 155, power 60
+type ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+wait 60
+snap cfp_4_aim
+type F
+track cfp_4 9000 12 2
+wait 900
+snap cfp_end
+exit
