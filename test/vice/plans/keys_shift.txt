@@ -1,0 +1,58 @@
+# The Shift keys typed for real: press and xtype press keys on VICE's window, and the program's own keyboard
+# scan reads them, where the other steps put keys in its queue. In the console the WiFi-modem stand-in echoes
+# what is typed (shift_console): capitals, ? and shifted symbols with the left Shift, the right Shift with /
+# and with A (VICE's right Shift holds both of the C64's, so / and Z are ghosts of each other there), and
+# Shift Lock. The name prompt shows capitals and ? as typed (shift_name). Then a sign-up whose password is
+# typed the same way, ? and capitals in it (shift_password shows it as stars; memfind finds it in the field
+# before Return), the lobby, Commodore-Q, and a sign-in with that password put in the queue as text: the
+# lobby comes back only if the field had the password exactly (shift_lobby2).
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+press c
+waittext Line: 4800
+xtype Hi? ABC!#$%<>
+press Shift_R+slash Shift_R+a Caps_Lock b c Caps_Lock d
+waittext Hi? ABC!#$%<>?ABCd 300
+snap shift_console
+dumptext shift_console
+press Return
+waittext ERROR 300
+oa Q
+waittext ParlorNet: connect 600
+type P
+waittext Name: 4800
+xtype Who? ABC
+press Shift_R+slash
+waittext Who? ABC? 300
+snap shift_name
+dumptext shift_name
+key 9del
+type new\r
+waittext want 300
+type shifty\r
+waittext password 600
+xtype Ab?CD!x9
+press Shift_R+slash Caps_Lock q Caps_Lock
+wait 30
+snap shift_password
+memfind Ab?CD!x9?Q
+press Return
+waittext again 600
+xtype Ab?CD!x9
+press Shift_R+slash Caps_Lock q Caps_Lock
+press Return
+bitmap 1200
+wait 300
+snap shift_lobby
+oa Q
+waittext ParlorNet: connect 2400
+type P
+waittext Name: 4800
+type shifty\r
+waittext assword 600
+type Ab?CD!x9?Q\r
+bitmap 1200
+wait 300
+snap shift_lobby2
+exit
