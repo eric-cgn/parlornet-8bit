@@ -1,8 +1,8 @@
-; ParlorNet: the time connected to the parlor (clk_*, machine.h); clk_tick is called for each tick.
+; ParlorNet: the time signed in to the parlor (clk_*, machine.h); clk_tick is called for each tick.
 ; Machine-neutral 6502 code, .included by each machine's sys.s where it belongs among its own code and data.
 
-; The time connected to the parlor: the seconds the parlor last gave (TIM: clk_sync, clk_set), or 0 at
-; connecting, and the seconds of 60 ticks since. clk_tick: one tick more. Keeps X and Y.
+; The time signed in: the seconds the parlor last gave (TIM: clk_sync, clk_set), or 0 when sign-in
+; completes, and the seconds of 60 ticks since. clk_tick: one tick more. Keeps X and Y.
 clk_tick:
         dec     _clk_sub
         bne     ck_done
@@ -16,7 +16,7 @@ clk_tick:
 ck_done:
         rts
 
-; void __fastcall__ clk_set(const char *secs): the connected time from the parlor's decimal seconds.
+; void __fastcall__ clk_set(const char *secs): the time signed in from the parlor's decimal seconds.
 _clk_set:
         sta     ptr1
         stx     ptr1+1
@@ -63,8 +63,8 @@ ck_dbl: asl     _clk_t
         rol     _clk_t+2
         rts
 
-; unsigned char clk_min(void): the connected time's minutes within the hour (0 to 59), which change once a
-; minute; w: the whole hours. X is 0 after.
+; unsigned char clk_min(void): the minutes within the hour (0 to 59) of the time signed in, which change
+; once a minute; w: the whole hours. X is 0 after.
 _clk_min:
         ldy     #2
 :       lda     _clk_t,y
@@ -76,7 +76,7 @@ _clk_min:
         ldx     #0
         rts
 
-; const char *clk_text(void): the connected time in whole minutes in clk_buf, "0m", "59m" or "1h 5m" (up to
+; const char *clk_text(void): the time signed in, in whole minutes in clk_buf, "0m", "59m" or "1h 5m" (up to
 ; 99 hours), right-aligned in 8 characters; notes its minutes as shown (clk_shown).
 _clk_text:
         jsr     _clk_min
@@ -130,19 +130,20 @@ div60:  lda     #0              ; w = w / 60, A = the remainder; keeps X
         inc     ck_w
 :       dey
         bne     :--
-        rts
+cy_ret: rts                     ; (clk_sync's, too: its own end is out of a branch's reach)
 
-; void clk_sync(void): the connected time from the parlor, which counts it: TIM answers "TIM secs now".
-; Asked at connecting (the sign-in sets clk_tim_at to $FF), then along with the lobby's and the table's
-; polls once in each 32 seconds; the ticks count the seconds in between, and alone after an ERR (from a
-; parlor that does not know TIM: ERR UNKNOWN).
+; void clk_sync(void): the time signed in from the parlor, which counts it: TIM answers "TIM secs now".
+; Asked at the lobby's first poll (the sign-in sets clk_tim_at to $FF), then along with the lobby's and
+; the table's polls once in each 32 seconds; the ticks count the seconds in between, and alone after an
+; ERR (from a parlor that does not know TIM: ERR UNKNOWN). The program's own count since sign-in comes
+; first: TIM's secs are taken when they are less, or at most 30 seconds over it.
 _clk_sync:
         lda     _clk_tim_off
-        bne     cy_done
+        bne     cy_ret
         lda     _clk_t
         and     #$E0
         cmp     _clk_tim_at
-        beq     cy_done
+        beq     cy_ret
         lda     #<s_tim
         ldx     #>s_tim
         jsr     _q_set
@@ -159,28 +160,52 @@ _clk_sync:
         lda     (ptr1),y
         cmp     #'T'
         bne     cy_at
+        ldy     #3              ; the count since sign-in (clk_t and clk_sub after it), kept in o
+:       lda     _clk_t,y
+        sta     ck_o,y
+        dey
+        bpl     :-
         lda     ptr1
         clc
         adc     #4
         bcc     :+
         inx
 :       jsr     _clk_set
-        jmp     cy_at
+        sec                     ; TIM's secs less o: TIM is taken when under o or at most 30 over
+        lda     _clk_t
+        sbc     ck_o
+        tay
+        lda     _clk_t+1
+        sbc     ck_o+1
+        tax
+        lda     _clk_t+2
+        sbc     ck_o+2
+        bcc     cy_at
+        bne     cy_own
+        txa
+        bne     cy_own
+        cpy     #31
+        bcc     cy_at
+cy_own: ldy     #3              ; more: the count since sign-in again
+:       lda     ck_o,y
+        sta     _clk_t,y
+        dey
+        bpl     :-
+        bmi     cy_at
 cy_err: cmp     #2              ; R_ERR
         bne     cy_at
         sta     _clk_tim_off
 cy_at:  lda     _clk_t
         and     #$E0
         sta     _clk_tim_at
-cy_done:
         rts
 s_tim:  .byte   "TIM", 0
 
-; void clk_show(void): when connected and the minute has changed (or clk_shown is 255, after ui_cls), the
-; connected time at the right end of the Hi-Res title row, columns 32 to 39, in inverse (the lobby and the
+; void clk_show(void): when signed in and the minute has changed (or clk_shown is 255, after ui_cls), the
+; time signed in at the right end of the Hi-Res title row, columns 32 to 39, in inverse (the lobby and the
 ; tables: ui_poll). Once a minute, so the pointer, hidden while it is drawn, does not flicker.
 _clk_show:
-        lda     _connected
+        lda     _signed_in
         beq     cs_done
         jsr     _clk_min
         cmp     _clk_shown

@@ -25,28 +25,6 @@
 
 static unsigned char auth_none;
 
-/* The connected time on the title row, after "ParlorNet", when the minute changed (clk_text). */
-static void txt_clock(void)
-{
-    unsigned char x, y, inv, top;
-    const char *p;
-    if (!connected || clk_shown == clk_min())
-        return;
-    x = txt_x;
-    y = txt_y;
-    inv = txt_inv;
-    top = txt_top;
-    for (p = clk_text(); *p == ' '; ++p)
-        ;
-    txt_top = 0;
-    txt_goto(11, 0);
-    txt_inv = 1;
-    say(p);
-    txt_top = top;
-    txt_inv = inv;
-    txt_goto(x, y);
-}
-
 /* Text-mode line input at the cursor, to the end of the row. 1 on Return, 0 on Escape; OA-C (the
    console) gives 2. */
 static unsigned char txt_input(char *buf, unsigned char max, unsigned char secret)
@@ -70,10 +48,8 @@ static unsigned char txt_input(char *buf, unsigned char max, unsigned char secre
         txt_cursor(0x20);
         ++txt_x;
         txt_clreol();
-        do {
-            txt_clock();
-            k = kbd_get();
-        } while (!k);
+        while (!(k = kbd_get()))
+            ;
         if (kbd_mods() & 1) {
             if ((k | 0x20) == 'c')
                 return 2;
@@ -448,8 +424,6 @@ static void screen(void)
     title_bar("ParlorNet", CONSOLE_KEYS);
     txt_top = 2;                        /* the title bar stays when the text scrolls */
     txt_goto(0, 2);
-    clk_shown = 255;
-    txt_clock();
 }
 
 /* The screen is full: wait for a key on the bottom row, then go on at the top of a fresh screen. */
@@ -468,7 +442,7 @@ static void more(void)
 static unsigned char run(void)
 {
     static char name[14];
-    unsigned char k, n, signed_in;
+    unsigned char k, n, in;
     const char *p;
 
 #if MACHINE_SERIAL
@@ -567,12 +541,6 @@ connect:
         if (is(w[k], "AUTH=none"))
             auth_none = 1;
     connected = 1;
-    memset(clk_t, 0, 3);                /* the connected time from 0m, or the parlor's */
-    clk_tim_off = 0;
-    clk_tim_at = 0xFF;                  /* (now) */
-    clk_sync();
-    clk_shown = 255;
-    txt_clock();
     q_set("Connected to ");
     q_cat(server_name);
     show_wrapped(q);
@@ -625,19 +593,19 @@ names:
         } else
             q_set(auth_none ? "HELO" : "USER");
         q_add(name);
-        signed_in = dialogue();
-        if (signed_in >= 2)
-            return signed_in == 2 ? 1 : 3;
+        in = dialogue();
+        if (in >= 2)
+            return in == 2 ? 1 : 3;
         if (net_lost)
             goto lost;
-        if (!signed_in) {
-            if (r_final && strncmp(r_final, "ERR STATE", 9) == 0)
-                signed_in = 1;          /* signed in already, on this connection */
-            else
-                continue;
-        }
+        if (!in && !(r_final && strncmp(r_final, "ERR STATE", 9) == 0))
+            continue;                   /* (ERR STATE: signed in already, on this connection) */
         strcpy(me, name);
         prefs_load();
+        /* The time signed in starts from 0m; the lobby's first poll asks the parlor for it (TIM). */
+        memset(clk_t, 0, 3);
+        clk_tim_off = 0;
+        clk_tim_at = 0xFF;
         return 4;
     }
 lost:

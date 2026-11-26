@@ -57,7 +57,7 @@ void ui_cls(void)
 {
     ui_hide();
     hgr_clear();
-    clk_shown = 255;                    /* (the connected time drawn again: clk_show) */
+    clk_shown = 255;                    /* (the time signed in drawn again: clk_show) */
     ui_targets_clear();
     ui_ink(F_WHITE, F_BLACK);
     hg_bold = !mono;

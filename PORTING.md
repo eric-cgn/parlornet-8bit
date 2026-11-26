@@ -33,7 +33,7 @@ The Apple II and the C64 are built with cc65 2.19, from a Debian image pinned by
 For a Z80 machine (the ZX Spectrum, the MSX, the Amstrad CPC, CP/M) the likely route is z88dk, and for the 6809 (the Tandy Color Computer) the CMOC compiler. Neither has been tried, and these are the things to check first.
 
 - **Integer sizes.** The core assumes 16-bit `int` and 8-bit `char`, as all three compilers have, and uses `unsigned char` wherever the sign matters. `char` is unsigned in cc65; check how a plain `char` behaves in the new compiler where the core compares characters.
-- **Byte order.** The 6502 and the Z80 are little-endian and the 6809 is big-endian. The core keeps the connected time as three bytes in `clk_t`, low byte first, and the 6502 machines' assembly reads it that way. A big-endian machine has to keep those bytes in the same order.
+- **Byte order.** The 6502 and the Z80 are little-endian and the 6809 is big-endian. The core keeps the time signed in as three bytes in `clk_t`, low byte first, and the 6502 machines' assembly reads it that way. A big-endian machine has to keep those bytes in the same order.
 - **cc65's keywords and pragmas.** The core marks some functions `__fastcall__`, which another compiler can ignore if `machdefs.h` defines it as nothing. The core places data with `#pragma bss-name` and `#pragma rodata-name` (the table's buffers, each overlay's header), which another compiler does with its own section names, and builds with `-Cl` (local variables static), which only matters for speed.
 - **The memory model and overlays.** The core and one overlay at a time must fit in the machine's memory, with about 32K for the resident program and about 10K for the largest overlay. cc65's linker writes each overlay as its own file to load at `OVL_ADDR`. z88dk and CMOC have their own ways of building code to load at a fixed address, and on a machine with banked memory (a Spectrum 128, an MSX2) the overlays could live in banks instead.
 - **The 6502 assembly in `src/common/6502`.** The reply reader and the clock are assembly that both 6502 machines include. A machine on another processor writes them itself, and `src/template/template.c` has both in C to start from.
@@ -59,7 +59,7 @@ For a Z80 machine (the ZX Spectrum, the MSX, the Amstrad CPC, CP/M) the likely r
 - **Storage and settings.** There are no calls here, since the setup overlay reads and writes the settings file itself.
 - **Overlays and memory.** `ovl_load`, `OVL_ADDR`, and the two flags `connected` and `signin_note`.
 - **The progress bar.** There are no calls here either. A machine with a slow disk shows the load's progress itself, inside `ovl_load`.
-- **The clock.** `ticks` (60 a second), `tick_poll`, and the connected time, the `clk_` calls.
+- **The clock.** `ticks` (60 a second), `tick_poll`, and the time signed in, the `clk_` calls.
 - **Start-up and shutdown.** `sys_init` and `sys_quit`.
 
 The overlays the machine writes itself are the setup overlay (`setup.c`, the start screen and the settings), the title screen (`splash.c`) and the sign-in's network part (`signin_net.c`). Their headers are in `src/core/ovl.h`.

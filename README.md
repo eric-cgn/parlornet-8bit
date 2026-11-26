@@ -1,6 +1,6 @@
 # ParlorNet for 8-bit computers
 
-parlornet-8bit builds ParlorNet's own programs for 8-bit computers: the Apple II family (the IIe, and the IIgs) and the Commodore 64, whose program a Commodore 128 runs too. Each machine has its own screen, input, storage and connection code, around a shared core: the protocol, the sign-in, the lobby, the table, the chat, the dialer, the connected time and the ten games' rules.
+parlornet-8bit builds ParlorNet's own programs for 8-bit computers: the Apple II family (the IIe, and the IIgs) and the Commodore 64, whose program a Commodore 128 runs too. Each machine has its own screen, input, storage and connection code, around a shared core: the protocol, the sign-in, the lobby, the table, the chat, the dialer, the time signed in and the ten games' rules.
 
 Ports to other 8-bit machines are welcome. [PORTING.md](PORTING.md) explains how the core and the machine layers fit together, how to start a new machine from the template, which machines we would most like to see, and what a port needs before it is merged.
 
@@ -75,7 +75,7 @@ When you close the connection (Open-Apple-Q), the program says goodbye to the pa
 
 The console stays a plain terminal: what you type goes to the line and what comes back is shown. Open-Apple-P there goes into ParlorNet mode on the line as it is, without dialing, for a connection you have made by hand. Going to the console while the program is still connected to the parlor, from the name prompt, the lobby, a table or the start screen, closes that connection first, as Open-Apple-Q does: the parlor hangs up and a dialed line is hung up, so the console starts with the line back at the modem or the shell. To play again, dial with P on the start screen (Open-Apple-Q from the console), or make the connection by hand again and press Open-Apple-P.
 
-Once connected, the program shows how long the connection has been up, as terminal programs show the time online, in whole minutes: "0m" in the first minute, then "12m", and "1h 5m" after an hour. It changes once a minute, so the pointer is left alone in between. It is on the sign-in screen's title row after "ParlorNet", and at the right end of the title row in the lobby and at a table, and it starts from 0m with each new connection. Most Apple IIs have no clock, so the parlor gives the time (its TIM request, asked about every 30 seconds along with the program's other requests), and the program counts the seconds in between. With a parlor that does not know TIM yet, the program counts on its own, from the screen's 60 frames a second; that count falls behind by a second or two each time a game is loaded from the disk, and by about five seconds an hour besides.
+Once signed in, the program shows the time signed in, as terminal programs show the time online, in whole minutes: "0m" in the first minute, then "12m", and "1h 5m" after an hour. It starts when sign-in completes, and no screen shows it before then: the sign-in screen has none. It changes once a minute, so the pointer is left alone in between. It is at the right end of the title row in the lobby and at a table. Signing out ends it, and the next sign-in starts again from 0m. Most Apple IIs have no clock, so the parlor gives the time signed in (its TIM request, asked about every 30 seconds along with the program's other requests), and the program counts the seconds in between. The program's own count since sign-in comes first: it takes TIM's time when that is less, or no more than half a minute over it. With a parlor that does not know TIM, the program counts on its own, from the screen's 60 frames a second; that count falls behind by a second or two each time a game is loaded from the disk, and by about five seconds an hour besides.
 
 ### Through a Unix shell
 
@@ -159,7 +159,7 @@ A number that starts with AT is sent as the whole dial command; with a Zimodem, 
 
 The settings are kept in PARLOR.CFG on the program's disk, which is written only when they change (so the disk must not be write-protected for them to be kept). Settings kept by an older version of the program, or by one before the two modems, are reset to the defaults.
 
-The console, the line lost and dialed again, the connected time and the chat work as they do on the Apple II (Connecting, above). An Ethernet connection (ip65 with an RR-Net or an ETH64, or the Ultimate 64's own network) is not there yet; it would go in `signin_net.c` and behind the serial calls, as the machine interface's network calls describe (`src/core/machine.h`).
+The console, the line lost and dialed again, the time signed in and the chat work as they do on the Apple II (Connecting, above). An Ethernet connection (ip65 with an RR-Net or an ETH64, or the Ultimate 64's own network) is not there yet; it would go in `signin_net.c` and behind the serial calls, as the machine interface's network calls describe (`src/core/machine.h`).
 
 ### How it works
 
@@ -207,7 +207,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
 - `src/common`: what more than one machine uses.
   - `ui_targets.c`: the screen kit's targets, the nearest one for the arrow keys, and waiting for a key, in plain C.
   - `ui_hgr.c`: text, outlines and buttons, for a machine whose drawing has the Apple's Hi-Res primitives (the Apple II's and the C64's).
-  - `6502/reply.inc`, `6502/clock.inc`: the reply reader and the connected time, in 6502 assembly that each machine's `sys.s` includes.
+  - `6502/reply.inc`, `6502/clock.inc`: the reply reader and the time signed in, in 6502 assembly that each machine's `sys.s` includes.
 - `src/apple2`: the Apple IIe and IIgs (`apple2.h` declares the machine's own calls).
   - `boot.s`: the boot block. The Disk II boot ROM loads its six sectors at $0800; it reads the rest of the program with its own 6-and-2 sector reader, switches in the language card's RAM and starts the program. The reader stays in memory to load the overlays.
   - `crt0.s`, `sys.s`, `hgr.s`, `disk.s`: the start-up, the Super Serial Card (its 6551 read by interrupt when the card's interrupt switch is on, and polled when it is off), the text screen, the keyboard, the AppleMouse II card's firmware calls, and Hi-Res drawing.

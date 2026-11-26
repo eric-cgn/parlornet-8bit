@@ -240,7 +240,7 @@ void ui_button(unsigned char x, unsigned char y, const char *s, unsigned char id
 
 void ui_cls(void)
 {
-    clk_shown = 255;                    /* (the connected time drawn again: clk_show) */
+    clk_shown = 255;                    /* (the time signed in drawn again: clk_show) */
     ui_targets_clear();
 }
 
@@ -329,8 +329,8 @@ unsigned char __fastcall__ ovl_load(unsigned char k)
 }
 
 /* ---------------------------------------------------------------------------------------------------
-   The clock: ticks from the machine's 60 Hz interrupt, and the connected time. src/common/6502/clock.inc
-   does the connected time in assembly on the 6502 machines; this is the same in C, with TIM left out. */
+   The clock: ticks from the machine's 60 Hz interrupt, and the time signed in. src/common/6502/clock.inc
+   does the time signed in in assembly on the 6502 machines; this is the same in C, with TIM left out. */
 
 unsigned int ticks;
 unsigned char clk_t[3];
@@ -395,7 +395,7 @@ void clk_sync(void)
 
 void clk_show(void)
 {
-    if (!connected || clk_min() == clk_shown)
+    if (!signed_in || clk_min() == clk_shown)
         return;
     ui_textn(32, 0, clk_text(), 8);
 }

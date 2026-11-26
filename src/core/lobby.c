@@ -235,7 +235,7 @@ static void draw_lobby(void)
     gr_mode();
     ui_cls();
     ui_ink(F_BLACK, F_WHITE);
-    /* "ParlorNet: name at server", in the 32 columns before the connected time (clk_show): without
+    /* "ParlorNet: name at server", in the 32 columns before the time signed in (clk_show): without
        "ParlorNet: " when that does not fit, then with the server's name cut short (b holds 41) */
     b[0] = 0;
     if (strlen(me) + strlen(server_name) <= 32 - 15)

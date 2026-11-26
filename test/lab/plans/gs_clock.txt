@@ -1,0 +1,74 @@
+# The time signed in on the IIgs (test/lab/gs.sh), as plans/clock.txt shows it on the IIe: no clock on the
+# sign-in screen (ck_name), "0m" at the right end of the lobby's title row right after sign-in, and no clock
+# after signing out (ck_out). The next sign-in starts again from 0m, and so does one after the connection is
+# closed and opened again. MAME runs the IIgs unthrottled here, so the frames between the snapshots are not
+# the parlor's seconds.
+wait 2400
+dclick 568 66
+wait 300
+dclick 86 49
+title 1800
+waittext quit to the Finder 1800
+key s
+waittext settings 300
+key 1
+wait 30
+key ctrl+x
+type parlor\r
+wait 30
+key ret
+waittext quit to the Finder 600
+key p
+waittext Name: 3600
+wait 120
+dumptext ck_name
+snap ck_name
+type new\r
+waittext want 300
+type tim\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 900
+snap ck_lobby
+wait 1800
+snap ck_lobby30
+# a game against the bot
+key ret
+wait 300
+key ret
+wait 300
+key ret
+wait 1200
+snap ck_table
+key esc
+wait 600
+# sign out: the sign-in screen has no clock, and the next sign-in starts from 0m
+click 203
+waittext Signed out 1800
+wait 300
+dumptext ck_out
+snap ck_out
+type tim\r
+waittext assword 600
+type Swordfish 1997\r
+wait 900
+snap ck_lobby2
+# close the connection, then a new one: the time starts again
+oa q
+waittext quit to the Finder 900
+key p
+waittext Name: 3600
+wait 120
+dumptext ck_name3
+type tim\r
+waittext assword 600
+type Swordfish 1997\r
+wait 900
+snap ck_lobby3
+oa q
+waittext quit to the Finder 900
+oa q
+wait 900
+exit

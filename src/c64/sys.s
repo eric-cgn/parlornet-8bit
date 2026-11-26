@@ -1,6 +1,6 @@
 ; ParlorNet on the Commodore 64: the machine. Start-up (BASIC and the KERNAL switched out, the VIC in bank 3),
 ; the raster interrupt (60 ticks a second on PAL and NTSC, the sprites, the keyboard, the joysticks and the
-; 1351 mouse), the 40-column text screen, the keyboard queue, and the time connected (common/6502/clock.inc).
+; 1351 mouse), the 40-column text screen, the keyboard queue, and the time signed in (common/6502/clock.inc).
 ;
 ; The interrupt vectors are ours at $FFFA-$FFFF while the KERNAL is out, and at $0314 (IRQ) and $0318 (NMI)
 ; while it is in for the disk (disk.s); the handlers take either way in.
@@ -9,7 +9,7 @@
         .import         popa, pusha
         .import         nmi_vec, irq_tx, _ser_irq, pb_on, pb_update
         .import         _q_set, _net_req, _r_n, _r_line
-        .import         _connected, _ui_hide, _ui_show, _ui_ink, _hgr_text, _hg_x, _hg_y
+        .import         _signed_in, _ui_hide, _ui_show, _ui_ink, _hgr_text, _hg_x, _hg_y
         .import         _ser_get
 
         .export         sys_start, _tick_poll, _ticks, _pal
@@ -637,7 +637,7 @@ _kbd_flush:
         sta     _kq_tail
         rts
 
-; void tick_poll(void): ticks up to the interrupt's count, the connected time with them. Call it often.
+; void tick_poll(void): ticks up to the interrupt's count, the time signed in with them. Call it often.
 _tick_poll:
         lda     _ticks
         cmp     _irq_ticks
@@ -840,7 +840,7 @@ tp:     lda     $FFFF
 :       rts
 
 ; ---------------------------------------------------------------------------------------------------
-; Reading a reply (net.c) and the connected time: the same code as every machine's.
+; Reading a reply (net.c) and the time signed in: the same code as every machine's.
 
         .include "reply.inc"
         .include "clock.inc"

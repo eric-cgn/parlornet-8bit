@@ -95,7 +95,7 @@ void ui_cls(void)
     hg_kbg = hg_bg;
     hg_kfg = mono ? C_WHITE : C_YELLOW;
     hgr_clear();
-    clk_shown = 255;                    /* (the connected time drawn again: clk_show) */
+    clk_shown = 255;                    /* (the time signed in drawn again: clk_show) */
     VIC_BORDER = hg_bg;
     hg_bold = 0;
 }

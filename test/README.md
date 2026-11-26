@@ -89,11 +89,12 @@ board on the right and on the left. Tall stacks show four checkers and +n. `plan
 a Row, Naval Combat and Grid Words and shows the pointer on the middle of a point or square, at the first one
 and one along and one down from it.
 
-`plans/clock.txt` shows the connected time in whole minutes: on the sign-in's title row ("ParlorNet  0m"), at
-the right end of the lobby's and a table's title row ("1m" at the table), and from 0m again after Open-Apple-Q
-and a new connection. The
-time comes from the parlor's TIM request (`TIM secs now`) when the parlor has it; a parlor without it
-answers ERR UNKNOWN and the program counts the ticks alone.
+`plans/clock.txt` shows the time signed in, in whole minutes. The sign-in screen has no clock (`ck_name`); it
+is "0m" at the right end of the lobby's title row right after sign-in (`ck_lobby`), "1m" by the table's
+snapshots, and gone after signing out (`ck_out`). The next sign-in starts again from 0m (`ck_lobby2`), and so
+does the sign-in on a new connection after Open-Apple-Q (`ck_name3`, `ck_lobby3`). The time comes from the
+parlor's TIM request (`TIM secs now`, the time signed in) when the parlor has it; a parlor without it answers
+ERR UNKNOWN and the program counts the ticks alone.
 
 The machine has the Apple joystick in its game port (`-gameio joy`), and `mame/joy.lua` sets it for the
 runners. `joy BITS [N]` holds it for N frames as the VICE runner's `joy` does (1 up, 2 down, 4 left, 8 right,
@@ -245,6 +246,9 @@ GSROMS=~/roms GSHD=~/gs/marinetti.2mg PARLORNET=~/src/parlornet test/lab/gs.sh t
   the display set to color, then to monochrome (where the IIgs shows the same title screen in black and
   white) and then not at all, each set in the settings and kept in PARLOR.CFG across a quit and a new
   start. `plans/gs_gridwords.txt` plays some words of Grid Words, in color and monochrome.
+  `plans/gs_clock.txt` shows the time signed in as `plans/clock.txt` does on the IIe: no clock on the sign-in
+  screen, "0m" in the lobby right after sign-in, none after signing out, and 0m again on the next sign-in and
+  on a new connection.
 - The IIgs has the Apple joystick in its game port too, and `gsrun.lua` has the IIe runner's joystick steps.
   `plans/gs_joystick.txt` turns the joystick on in the settings, moves in the lobby, chooses Reversi and the
   bot, places a disc, opens the chat with Open-Apple-T, and shows an empty port doing nothing.
@@ -324,6 +328,9 @@ The plans in `vice/plans`:
   on the user port at 2400 and at 300, through the console, the dialer, signing up and the lobby.
 - `progress.txt`: the progress bars, at the start, for the lobby (PN.PARLOR) and the sign-in when the console first
   opens, and for a game.
+- `clock.txt`: the time signed in, as `plans/clock.txt` in `lab/` shows it on the Apple IIe: no clock on the
+  sign-in screen, "0m" in the lobby right after sign-in, "1m" by the table's snapshots, none after signing
+  out, and 0m again on the next sign-in and after the line is closed and dialed again.
 - `reversi.txt`: a game of Reversi against the bot, with moves by the cursor keys, the orchestrator and the joystick,
   and the board in monochrome.
 - `table_entry.txt`: the first view of each of the ten games, as `plans/table_entry.txt` does for the Apple II, by
