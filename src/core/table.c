@@ -51,11 +51,11 @@ static char mbuf[640];
 static char chat_l[CHAT_N][CHAT_W];
 #pragma bss-name (pop)
 static unsigned int mused;
-/* The message line shows chat (chat_on): line chat_tk, its part chat_pg (a line longer than the screen is
-   two). New lines step past on it (chat_run), a part every 3 seconds, until a key or a click; the newest
-   then stays. ev_seq is where SIN asks from (the server's own mark moves on with VUE, which would skip
-   chat), v_seq the view's: events up to it are drawn already. */
-static unsigned char chat_n, chat_on, chat_run, chat_tk, chat_pg, part_pg, in_view, stale;
+/* The message line shows chat (chat_on): line chat_tk, and a line longer than the screen goes on over the
+   status line (msg_line). New lines step past on it (chat_run), one every 3 seconds, until a key or a
+   click; the newest then stays. ev_seq is where SIN asks from (the server's own mark moves on with VUE,
+   which would skip chat), v_seq the view's: events up to it are drawn already. */
+static unsigned char chat_n, chat_on, chat_run, chat_tk, in_view, stale;
 static unsigned int chat_at, ev_seq, v_seq;
 static const struct game *G;
 static unsigned char clk_seat, have_clk, view_g;
@@ -86,36 +86,49 @@ const char *__fastcall__ g_name(unsigned char seat)
     return b;
 }
 
-/* Part part_pg of chat line i into part; 2 if the line is in two parts. */
-static unsigned char __fastcall__ chat_part(unsigned char i)
+/* The first line of s that fits the screen, cut at a space, into part; returns the rest ("" for none). */
+static const char *__fastcall__ cut40(const char *s)
 {
-    const char *s = chat_l[i];
-    unsigned char cut = 40;
-    if (strlen(s) <= 40) {
-        strcpy(part, s);
-        return 1;
+    unsigned char c = 40;
+    if (strlen(s) <= 40)
+        c = strlen(s);
+    else {
+        while (c && s[c] != ' ')
+            --c;
+        if (!c)
+            c = 40;
     }
-    while (cut && s[cut] != ' ')
-        --cut;
-    if (!cut)
-        cut = 40;
-    if (part_pg) {
-        strcpy(part, "  ");
-        strncat(part, s + cut + (s[cut] == ' '), 38);
-    } else {
-        memcpy(part, s, cut);
-        part[cut] = 0;
+    memcpy(part, s, c);
+    part[c] = 0;
+    s += c;
+    if (*s == ' ')
+        ++s;
+    return s;
+}
+
+static unsigned char st_dirty;          /* something else is on the status line until the next key */
+static void show_status(void);
+
+/* Text on the message line. A text longer than the screen goes on over the status line, cut at a space,
+   until the next key; whatever was over the status line before goes away first. */
+static void __fastcall__ msg_line(const char *s)
+{
+    if (st_dirty) {
+        st_dirty = 0;
+        show_status();
     }
-    return 2;
+    s = cut40(s);
+    ui_msg(part);
+    if (*s) {
+        ui_status(s);
+        st_dirty = 1;
+    }
 }
 
 static void chat_show(void)
 {
-    if (chat_on) {
-        part_pg = chat_pg;
-        chat_part(chat_tk);
-        ui_msg(part);
-    }
+    if (chat_on)
+        msg_line(chat_l[chat_tk]);
 }
 
 /* A message; with nothing to say, the line shows the last thing said. */
@@ -131,7 +144,7 @@ void g_message(const char *s)
         hint();
         return;
     }
-    ui_msg(s);
+    msg_line(s);
     g_hold = 1;
 }
 
@@ -142,23 +155,17 @@ static void hint(void)
     if (G && G->hover && g_myturn && !offer_away)
         G->hover(t_cur < t_n ? t_id[t_cur] : 255);
     else
-        ui_msg(offer_away ? "Press " KEY_RET " to answer." : g_over ? "Press " KEY_ESC " to go back to the lobby."
+        msg_line(offer_away ? "Press " KEY_RET " to answer." : g_over ? "Press " KEY_ESC " to go back to the lobby."
                : !g_started && g_seat >= 0 ? "Type /invite bot to play the bot."  /* (your own table, waiting) */
                : "Press " OA "T to chat, or ? for help.");
     g_hold = 0;
 }
 
-/* The next part or line of new chat on the message line. */
+/* The next line of new chat on the message line, or the last once more (an answer may have been over it). */
 static void chat_step(void)
 {
-    unsigned char two = strlen(chat_l[chat_tk]) > 40;
-    if (!chat_pg && two)
-        chat_pg = 1;
-    else if (chat_tk + 1 < chat_n) {
+    if (chat_tk + 1 < chat_n)
         ++chat_tk;
-        chat_pg = 0;
-    } else if (two)
-        chat_pg = 0;
     else
         chat_run = 0;
     chat_at = ticks;
@@ -328,7 +335,6 @@ static unsigned long clk_left(void)
 /* The status line: the first sentence of the sentence line (docs/design.md), whose turn it is in the
    shared words, then the clock: "Your turn. You have 4m left." or "Waiting for ann. ann has 2m left." */
 static unsigned int st_at;              /* (ticks when it was drawn, to count the last minute down) */
-static unsigned char st_dirty;          /* something else is on the status line until the next key */
 #ifdef MACHINE_GRBSS
 #pragma bss-name (push, "GRBSS")
 #endif
@@ -353,6 +359,8 @@ static void show_status(void)
     unsigned long left;
     unsigned int m;
     char *p;
+    if (st_dirty)                       /* (until the next key: the end of a long message is there) */
+        return;
     sb[0] = 0;
     if (offer_away) {
         /* the offer's first sentence (the dialog's words), the message line saying how to answer */
@@ -610,7 +618,7 @@ static void poll_events(void)
         who = g_name(s);
         tail = ":";
         if (is(w[3], "JOIN")) {
-            jseat = s;      /* its name, for the CLIENT that follows: the names are read after these */
+            jseat = s;      /* its name, for the CLIENT and chat that follow: the names are read after these */
             jname = w[5];
         }
         if (is(w[3], "CLIENT")) {
@@ -624,6 +632,8 @@ static void poll_events(void)
         } else if (is(w[3], "CHT")) {
             if (w[4][0] == 0x2D)
                 who = "watcher";
+            else if (s == jseat)
+                who = jname;
         } else {
             if (!g_over && num(w[2]) > v_seq) {
                 stale = 1;
@@ -660,7 +670,6 @@ static void poll_events(void)
     if (said) {
         if (!chat_run || !chat_on) {
             chat_tk = said < chat_n ? chat_n - said : 0;
-            chat_pg = 0;
         }
         chat_on = chat_run = 1;
         chat_at = ticks;
@@ -683,7 +692,7 @@ static void poll_events(void)
 static void chat(void)
 {
     static char b[57];
-    const char *note = 0;
+    const char *note = 0, *s;
     unsigned char i, y;
     in_view = 1;
     for (;;) {
@@ -693,14 +702,12 @@ static void chat(void)
         if (!chat_n)
             ui_text(0, y, "Nothing has been said here yet.");
         for (i = chat_n; i && y >= GAME_TOP;) {
-            part_pg = 1;
-            if (chat_part(--i) == 2) {
-                ui_text(0, y, part);
+            s = cut40(chat_l[--i]);     /* (a long line's second part, indented, is drawn first) */
+            if (*s) {
+                ui_textn(2, y, s, 38);
                 y -= 8;
                 if (y < GAME_TOP)
                     break;
-                part_pg = 0;
-                chat_part(i);
             }
             ui_text(0, y, part);
             y -= 8;
@@ -723,7 +730,6 @@ static void chat(void)
     chat_run = 0;
     chat_on = chat_n;
     chat_tk = chat_n - 1;
-    chat_pg = 0;
     if (stale)
         fetch(0);
     draw_all();
