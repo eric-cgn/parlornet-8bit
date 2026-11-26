@@ -85,8 +85,8 @@ board on the left (`d01` on). The orchestrator's `bgsnapX` plays the first legal
 snapshots `X01` to `X30`. `plans/bg_bar.txt` plays until a checker is on the bar (`bgplay`, which hits),
 then until one of the player's is (`bgbarme`, which does not), and each time points at the bar from point
 7 with the up arrow: the pointer sits on the player's checkers on the bar, below the cube, with the home
-board on the right and on the left. On a tall stack the last checker shown has the number not shown cut out
-of it. `plans/fingers.txt` opens Five in a Row, Naval Combat and Grid Words and shows the pointer on the middle
+board on the right and on the left. On a tall stack the last checker shown has cut out of it the number of
+checkers it stands for. `plans/fingers.txt` opens Five in a Row, Naval Combat and Grid Words and shows the pointer on the middle
 of a point or square, at the first one and one along and one down from it.
 
 `plans/clock.txt` shows the connected time in whole minutes: on the sign-in's title row ("ParlorNet  0m"), at

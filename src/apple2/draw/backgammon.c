@@ -3,19 +3,19 @@
    place two bytes by 12 lines filled with its point's color (orange or blue; on the bar and beside the
    names, blue; in monochrome a gray of alternate dots), since a black disc needs a color round it to show
    on the black board. A point shows up to five checkers and the bar up to three a side; on a taller stack
-   the last one shown has the number not shown cut out of it, a digit up to 9 or else +, in its place's
-   color. */
+   the last one shown stands for itself and those not shown, and has that number cut out of it, a digit
+   from 2 to 9 or else +, in its place's color. */
 #include "apple2.h"
 extern const unsigned char spr_bg_da[], spr_bg_db[], spr_bg_ua[], spr_bg_ub[];
 extern const unsigned char spr_bg_m_da[], spr_bg_m_db[], spr_bg_m_ua[], spr_bg_m_ub[];
-extern const unsigned char spr_bg_disc[], spr_bg_n1[], spr_bg_n2[], spr_bg_n3[], spr_bg_n4[], spr_bg_n5[],
-    spr_bg_n6[], spr_bg_n7[], spr_bg_n8[], spr_bg_n9[], spr_bg_nplus[];
+extern const unsigned char spr_bg_disc[], spr_bg_n2[], spr_bg_n3[], spr_bg_n4[], spr_bg_n5[], spr_bg_n6[],
+    spr_bg_n7[], spr_bg_n8[], spr_bg_n9[], spr_bg_nplus[];
 extern const unsigned char spr_bg_die1[], spr_bg_die2[], spr_bg_die3[], spr_bg_die4[], spr_bg_die5[],
     spr_bg_die6[];
 static const unsigned char *const die_spr[] = {spr_bg_die1, spr_bg_die2, spr_bg_die3, spr_bg_die4,
                                                spr_bg_die5, spr_bg_die6};
-static const unsigned char *const num_spr[] = {spr_bg_n1, spr_bg_n2, spr_bg_n3, spr_bg_n4, spr_bg_n5,
-                                               spr_bg_n6, spr_bg_n7, spr_bg_n8, spr_bg_n9, spr_bg_nplus};
+static const unsigned char *const num_spr[] = {spr_bg_n2, spr_bg_n3, spr_bg_n4, spr_bg_n5, spr_bg_n6,
+                                               spr_bg_n7, spr_bg_n8, spr_bg_n9, spr_bg_nplus};
 #define ORANGE 0                        /* a place's color */
 #define BLUE 1
 
@@ -28,7 +28,7 @@ static unsigned char ax, ay;
 static unsigned char kbuf[2 + 24] = {2, 12};
 
 /* Seat s's checker (0 white, 1 black) in kbuf, for the place at byte column x: the disc on color c (ORANGE
-   or BLUE; in monochrome alternate dots), with the count n (0 for none) in its middle lines. A color is the
+   or BLUE; in monochrome alternate dots), with the count n (0 for none, else 2 or more) in its middle lines. A color is the
    bits of every other screen column (odd for orange, even for blue) with the high bit set; bit 0 of a byte
    is its leftmost column, 7x on the screen. In color the count is cut out of the disc and shows the
    place's color; in monochrome, where that color is a pattern of dots that would break up so small a digit,
@@ -38,7 +38,7 @@ static void make_checker(unsigned char x, unsigned char s, unsigned char c, unsi
     unsigned char i, k, pat, in, dg, ink;
     const unsigned char *g = 0;
     if (n)
-        g = num_spr[n > 9 ? 9 : n - 1] + 2 - 6;      /* its 5 lines are the disc's 3 to 7 */
+        g = num_spr[n > 9 ? 8 : n - 2] + 2 - 6;      /* its 5 lines are the disc's 3 to 7 */
     for (i = 0; i < 24; ++i) {
         k = i >> 1;                     /* the line */
         pat = ((x + i) & 1) ? 0x55 : 0x2A;      /* the odd columns */
@@ -120,12 +120,12 @@ static void draw_point(unsigned char p, signed char v)
     hg_src = spr;
     hgr_blit();
     n = v < 0 ? -v : v;
-    /* five places: up to five checkers, the last with the count of any more, each on the point's color
-       (its art is made for an even column, so at an odd one its orange shows as blue, and its blue as
-       orange) */
+    /* five places: up to five checkers, the last with the count it stands for when there are more, each
+       on the point's color (its art is made for an even column, so at an odd one its orange shows as blue,
+       and its blue as orange) */
     for (i = 0; i < n && i < 5; ++i) {
         y = top ? TOP + 12 * i : BOT - 11 - 12 * i;
-        checker(x, y, v < 0, c ^ (x & 1), i == 4 && n > 5 ? n - 5 : 0);
+        checker(x, y, v < 0, c ^ (x & 1), i == 4 && n > 5 ? n - 4 : 0);
     }
     shown[p] = v;
 }
@@ -140,11 +140,11 @@ static void draw_bar_off(void)
     ui_rect(bx, TOP, 2, BOT - TOP + 1, F_BLACK);
     for (s = 0; s < 2; ++s) {
         n = sbar[s];
-        /* three places: up to three checkers, the last with the count of any more */
+        /* three places: up to three checkers, the last with the count it stands for when there are more */
         for (i = 0; i < n && i < 3; ++i) {
             /* my checkers on the bar wait below the middle, the other's above */
             y = (s == me) ? 98 + 12 * i : 65 - 12 * i;
-            checker(bx, y, s, BLUE, i == 2 && n > 3 ? n - 3 : 0);
+            checker(bx, y, s, BLUE, i == 2 && n > 3 ? n - 2 : 0);
         }
     }
     ui_rect(tx, TOP, 2, BOT - TOP + 1, F_BLACK);

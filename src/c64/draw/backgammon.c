@@ -2,7 +2,8 @@
    lanes of whole cells, two wide, red and green by turns on a wooden board, each ending in a tip toward the
    middle, so that a checker (a solid disc, black or white, two cells by two) needs only its lane's color and
    its own. A point shows up to four checkers and the bar up to two a side; on a taller stack the last one
-   shown has the number not shown cut out of it, a digit up to 9 or else +, in its place's color. Each step
+   shown stands for itself and those not shown, and has that number cut out of it, a digit from 2 to 9 or
+   else +, in its place's color. Each step
    glides its checker from where it was to where it goes: a sprite moves over the board. The dice and the
    cube are in the row across the middle, the trays on the right hold the counts borne off, and the names
    and buttons are beside the board. The columns are the Apple II's (mx, col_of): the board is 29 cells
@@ -14,12 +15,12 @@
 extern const unsigned char pic_bg_checker[], pic_bg_tip_down[], pic_bg_tip_up[], pic_bg_lane[];
 extern const unsigned char pic_bg_die1[], pic_bg_die2[], pic_bg_die3[], pic_bg_die4[], pic_bg_die5[],
     pic_bg_die6[], spr_bg_glide[];
-extern const unsigned char pic_bg_n1[], pic_bg_n2[], pic_bg_n3[], pic_bg_n4[], pic_bg_n5[], pic_bg_n6[],
-    pic_bg_n7[], pic_bg_n8[], pic_bg_n9[], pic_bg_nplus[];
+extern const unsigned char pic_bg_n2[], pic_bg_n3[], pic_bg_n4[], pic_bg_n5[], pic_bg_n6[], pic_bg_n7[],
+    pic_bg_n8[], pic_bg_n9[], pic_bg_nplus[];
 static const unsigned char *const die_pic[] = {pic_bg_die1, pic_bg_die2, pic_bg_die3, pic_bg_die4, pic_bg_die5,
                                                pic_bg_die6};
-static const unsigned char *const num_pic[] = {pic_bg_n1, pic_bg_n2, pic_bg_n3, pic_bg_n4, pic_bg_n5, pic_bg_n6,
-                                               pic_bg_n7, pic_bg_n8, pic_bg_n9, pic_bg_nplus};
+static const unsigned char *const num_pic[] = {pic_bg_n2, pic_bg_n3, pic_bg_n4, pic_bg_n5, pic_bg_n6, pic_bg_n7,
+                                               pic_bg_n8, pic_bg_n9, pic_bg_nplus};
 
 #define TOP 16                          /* the top lanes: checkers from line 16 down, the tip at 80 */
 #define MID 88                          /* the row across the middle: dice and cube */
@@ -97,14 +98,14 @@ static void place(unsigned char x, unsigned char y, unsigned char s, unsigned ch
     }
 }
 
-/* The n checkers a stack has past the ones shown, cut out of the checker in the place at (x, y): the
-   digit, or + for 10 or more, exclusive-or over the disc's middle rows, so the place's color shows
-   through it. */
+/* The n checkers (2 or more) the last checker shown stands for, cut out of the checker in the place at
+   (x, y): the digit, or + for 10 or more, exclusive-or over the disc's middle rows, so the place's color
+   shows through it. */
 static void cut_count(unsigned char x, unsigned char y, unsigned char n)
 {
     hg_x = x;
     hg_y = y + 4;
-    hg_src = num_pic[n > 9 ? 9 : n - 1];
+    hg_src = num_pic[n > 9 ? 8 : n - 2];
     hg_xor = 1;
     hgr_blit();
     hg_xor = 0;
@@ -119,13 +120,13 @@ static unsigned char count(signed char v)
 static void draw_point(unsigned char p, signed char v)
 {
     unsigned char top, x = col_of(p, &top), n = count(v), i, s = v < 0, c = lane_col(p), y;
-    /* four places: up to four checkers, the last with the count of any more */
+    /* four places: up to four checkers, the last with the count it stands for when there are more */
     for (i = 0; i < 4; ++i) {
         y = top ? TOP + 16 * i : BOT - 16 * i;
         place(x, y, i < n ? s : 2, c);
     }
     if (n > 4)
-        cut_count(x, y, n - 4);
+        cut_count(x, y, n - 3);
     hg_x = x;
     hg_y = top ? TOP + 64 : BOT - 56;
     hg_w = 2;
@@ -147,14 +148,14 @@ static void draw_bar_off(void)
     unsigned char bx = mx(13, 2), tx = mx(27, 2), barc = mono ? C_GREY : C_BROWN;
     for (s = 0; s < 2; ++s) {
         n = sbar[s];
-        /* two places a side: up to two checkers, the second with the count of any more; mine below the
-           middle */
+        /* two places a side: up to two checkers, the second with the count it stands for when there are
+           more; mine below the middle */
         for (i = 0; i < 2; ++i) {
             y = s == me ? MID + 16 + 16 * i : MID - 32 - 16 * i;
             place(bx, y, i < n ? s : 2, barc);
         }
         if (n > 2)
-            cut_count(bx, y, n - 2);
+            cut_count(bx, y, n - 1);
     }
     for (s = 0; s < 2; ++s) {
         y = s == me ? BOT : TOP;
