@@ -22,6 +22,21 @@
         .export         _hgr_clear, _hgr_rect, _hgr_blit, _hgr_char, _hgr_text, _hgr_vline, _hgr_hline
         .export         _hgr_ptr
         .export         _hgr_ylo, _hgr_yhi
+.ifndef IIGS
+        .export         _dhr_on, _dhr_vec, dhr_off
+
+; While dhr_on is set, the drawing routines here jump to the Double Hi-Res ones whose addresses dhr_vec
+; holds, in the order of the hooks below (dhr.s, which the Backgammon overlay links, fills it in).
+.macro  dhr_hook n
+        bit     _dhr_on
+        bpl     :+
+        jmp     (_dhr_vec + n)
+:
+.endmacro
+.else
+.macro  dhr_hook n
+.endmacro
+.endif
 
         .segment "DATA"
 _hg_x:  .byte   0
@@ -36,6 +51,11 @@ _hg_bold:.byte  0               ; 1: text in bold
 _hg_key:.byte   0               ; characters still to draw in bold as a key legend (hgr_char)
 _hg_src:.word   0
 _hg_px: .word   0
+.ifndef IIGS
+_dhr_on:.byte   0
+_dhr_vec:
+        .res    14
+.endif
 
         .segment "RODATA"
 ylo:    .repeat 192, ln
@@ -50,6 +70,17 @@ _hgr_yhi = yhi
 
         .segment "CODE"
 
+.ifndef IIGS
+; Back to Hi-Res: 80 columns, Double Hi-Res and 80STORE off (gr_mode and txt_mode, sys.s).
+dhr_off:
+        lda     #0
+        sta     _dhr_on
+        sta     $C00C
+        sta     $C05F
+        sta     $C000
+        rts
+.endif
+
 ; Set HP to the start of line X.
 rowx:   lda     ylo,x
         sta     HP
@@ -59,6 +90,7 @@ rowx:   lda     ylo,x
 
 ; void hgr_clear(void)
 _hgr_clear:
+        dhr_hook 0
         lda     #$20
         sta     HP+1
         lda     #0
@@ -79,6 +111,7 @@ _hgr_clear:
 
 ; void hgr_rect(void): fill hg_w columns by hg_h lines at (hg_x, hg_y) with hg_p.
 _hgr_rect:
+        dhr_hook 2
         lda     _hg_h
         beq     rr_done
         sta     tmp2
@@ -119,6 +152,7 @@ rr_done:
 
 ; void hgr_blit(void): draw the sprite at hg_src (width, height, rows) at (hg_x, hg_y).
 _hgr_blit:
+        dhr_hook 4
         lda     _hg_src
         sta     ptr2
         lda     _hg_src+1
@@ -177,6 +211,7 @@ bl_done:
 ; glyph and the character after it, and after a code 1 to 31 (K1 ... in machdefs.h) that many characters,
 ; which takes no cell.
 _hgr_char:
+        dhr_hook 6
 .ifndef IIGS
         pha
         jsr     _tick_poll
@@ -318,6 +353,7 @@ ps4:    sta     tmp4
 
 ; void hgr_vline(void): a line hg_h long down from pixel (hg_px, hg_y); set, or flipped with hg_xor.
 _hgr_vline:
+        dhr_hook 8
         jsr     pxsplit
         lda     tmp3
         cmp     #40
@@ -348,6 +384,7 @@ vl_done:
 
 ; void hgr_hline(void): a line hg_w pixels long (up to 255) across from pixel (hg_px, hg_y).
 _hgr_hline:
+        dhr_hook 10
         jsr     pxsplit
         ldx     _hg_y
         cpx     #192
@@ -383,6 +420,7 @@ hl_done:
 ; void hgr_ptr(void): flip the pointer (a pointing hand) with its fingertip at pixel (hg_px, hg_y).
 ; Drawing it twice takes it away.
 _hgr_ptr:
+        dhr_hook 12
         ; the fingertip is 5 pixels into the picture
         lda     _hg_px
         sec

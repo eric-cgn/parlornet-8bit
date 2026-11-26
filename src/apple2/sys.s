@@ -14,6 +14,8 @@
         .import         _eth_on, _eth_get, _eth_put, _eth_drop
 .ifdef IIGS
         .import         _gs_poll, _mono
+.else
+        .import         dhr_off
 .endif
         .import         joy_keyed, joy_idle
 
@@ -370,11 +372,17 @@ rowhi:  .repeat 24, r
         .segment "CODE"
 
 _txt_mode:
+.ifndef IIGS
+        jsr     dhr_off
+.endif
         io_sta  $C051           ; text
         io_sta  $C054           ; page 1
         rts
 
 _gr_mode:
+.ifndef IIGS
+        jsr     dhr_off
+.endif
         io_sta  $C057           ; hi-res
         io_sta  $C052           ; full screen
         io_sta  $C054           ; page 1

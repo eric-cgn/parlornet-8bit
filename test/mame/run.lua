@@ -19,6 +19,9 @@
 --   where              log the id of the target the pointer is on ("where 3", or "where none")
 --   nostick V          V 1: the game port reads as a real one does with no joystick in it, its timers never
 --                      running out; V 0: the joystick again
+--   poke HEX V ...     write the bytes V (negative ones as their two's complement) from address HEX on
+--   watch HEX          from now on, log the frame whenever the byte at HEX changes ("120 mark 3"): a build
+--                      with DHR_TIMING marks Backgammon's drawing at $0300 (draw/backgammon.c)
 --   exit
 -- Addresses of the pointer's targets, from the link map (/xchg/addr.txt: name hex per line).
 -- The Uthernet II test double, when the lab asks for it.
@@ -69,8 +72,13 @@ local joy = dofile("/scripts/joy.lua")    -- the Apple joystick (run.sh gives MA
 local joy_until = nil
 
 local frame = 0
+local watch_addr, watch_v = nil, nil
 sub = emu.add_machine_frame_notifier(function()
   frame = frame + 1
+  if watch_addr then
+    local v = space:read_u8(watch_addr)
+    if v ~= watch_v then log:write(frame .. " mark " .. v .. "\n"); watch_v = v end
+  end
   if hold_addr and frame < hold_until then space:write_u8(hold_addr, hold_v) end
   if release_oa and frame >= release_oa then
     field(":keyb_special", "Open Apple"):clear_value()
@@ -232,6 +240,15 @@ sub = emu.add_machine_frame_notifier(function()
   elseif cmd == "button" then
     local b, v = rest:match("^(%d)%s+(%d)$")
     joy.button(tonumber(b), tonumber(v)); i = i + 1
+  elseif cmd == "poke" then
+    local a, k = nil, 0
+    for word in rest:gmatch("%S+") do
+      if not a then a = tonumber(word, 16) else space:write_u8(a + k, tonumber(word) & 0xFF); k = k + 1 end
+    end
+    i = i + 1
+  elseif cmd == "watch" then
+    watch_addr = tonumber(rest, 16); watch_v = space:read_u8(watch_addr)
+    log:write(frame .. " mark " .. watch_v .. "\n"); i = i + 1
   elseif cmd == "nostick" then
     joy.nostick(space, rest == "1"); i = i + 1
   elseif cmd == "exit" then

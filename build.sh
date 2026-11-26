@@ -48,6 +48,14 @@ ovl_src() {
 	esac
 }
 
+# An overlay's assembly: on the IIe, the Backgammon overlay has the Double Hi-Res drawing (dhr.s, the
+# dhr-study branch's prototype). Its segments are renamed as the overlay's C files' are.
+ovl_asm() {
+	case $2 in
+	backgammon) if [ "$1" = "$A2" ] && [ -z "$pdef" ]; then echo "$1/dhr.s"; fi ;;
+	esac
+}
+
 # program MACHINEDIR OBJDIR MAPOUT PROGRAMOUT CONFIG CFLAGS CSRC ASM CRT0 LIB OVLSTART OVLSIZE
 #   compiles the C files in CSRC (paths, in link order; those named in $PLATE with their code and read-only
 #   data in the segments PCODE and PRODATA), assembles the files in ASM (in MACHINEDIR) and the
@@ -88,7 +96,15 @@ program() {
 			ca65 --cpu 6502 -o "$pobj/$b.o" "$pobj/$b.s"
 			objs="$objs $pobj/$b.o"
 		done
-		if [ -f "$PART/${name}_art.s" ]; then
+		for s in $(ovl_asm "$pm" "$name"); do
+			b=$(basename "$s" .s)
+			sed -e "s/\"CODE\"/\"OVC_$name\"/" -e "s/\"RODATA\"/\"OVR_$name\"/" -e "s/\"DATA\"/\"OVD_$name\"/" \
+				-e "s/\"BSS\"/\"OVB_$name\"/" "$s" > "$pobj/$b.s"
+			ca65 --cpu 6502 -o "$pobj/$b.o" "$pobj/$b.s"
+			objs="$objs $pobj/$b.o"
+		done
+		# (an overlay with Double Hi-Res drawing does without its Hi-Res pictures)
+		if [ -f "$PART/${name}_art.s" ] && [ -z "$(ovl_asm "$pm" "$name")" ]; then
 			sed -i "s/\"RODATA\"/\"OVR_$name\"/" "$PART/${name}_art.s"
 			ca65 --cpu 6502 -o "$pobj/${name}_art.o" "$PART/${name}_art.s"
 			objs="$objs $pobj/${name}_art.o"
