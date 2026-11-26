@@ -1,0 +1,89 @@
+# The joystick on the IIgs (test/lab/gs.sh): from the Finder, the parlor set to the lab's and the joystick
+# turned on (J), sign up, the stick in the lobby, Reversi against the bot chosen with the stick and the
+# buttons, a disc placed with the stick and button 0, Open-Apple-T with the joystick on, and an empty game
+# port, where the stick and the buttons do nothing.
+wait 2400
+dclick 568 66
+wait 300
+dclick 86 49
+title 1800
+waittext Open-Apple-Q 1800
+key s
+waittext settings 300
+key 1
+wait 30
+key ctrl+x
+type parlor\r
+wait 30
+key j
+waittext Joystick: on 60
+dumptext gsj_settings
+key ret
+waittext Open-Apple-Q 600
+key p
+waittext Name: 3600
+type new\r
+waittext want 300
+type gj\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 900
+snap gsj_lobby
+where
+joy 8
+where
+joy 4
+where
+joy 16
+wait 300
+where
+joy 2
+joy 2
+joy 2
+joy 2
+joy 2
+joy 2
+joy 2
+joy 2
+where
+snap gsj_menu
+joy 32
+wait 300
+where
+joy 16
+wait 1200
+where
+snap gsj_board
+point 0
+joy 8
+joy 8
+joy 8
+joy 2
+joy 2
+where
+snap gsj_pointer
+joy 16
+wait 900
+snap gsj_moved
+oa t
+wait 300
+snap gsj_chat
+key esc
+wait 300
+where
+nostick 1
+joy 8
+joy 8
+where
+key cmd
+wait 60
+where
+snap gsj_nostick
+nostick 0
+wait 30
+joy 8
+where
+snap gsj_back
+exit

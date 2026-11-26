@@ -120,7 +120,7 @@ PART=$OBJ
 PLATE=
 program "$A2" "$OBJ" "$OUT/parlor.map" "$OUT/parlor" "$A2/parlor.cfg" "$A2FLAGS" \
 	"$A2/eth.c $CORE/games.c $A2/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
-	"sys hgr disk mli w5100" crt0.o "$LIB" '$D000' '$2900'
+	"sys hgr disk mli w5100 joy" crt0.o "$LIB" '$D000' '$2900'
 echo "$OVERLAYS" | tr ' ' '\n' | awk '{ printf "%s%s:%s", (NR > 1 ? " " : ""), $1, ($1 == "signin" ? "parlor" : $1) } END { print "" }' > "$OUT/overlays.txt"
 
 # The Apple IIgs: PARLORNET's start, and the program.
@@ -130,7 +130,7 @@ ca65 -D IIGS -o "$GOBJ/gs.o" "$A2/gs.s"
 pdef="-D IIGS"
 program "$A2" "$GOBJ" "$GS/parlor.map" "$GS/parlor" "$A2/parlorgs.cfg" "$A2FLAGS -D IIGS" \
 	"$CORE/games.c $A2/gsos.c $A2/line.c $CORE/lobby.c $CORE/main.c $A2/mt.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
-	"sys hgr" gs.o "$LIB" '$D000' '$2900'
+	"sys hgr joy" gs.o "$LIB" '$D000' '$2900'
 cp "$OUT/overlays.txt" "$GS/overlays.txt"
 
 # The Commodore 64 (build/c64): PARLORNET (stub.s, which LOAD"*",8,1 starts by itself), the loader PN.BOOT,
