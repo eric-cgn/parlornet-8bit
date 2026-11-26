@@ -7,6 +7,9 @@
 --   oa C               Open-Apple and the key C
 --   ctrl C             Control and the key C
 --   snap NAME          save the screen as /out/NAME.png
+--   settle [N]         until the program waits for a key with everything drawn: for 30 frames it has read
+--                      the keyboard every frame and the screen has not changed; at most N frames (default
+--                      1200). Before a snap, so that a screen still being drawn is not taken.
 --   set TAG FIELD V    set an input field's value (DIP switches, configs)
 --   hold NAME V N      keep the byte at the program's variable NAME (from the link map) at V for the
 --                      next N frames, while the steps go on (the program's settings before it draws)
@@ -64,6 +67,12 @@ local function field(tag, name)
   local port = manager.machine.ioport.ports[tag]
   return port and port.fields[name]
 end
+
+-- (the keyboard's reads, which only kbd_get makes: the program waits for a key while they go on)
+local kbd_reads = 0
+kbd_tap = space:install_read_tap(0xC000, 0xC000, "kbd", function(offset, data, mask)
+  kbd_reads = kbd_reads + 1
+end)
 
 local joy = dofile("/scripts/joy.lua")    -- the Apple joystick (run.sh gives MAME -gameio joy)
 local joy_until = nil
@@ -198,6 +207,18 @@ sub = emu.add_machine_frame_notifier(function()
     field(":keyb_special", "Open Apple"):set_value(1); i = i + 1
   elseif cmd == "oaup" then
     field(":keyb_special", "Open Apple"):clear_value(); i = i + 1
+  elseif cmd == "settle" then
+    if not deadline then
+      deadline = frame + (tonumber(rest) or 1200); settle_n = 0; settle_px = nil; settle_reads = kbd_reads
+    end
+    local px = manager.machine.screens[":screen"]:pixels()
+    settle_n = (kbd_reads > settle_reads and px == settle_px) and settle_n + 1 or 0
+    settle_px = px; settle_reads = kbd_reads
+    if settle_n >= 30 then
+      log:write(frame .. " settled\n"); deadline = nil; settle_px = nil; i = i + 1
+    elseif frame > deadline then
+      log:write(frame .. " TIMEOUT settling\n"); deadline = nil; settle_px = nil; i = i + 1
+    end
   elseif cmd == "snap" then
     manager.machine.screens[":screen"]:snapshot("/out/" .. rest .. ".png")
     log:write(frame .. " snap " .. rest .. "\n"); i = i + 1

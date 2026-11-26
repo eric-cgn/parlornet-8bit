@@ -42,6 +42,8 @@ A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammo
   use them (`uthernet.txt`).
 - `lab/pngscale.py` scales MAME's snapshots (560 by 192) to 560 by 384.
 
+The step `settle` waits until the program waits for a key with everything drawn, which is when for half a second it has read the keyboard all along and the screen has not changed. The plans that save a screenshot of each step settle before each snap, so that a screen still being drawn (after a load from the 1541, say) is not taken.
+
 `plans/table_entry.txt` starts each of the ten games against the bot from the lobby, one after another on
 one connection, and shows its first view (`te_NAME.png`); the lobby comes back after each. A crash would
 show as the title screen and clicks with no target in `run.log`. `plans/table_entry_long.txt` does the same

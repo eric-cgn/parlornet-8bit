@@ -32,7 +32,7 @@
 --   dbg COMMAND          a MAME debugger command (when MAME runs with -debug)
 --   joy BITS [N]         the Apple joystick held (bits: 1 up, 2 down, 4 left, 8 right, 16 button 0,
 --                        32 button 1) for N frames (default 10), then let go, and 10 frames more
---   stick [X Y], button B V, nostick V, where: as in run.lua
+--   stick [X Y], button B V, nostick V, where, settle [N]: as in run.lua
 local plan_path = os.getenv("GSPLAN") or "/scripts/plan.txt"
 local steps = {}
 for line in io.lines(plan_path) do
@@ -43,6 +43,11 @@ local log = io.open("/out/run.log", "w")
 local function L(s) log:write(s .. "\n"); log:flush() end
 local space = manager.machine.devices[":maincpu"].spaces["program"]
 local ports = manager.machine.ioport.ports
+-- (the keyboard's reads at $E0C000, which only kbd_get makes: the program waits for a key while they go on)
+local kbd_reads = 0
+kbd_tap = space:install_read_tap(0xE0C000, 0xE0C000, "kbd", function(offset, data, mask)
+  kbd_reads = kbd_reads + 1
+end)
 
 -- The pointer position as the GS firmware keeps it (bank E1: x word at $00E9, y word at $00EB).
 local function rd16(a) return space:read_u8(a) | (space:read_u8(a + 1) << 8) end
@@ -304,6 +309,16 @@ sub = emu.add_machine_frame_notifier(function()
           end
           if not up and pressed then L(frame .. " title gone"); return true end
           if frame - t0 > n then L(frame .. (pressed and " title stays" or " no title")); return true end
+          return false
+        end
+      elseif cmd == "settle" then
+        local t0, n, k, px, reads = frame, tonumber(rest) or 1200, 0, nil, kbd_reads
+        task = function()
+          local p = manager.machine.screens[":screen"]:pixels()
+          k = (kbd_reads > reads and p == px) and k + 1 or 0
+          px = p; reads = kbd_reads
+          if k >= 30 then L(frame .. " settled"); return true end
+          if frame - t0 > n then L(frame .. " TIMEOUT settling"); return true end
           return false
         end
       elseif cmd == "dumptext" then

@@ -27,6 +27,9 @@ VICE's binary monitor (127.0.0.1:6502), as test/mame/run.lua does in MAME. Runs 
   memfind TEXT       log where TEXT is in the program's memory ($0800-$BFFF), as typed into a field (a
                      password, which the screen shows as stars), or that it is not there
   snap NAME          save the screen as /out/NAME.png (with the border)
+  settle [N]         until the program waits for a key with everything drawn: for half a second it has gone
+                     on calling kbd_get and the screen has not changed; at most N frames (default 1200).
+                     Before a snap, so that a screen still being drawn is not taken.
   dumptext NAME      write the text screen to /out/NAME.txt
   hold NAME V N      keep the byte at the program's variable NAME at V for the next N frames
   set NAME V         write the byte at the program's variable NAME once
@@ -122,6 +125,21 @@ class Mon:
 
     def joy(self, port, value):
         self.cmd(0xA2, struct.pack("<HH", port, value))
+
+    def hits(self, addr):
+        """How many times the program has run the instruction at addr: a checkpoint there that counts and
+        does not stop, set the first time."""
+        if not hasattr(self, "cps"):
+            self.cps = {}
+        if addr not in self.cps:
+            d = self.cmd(0x12, struct.pack("<HHBBBB", addr, addr, 0, 1, 4, 0))
+            self.cps[addr] = struct.unpack("<I", d[:4])[0]
+        d = self.cmd(0x11, struct.pack("<I", self.cps[addr]))
+        return struct.unpack("<I", d[13:17])[0]
+
+    def screen(self):
+        """The screen as VICE draws it, to compare."""
+        return self.cmd(0x84, bytes([1, 0]))
 
     def snap(self, path):
         d = self.cmd(0x84, bytes([1, 0]))
@@ -388,6 +406,21 @@ def run():
             mon.resume()
             at = mem.find(rest.encode())
             note("memfind %s: %s" % (rest, "at $%04X" % (0x0800 + at) if at >= 0 else "NOT FOUND"))
+        elif cmd == "settle":
+            end = time.time() + (int(rest) if rest else 1200) * FRAME
+            last, n = None, 0
+            while True:
+                k, scr = mon.hits(ADDR["kbd_get"]), mon.screen()
+                mon.resume()
+                n = n + 1 if last and k > last[0] and scr == last[1] else 0
+                last = (k, scr)
+                if n >= 6:
+                    note("settled")
+                    break
+                if time.time() > end:
+                    note("TIMEOUT settling")
+                    break
+                wait(5)
         elif cmd == "snap":
             mon.snap(os.path.join(OUT, rest + ".png"))
             mon.resume()

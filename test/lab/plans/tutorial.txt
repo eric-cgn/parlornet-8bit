@@ -17,77 +17,77 @@ waittext assword 600
 type Swordfish 1997\r
 waittext again 600
 type Swordfish 1997\r
-wait 300
+settle
 snap tu_offer
 type y
-wait 300
+settle
 snap tu_01
 key ret
 wait 60
 arrows RD
-wait 60
+settle
 snap tu_02
 key ret
-wait 60
+settle
 snap tu_03
 arrows UR
 key ret
-wait 60
+settle
 snap tu_04
 oa U
-wait 60
+settle
 snap tu_05
 key ret
-wait 60
+settle
 snap tu_06
 type /
-wait 60
+settle
 snap tu_07
 type time\r
-wait 60
+settle
 snap tu_08
 type /
 wait 30
 type xyz
 wait 30
 key esc
-wait 60
+settle
 snap tu_09
 type /
 wait 30
 type c3\r
-wait 60
+settle
 snap tu_10
 oa T
-wait 120
+settle
 snap tu_11
 type hello\r
-wait 120
+settle
 snap tu_12
 key esc
-wait 120
+settle
 snap tu_13
 type /
 wait 30
 type say good game\r
 wait 60
-wait 60
+settle
 snap tu_14
 type ?
-wait 200
+settle
 snap tu_15
 key esc
 wait 60
 oa R
-wait 60
+settle
 snap tu_16
 key esc
 wait 60
 click 5
-wait 60
+settle
 snap tu_17
 key esc
-wait 300
+settle
 snap tu_lobby
 oa Q
 wait 200
@@ -97,11 +97,11 @@ wait 120
 type tina\r
 waittext assword 600
 type Swordfish 1997\r
-wait 400
+settle
 snap tu_again
 type /
 wait 30
 type tutorial\r
-wait 300
+settle
 snap tu_command
 exit

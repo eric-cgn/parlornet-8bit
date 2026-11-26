@@ -22,9 +22,11 @@ wait 30
 snap cl_typing
 type \r
 wait 200
+settle
 snap cl_who
 type /help\r
 wait 300
+settle
 snap cl_help
 key esc
 wait 300
@@ -34,25 +36,33 @@ click 8
 wait 200
 click 1
 wait 900
+settle
 snap cl_waiting
 type /invite bot\r
 wait 300
+settle
 snap cl_invited
 wait 600
+settle
 snap cl_seated
 type /d3\r
 wait 600
+settle
 snap cl_typed_move
 type /resign\r
 wait 200
+settle
 snap cl_resign_dialog
 key esc
 wait 300
+settle
 snap cl_resign_no
 type /xyzzy\r
 wait 200
+settle
 snap cl_unknown
 type /leave\r
 wait 400
+settle
 snap cl_lobby
 exit

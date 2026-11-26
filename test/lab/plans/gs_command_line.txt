@@ -30,6 +30,7 @@ wait 600
 wait 900
 type /who\r
 wait 300
+settle
 snap gs_cl_who
 key ret
 wait 300
@@ -39,17 +40,22 @@ wait 300
 arrows D
 key ret
 wait 1200
+settle
 snap gs_cl_waiting
 type /invite bot\r
 wait 900
+settle
 snap gs_cl_seated
 type /d3\r
 wait 600
+settle
 snap gs_cl_typed_move
 type /resign\r
 wait 300
+settle
 snap gs_cl_resign_dialog
 key esc
 wait 300
+settle
 snap gs_cl_resign_no
 exit
