@@ -1,0 +1,56 @@
+# The console first, on a line connected by hand. C opens the console at once, with nothing loaded
+# (cf_console: no bar on the bottom row). AT and ATDT reach the WiFi-modem stand-in, and the plan waits ten
+# seconds after CONNECT before Commodore-P, so that the load after it (the lobby, PN.PARLOR, then the
+# sign-in) ends long after the parlor's 20 seconds for the opening. Commodore-P sends the opening first,
+# the parlor's greeting waits in the serial ring through the load (cf_loading), and the sign-in reads it
+# there: the name prompt says "Connected to labparlor", the name from the greeting (cf_name). The player
+# signs up and reaches the lobby. Commodore-C goes back to the console, which closes the connection; ATDT
+# connects again, and Commodore-P now signs in with nothing more to load (cf_lobby2). The irq_ticks peeks
+# mark the times in run.log.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+peek irq_ticks:2
+type C
+waittext Line: 120
+peek irq_ticks:2
+snap cf_console
+dumptext cf_console
+type AT\r
+waittext OK 300
+type ATDT parlornet.org:6501\r
+waittext CONNECT 600
+wait 600
+peek irq_ticks:2
+oa P
+waittext Loading 600
+snap cf_loading
+waittext Connected to labparlor 4800
+waittext Name: 300
+peek irq_ticks:2
+snap cf_name
+dumptext cf_name
+type new\r
+waittext want 300
+type cleo\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+bitmap 3600
+peek irq_ticks:2
+snap cf_lobby
+oa C
+waittext Line: 600
+type ATDT parlornet.org:6501\r
+waittext CONNECT 600
+peek irq_ticks:2
+oa P
+waittext Name: 600
+peek irq_ticks:2
+type cleo\r
+waittext assword 600
+type Swordfish 1997\r
+bitmap 1800
+snap cf_lobby2
+exit

@@ -298,6 +298,12 @@ The plans in `vice/plans`:
 - `boot128.txt` (with `C128=1`): a C128 boots the disk, goes to 64 mode and starts the program.
 - `console.txt`: the console through the modem stand-in at 2400 baud, AT and ATDT, then Commodore-P to the name
   prompt.
+- `console_first.txt`: the console opens at once, with nothing loaded (`cf_console`). After ATDT and CONNECT the
+  plan waits ten seconds before Commodore-P, which sends the opening and then loads the lobby and the sign-in
+  (`cf_loading`), so the load ends long after the parlor's 20 seconds for the opening. The greeting waits in the
+  serial ring through the load, and the name prompt says "Connected to labparlor", the name from it (`cf_name`).
+  The player signs up and reaches the lobby (`cf_lobby`); Commodore-C, ATDT and Commodore-P sign in again with
+  nothing more to load (`cf_lobby2`). The `irq_ticks` peeks in `run.log` mark the times.
 - `keys_shift.txt`: the Shift keys pressed for real. In the console, capitals, `?` and shifted symbols with the
   left Shift, `?` and a capital with the right Shift, and capitals with Shift Lock, echoed by the modem stand-in
   (`shift_console`); capitals and `?` at the name prompt (`shift_name`); a sign-up whose password is typed the same
@@ -320,8 +326,8 @@ The plans in `vice/plans`:
 - `swift38.txt`: the SwiftLink compatible modem's 38400, set with key 3 and kept in PARLOR.CFG.
 - `supra.txt` and `supra300.txt` (`IFACE=user`, with `BAUD=2400` and `BAUD=300`): the Supra 2400 compatible modem
   on the user port at 2400 and at 300, through the console, the dialer, signing up and the lobby.
-- `progress.txt`: the progress bars, at the start, for the lobby (PN.PARLOR) and the sign-in when the console first
-  opens, and for a game.
+- `progress.txt`: the progress bars, at the start, for the lobby (PN.PARLOR) and the sign-in when P is first
+  pressed, and for a game; the console opens with no bar (`pb_console`).
 - `reversi.txt`: a game of Reversi against the bot, with moves by the cursor keys, the orchestrator and the joystick,
   and the board in monochrome.
 - `table_entry.txt`: the first view of each of the ten games, as `plans/table_entry.txt` does for the Apple II, by

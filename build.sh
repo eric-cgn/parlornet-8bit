@@ -140,7 +140,8 @@ cp "$OUT/overlays.txt" "$GS/overlays.txt"
 # parlor's protocol, the catalog and the bitmap's buttons (PLATE, and the parts of ui.c marked PCODE) are
 # linked after the program's zeroed data, and tools/c64_disk.py makes them a file of their own, PN.PARLOR,
 # which the program loads before the first sign-in (ovl.c): the start-up loads only what the title, the
-# start screen, the settings and the console need.
+# start screen, the settings and the console need, and the console loads nothing more. The opening line
+# (net.c's net_opening) stays in the program, since the console sends it before PN.PARLOR is loaded.
 C64=src/c64
 COUT=$OUT/c64
 COBJ=$COUT/obj

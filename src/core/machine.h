@@ -49,6 +49,10 @@ int ser_get(void);
 void __fastcall__ ser_put(unsigned char c);
 /* Forget what has come in and not been read (before a request, after a modem's echo). */
 void ser_drop(void);
+#if MACHINE_LATE_SIGNIN
+/* The bytes in the ring that have not been read yet. */
+unsigned char ser_used(void);
+#endif
 /* Open the line as the settings say (after start-up and after the settings screen). */
 void serial_open(void);
 /* The line as the start screen and console describe it: "9600 8N1", "2400 user port". */
@@ -198,11 +202,19 @@ void ui_wait_key(void);                 /* until a key */
    it loads ("Loading Reversi..." and a bar on the C64's bottom row, from its IRQ), asks for the disk if it is
    not in the drive, and keeps the serial line's bytes safe meanwhile (the C64 holds the line with RTS while
    the KERNAL reads). The Apple II reads the self-booting disk's sectors itself or PARLOR.DAT under ProDOS;
-   the C64 loads PN.<NAME> files through the KERNAL and unpacks them. */
+   the C64 loads PN.<NAME> files through the KERNAL and unpacks them.
+
+   MACHINE_LATE_SIGNIN (machdefs.h) says when the console's command-P (Open-Apple-P, Commodore-P) has the
+   sign-in loaded. With 0 (the Apple II) the console loads it as it opens, so that command-P sends the opening
+   at once. With 1 (the C64, whose 1541 takes about 45 seconds for PN.PARLOR and the sign-in) the console
+   loads nothing: command-P sends the opening itself and waits for the parlor's answer to come into the ring
+   (ser_used), and the sign-in is loaded after it, with the answer kept in the ring while the load holds the
+   line. The parlor waits 20 seconds for the opening after the line connects, and 15 minutes after it. */
 unsigned char __fastcall__ ovl_load(unsigned char k);
 
 /* Whether the line has been greeted (so the sign-in skips the opening and greeting), and what the sign-in
-   should say on its way in: 1 that the player signed out, 2 that the line was lost. */
+   should say on its way in: 1 that the player signed out, 2 that the line was lost, 3 that the console sent
+   the opening (MACHINE_LATE_SIGNIN) and the answer is in the ring. */
 extern unsigned char connected;
 extern unsigned char signin_note;
 

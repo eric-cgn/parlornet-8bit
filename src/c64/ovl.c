@@ -6,9 +6,11 @@
 
    The lobby, the tables, the parlor's protocol, the catalog and the bitmap's buttons and pointer
    (ui_targets.c and most of ui.c) are PN.PARLOR (build.sh's PLATE, segment PCODE), which is loaded once,
-   before the sign-in is first loaded: in the console, or for P on the start screen. It unpacks to where the
-   linker put it, after the program's zeroed data; on its way it passes through the memory above, where the
-   overlay is, so that overlay is gone after it. */
+   before the sign-in is first loaded: for P on the start screen, or for Commodore-P in the console once it
+   has sent the opening (main.c). The sign-in needs it, since the dialer and the sign-in read the line with
+   its protocol (net.c). It unpacks to where the linker put it, after the program's zeroed data; on its way
+   it passes through the memory above, where the overlay is, so that overlay is gone after it, and it is
+   never loaded while the sign-in runs. */
 #include <string.h>
 #include "machine.h"
 #include "ovl.h"
