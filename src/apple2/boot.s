@@ -1,9 +1,10 @@
 ; ParlorNet for the Apple IIe: the boot block and the sector reader.
 ;
 ; The Disk II boot ROM reads physical sectors 0 to N-1 of track 0 into $0800 upwards, where N is the
-; first byte of sector 0, and jumps to $0801. This block then reads the program from the disk with its
-; own 6-and-2 sector reader, switches the language card's RAM in, and starts the program. The reader
-; stays in memory: the program loads the games through it (rd_range, below).
+; first byte of sector 0, and jumps to $0801. This block checks for the auxiliary memory that Double
+; Hi-Res needs, then reads the program from the disk with its own 6-and-2 sector reader, switches the
+; language card's RAM in, and starts the program. The reader stays in memory: the program loads the games
+; through it (rd_range, below).
 ;
 ; The disk holds no operating system. Sectors are counted linearly from track 0 physical sector 0
 ; (linear sector = track * 16 + physical sector); tools/apple2_disk.py lays the program out and fills
@@ -12,6 +13,8 @@
         .setcpu "6502"
 
 BOOTSECT = 6                    ; this block is 6 sectors, $0800-$0DFF
+HOME    = $FC58                 ; the monitor's: clear the text screen
+COUT    = $FDED                 ; and print a character
 
 ; Zero page used by the reader ($F0-$FF; the C program keeps out of it).
 slot16  = $F0                   ; boot slot * 16
@@ -55,24 +58,42 @@ OVLTAB: .res    80, 0           ; $0821-$0870
 title:  .byte   "PARLORNET", 0
 msg2:   .byte   "THIS IS DISK 2. BOOT DISK 1.", 0
 msgerr: .byte   "DISK ERROR", 0
+; (40 characters to the space, so that the screen's own wrap ends the first line there)
+msg128: .byte   "ParlorNet needs an Apple IIe with 128K, or a IIc or IIgs.", 0
 
 boot:
         stx     slot16
         ; Clear the text screen and say what this is.
         lda     $C051           ; text
-        lda     $C054           ; page 1
         sta     $C00C           ; 40 columns
         sta     $C00F           ; the alternate characters (inverse lower case)
-        sta     $C000           ; 80STORE off
+        sta     $C001           ; 80STORE
+        jsr     HOME
+        ; Double Hi-Res needs the auxiliary 64K. With 80STORE and HIRES on, PAGE2 puts its $2000 in place
+        ; of the main memory's, so a value written there must still be there after the main one is, and
+        ; after its $2400 is, which the 1K of an 80-column card without the 64K repeats at $2000.
+        lda     $C057           ; HIRES (the text screen still shows)
+        sta     $C055           ; the auxiliary memory
+        lda     #$A5
+        sta     $2000
+        lsr     a
+        sta     $2400
+        sta     $C054           ; the main memory
+        sta     $2000
+        sta     $C055
+        lda     $2000
+        sta     $C054           ; (page 1: PAGE2 is off once 80STORE is)
+        sta     $C000           ; 80STORE off (HIRES stays on, which text mode does not mind)
+        cmp     #$A5
+        beq     :+
         ldx     #0
-        lda     #$A0
-:       sta     $0400,x
-        sta     $0500,x
-        sta     $0600,x
-        sta     $0700,x
+no128:  lda     msg128,x
+        beq     hang
+        ora     #$80
+        jsr     COUT
         inx
-        bne     :-
-        ldx     #0
+        bne     no128
+:       ldx     #0
 :       lda     title,x
         beq     :+
         ora     #$80

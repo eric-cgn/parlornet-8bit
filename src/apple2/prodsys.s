@@ -183,7 +183,7 @@ fail:   lda     msgs,x
         brk
 
 msgs:
-m_128:  .byte   "PARLORNET NEEDS AN APPLE IIE WITH 128K.", $0D, "PRESS A KEY.", 0
+m_128:  .byte   "ParlorNet needs an Apple IIe with 128K,", $0D, "or a IIc or IIgs. Press a key.", 0
 m_file: .byte   "PARLOR.DAT IS NOT BESIDE PARLOR.SYSTEM.", $0D, "PRESS A KEY.", 0
 
 p_getpfx:
