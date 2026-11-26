@@ -45,6 +45,9 @@ void cfg_load(void)
     memcpy(cfg_number, cfg_saved + 10 + DIAL_INIT_MAX + 1, DIAL_NUM_MAX);
     mouse_on = cfg_saved[70] & 1;
     cfg_acia = cfg_saved[71];           /* (serial_open puts one it cannot use right) */
+    cfg_stay = cfg_saved[72] & 1;
+    memcpy(cfg_user, cfg_saved + 73, 12);
+    memcpy(cfg_key, cfg_saved + 86, 23);
 }
 
 /* The speeds each modem can do: Supra 2400 compatible 300 to 2400, SwiftLink compatible 300 to 38400. */

@@ -8,6 +8,7 @@
 /* Define MACHINE_LOWBSS to put the table's move tokens in a LOWBSS segment of the linker configuration. */
 
 #define MACHINE_NAME "this computer"    /* "This game is not on this computer yet." */
+#define MACHINE_LABEL "Computer"       /* the computer, for its sign-in key (KEY NEW) */
 
 /* The font's characters for the command key and a second one, and the key-legend marks. */
 #define OA "\x7F"

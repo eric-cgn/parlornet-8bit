@@ -11,6 +11,7 @@
 #define OA "\x7F"
 #define CA "\x80"
 #define MACHINE_NAME "the C64"
+#define MACHINE_LABEL "Commodore 64"   /* the computer, for its sign-in key (KEY NEW) */
 /* Key legends on the bitmap: the next 1, 3 or 6 characters are a key, drawn in the keys' color. */
 #define K1 "\x01"
 #define K3 "\x03"

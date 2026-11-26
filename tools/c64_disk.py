@@ -164,9 +164,9 @@ def packed(data, start, end):
 def default_cfg():
     """PARLOR.CFG as c64/setup.c packs the settings they start with: SwiftLink compatible at 19200, no flow
     control, no echo, color, the title screen, tone dialing, the init string ATZ, the number
-    parlornet.org:6501, no mouse, the SwiftLink at $DE00 (byte 71: 0)."""
-    b = bytearray(72)
-    b[0:10] = bytes([ord("P"), ord("C"), 4, 2, 5, 0, 0, 0, 1, 0])     # (version 4, as setup.c's CFG_VER)
+    parlornet.org:6501, no mouse, the SwiftLink at $DE00 (byte 71: 0), and Stay signed in off, with no key."""
+    b = bytearray(110)
+    b[0:10] = bytes([ord("P"), ord("C"), 5, 2, 5, 0, 0, 0, 1, 0])     # (version 5, as setup.c's CFG_VER)
     b[10:13] = b"ATZ"
     num = b"parlornet.org:6501"
     b[10 + 24:10 + 24 + len(num)] = num

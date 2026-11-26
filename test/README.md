@@ -310,6 +310,7 @@ test/vice/run.sh build/c64/parlornet.d64 test/vice/plans/reversi.txt test/out/c6
   with `joy` steps.
 
 The plans in `vice/plans`:
+- `stay_signed_in.txt` (with a parlor that has sign-in keys, and `lab/keys.py` beside it: `keys.py 16501 kim "Swordfish 1997"`): Stay signed in turned on in the settings (`ks_setting`); kim signs up with the password, which gets this computer's key (`ks_lobby`); the connection is closed from the console and P signs in again with the key, asking nothing (`ks_keyed`). keys.py then forgets kim's keys from a connection of its own, which ends the session (`ks_ended`); the next sign-in tries the key, the parlor refuses it with ERR NOKEY, and the password is asked for (`ks_nokey`), which signs in and gets a new key (`ks_password`). Signing out forgets the key, so the name is asked for again (`ks_signed_out`).
 - `title.txt`, `start.txt`: the title screen after the load at a 1541's speed, the start screen and the settings.
 - `load81.txt`, `load8.txt` (with `ATTACH=1`): `LOAD"*",8,1`, which starts the program with no RUN; and
   `LOAD"*",8` with RUN.

@@ -25,6 +25,7 @@
 #endif
 
 static unsigned char auth_none;
+static unsigned char keyed;             /* 1: the next password question is answered with the key; 2: it was */
 
 /* Text-mode line input at the cursor, to the end of the row. 1 on Return, 0 on Escape; OA-C (the
    console) gives 2. */
@@ -370,6 +371,13 @@ static unsigned char dialogue(void)
                 secret = 1;
             if (is(w[i], "yn"))
                 yn = 1;
+            if (is(w[i], "cred") && keyed == 1)
+                keyed = 2;
+        }
+        if (keyed == 2) {               /* the key for this computer answers it, with no question asked */
+            q_set("AUT key ");
+            q_cat(cfg_key);
+            continue;
         }
         say(label);
         if (yn) {
@@ -571,6 +579,16 @@ connect:
 names:
     for (;;) {
         txt_putc(13);
+        keyed = 0;
+        if (cfg_key[0] && !auth_none) {
+            /* Stay signed in: the key kept for this computer answers the password */
+            strcpy(name, cfg_user);
+            say("Signing in as ");
+            sayln(name);
+            keyed = 1;
+            q_set("USER");
+            goto user;
+        }
         sayln("Type your name, or new to sign up.");
         sayln(NAME_KEYS);
         say("Name: ");
@@ -593,14 +611,40 @@ names:
             q_set(auth_none ? "HELO" : "REG");
         } else
             q_set(auth_none ? "HELO" : "USER");
+user:
         q_add(name);
         in = dialogue();
         if (in >= 2)
             return in == 2 ? 1 : 3;
         if (net_lost)
             goto lost;
+        if (!in && keyed == 2 && r_final && strncmp(r_final, "ERR NOKEY", 9) == 0) {
+            /* the key was refused (signed out elsewhere, or the password changed): forgotten, and the
+               password asked for as usual */
+            cfg_key[0] = 0;
+            cfg_changed = 1;
+            keyed = 0;
+            q_set("USER");
+            goto user;
+        }
         if (!in && !(r_final && strncmp(r_final, "ERR STATE", 9) == 0))
             continue;                   /* (ERR STATE: signed in already, on this connection) */
+        if (keyed == 2) {
+            if (!cfg_stay) {            /* (the setting turned off since: this computer's key forgotten) */
+                q_set("KEY DEL");
+                net_req();
+                cfg_key[0] = 0;
+                cfg_changed = 1;
+            }
+        } else if (cfg_stay && !auth_none) {
+            /* the first sign-in with the password gets the key, which is kept instead of the password */
+            q_set("KEY NEW " MACHINE_LABEL);
+            if (net_req() == R_OK && r_final[2]) {
+                strncpy(cfg_key, r_final + 3, sizeof cfg_key - 1);
+                strcpy(cfg_user, name);
+                cfg_changed = 1;
+            }
+        }
         strcpy(me, name);
         prefs_load();
         /* The time signed in starts from 0m; the lobby's first poll asks the parlor for it (TIM). */

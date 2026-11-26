@@ -7,6 +7,12 @@
 extern unsigned char cfg_echo;          /* 1: the console shows what is typed */
 extern unsigned char cfg_title;         /* 1: the title screen at start-up (off only under ProDOS) */
 extern unsigned char cfg_tutor;         /* 1: the tutorial has been offered (the first sign-in) */
+/* Stay signed in (docs/protocol.md, Staying signed in): the setting, and the key the parlor gave this computer
+   for the player, kept in the settings file in place of a password. Signing out forgets it. */
+extern unsigned char cfg_stay;
+extern char cfg_user[13];
+extern char cfg_key[24];
+extern unsigned char cfg_changed;       /* 1: the settings changed since the file was written */
 void tutorial(void);                    /* the tutorial (an overlay, never on the parlor) */
 #if MACHINE_SERIAL
 /* The dialer (parlor.c): P sends the init string (ATZ as it starts; nothing when it is empty) and waits for

@@ -11,6 +11,11 @@
 #endif
 
 #define MACHINE_NAME "the Apple II"
+#ifdef IIGS
+#define MACHINE_LABEL "Apple IIgs"     /* the computer, for its sign-in key (KEY NEW) */
+#else
+#define MACHINE_LABEL "Apple IIe"
+#endif
 
 /* The Open-Apple and Closed-Apple keys in text: MouseText's apples on an enhanced IIe, a IIc or a IIgs
    (txt_mt), "OA-" and "CA-" on an older IIe (txt_putc); the Hi-Res font has them on every machine. */

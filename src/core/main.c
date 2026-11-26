@@ -17,6 +17,18 @@ unsigned char signin_note;
 unsigned char cfg_echo;
 unsigned char cfg_title = 1;
 unsigned char cfg_tutor;
+unsigned char cfg_stay;
+char cfg_user[13];
+char cfg_key[24];
+unsigned char cfg_changed;
+
+/* The settings into their file, by the setup overlay. */
+static void cfg_save(void)
+{
+    cfg_changed = 0;
+    if (ovl_load(OVL_SETUP))
+        SETUP->save();
+}
 
 void tutorial(void)
 {
@@ -133,15 +145,16 @@ unsigned char parlor(void)
             if (k != 4)
                 return k;
             signed_in = 1;
+            k = 0;
             if (!cfg_tutor) {
                 /* the first sign-in: the tutorial's dialog, and the answer kept, so it comes once */
-                cfg_tutor = 1;
+                cfg_tutor = cfg_changed = 1;
                 k = SIGNIN->offer();
-                if (ovl_load(OVL_SETUP))
-                    SETUP->save();
-                if (k)
-                    tutorial();
             }
+            if (cfg_changed)            /* (and a key that came or went with the sign-in) */
+                cfg_save();
+            if (k)
+                tutorial();
         }
         k = lobby();
         if (k == 1)
@@ -161,6 +174,10 @@ quit:
                 net_req();
             }
             signin_note = 1;
+            if (cfg_key[0]) {           /* signing out forgets this computer's key, here as on the parlor */
+                cfg_key[0] = 0;
+                cfg_save();
+            }
         }
     }
 }

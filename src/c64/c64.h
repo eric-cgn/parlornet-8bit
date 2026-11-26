@@ -53,8 +53,8 @@ unsigned char __fastcall__ k_readfile(const char *name, unsigned char *buf, unsi
 unsigned char __fastcall__ k_writefile(const char *name, const unsigned char *buf, unsigned char n);
 
 /* The settings as kept in PARLOR.CFG (setup.c), and as last read or written (line.c). */
-#define CFG_LEN 72
-#define CFG_VER 4                       /* PARLOR.CFG's version (setup.c) */
+#define CFG_LEN 110
+#define CFG_VER 5                       /* PARLOR.CFG's version (setup.c) */
 extern unsigned char cfg_saved[CFG_LEN];
 void cfg_load(void);                    /* the settings from PARLOR.CFG, if it has them (line.c) */
 unsigned char __fastcall__ baud_ok(unsigned char iface, unsigned char b);
