@@ -619,10 +619,116 @@ lost:
     return k == 2;
 }
 
+#if MACHINE_SERIAL
+/* The console: a plain terminal on the serial line, for setting up the line (dialing a modem, say) before
+   ParlorNet mode. What is typed goes out and what comes in is shown. Returns 1 when Open-Apple-P asks for
+   ParlorNet mode, 0 for the start screen (Open-Apple-Q) and 2 for the settings (Open-Apple-S), after which
+   main.c opens it again. When a line has been typed and not yet sent, OA-P sends its Return first, so that a
+   command that connects to the parlor (nc in a Unix shell) is followed at once by ParlorNet mode's opening
+   line: the parlor waits 20 seconds for it. */
+static unsigned char console(void)
+{
+    static unsigned char k, under, shown, lastcr, typed;
+    static unsigned int blink;
+    static int c;
+    txt_mode();
+    txt_top = 0;
+    txt_bot = 24;
+    txt_clear();
+    title_bar("Console", OA "P: ParlorNet  " OA "S: Settings");
+    txt_top = 1;
+    txt_goto(0, 1);
+    say("Line: ");
+    sayln(line_desc());
+    sayln("Connect to the parlor's native port");
+    sayln("(6501, not telnet), then press " OA "P.");
+    sayln("To dial a modem, type ATDT host:6501.");
+    sayln("Press " OA "Q for the start screen.");
+    txt_putc(13);
+    shown = 0;
+    lastcr = 0;
+    blink = ticks;
+    for (;;) {
+        c = ser_get();
+        if (c >= 0 || (k = kbd_get()) != 0 || ticks - blink > 20) {
+            if (shown) {
+                txt_cursor(under);
+                shown = 0;
+            }
+        }
+        if (c >= 0) {
+            c &= 0x7F;
+            if (c == 13) {
+                txt_putc(13);
+                lastcr = 1;
+            } else if (c == 10) {
+                if (!lastcr)
+                    txt_putc(13);
+                lastcr = 0;
+            } else {
+                lastcr = 0;
+                if (c == 8)
+                    txt_putc(8);
+                else if (c == 9) {
+                    do
+                        txt_putc(' ');
+                    while (txt_x & 7);
+                } else if (c >= 32 && c < 127)
+                    txt_putc(c);
+            }
+            continue;
+        }
+        if (k) {
+            if (kbd_mods() & 1) {
+                if (k >= 'a')
+                    k -= 32;
+                if (k == 'P') {
+                    if (typed)
+                        ser_put(13);
+                    typed = 0;
+                    return 1;
+                }
+                if (k == 'Q')
+                    return 0;
+                if (k == 'S')
+                    return 2;
+                k = 0;
+                continue;
+            }
+            if (k == K_LEFT)
+                k = 8;
+            typed = k != 13;
+            ser_put(k);
+            if (cfg_echo) {
+                if (k == 13)
+                    txt_putc(13);
+                else if (k == 8 || k == K_DEL) {
+                    txt_putc(8);
+                    txt_putc(' ');
+                    txt_putc(8);
+                } else
+                    txt_putc(k);
+            }
+            k = 0;
+            continue;
+        }
+        tick_poll();
+        if (!shown && ticks - blink > 20) {
+            under = txt_peek();
+            txt_cursor(0x20);           /* an inverse space */
+            shown = 1;
+            blink = ticks;
+        } else if (shown && ticks - blink > 20) {
+            blink = ticks;
+        }
+    }
+}
+#endif
+
 #pragma rodata-name (push, "OVHDR")
 #if !MACHINE_SERIAL
 const struct signin signin_header = {run};
 #else
-const struct signin signin_header = {run, hangup};
+const struct signin signin_header = {run, hangup, console};
 #endif
 #pragma rodata-name (pop)

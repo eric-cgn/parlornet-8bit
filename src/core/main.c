@@ -1,15 +1,11 @@
-/* ParlorNet: the line console and the main loop (the start screen and the settings are the machine's setup
-   overlay, setup.c; the machine starts up, opens the line and quits in its own code, sys_init and the rest
-   in machine.h).
+/* ParlorNet: the main loop (the start screen and the settings are the machine's setup overlay, setup.c; the
+   machine starts up, opens the line and quits in its own code, sys_init and the rest in machine.h).
 
-   The console is a plain terminal on the serial line: what is typed goes out, what comes in is
-   shown. It is for setting up the line (dialing a modem, say) before ParlorNet mode, which starts with
-   OA-P (Open-Apple on the Apple II, the Commodore key on the C64). When a line has been typed
-   and not yet sent, OA-P sends its Return first, so that a command that connects to the parlor (nc in a
-   Unix shell) is followed at once by ParlorNet mode's opening line: the parlor waits 20 seconds for it.
-   OA-C comes back to the console from ParlorNet mode, closing the connection to the parlor first, and
-   OA-S opens the settings from either. P on the start screen dials the
-   modem first (parlor.c), unless the settings' number is empty. */
+   The console, a plain terminal on the serial line for setting up the line before ParlorNet mode, is in the
+   sign-in overlay (parlor.c). OA-P (Open-Apple on the Apple II, the Commodore key on the C64) goes from it
+   into ParlorNet mode, OA-C comes back to it from the lobby, closing the connection to the parlor first, and
+   OA-S opens the settings from it. P on the start screen dials the modem first (parlor.c), unless the
+   settings' number is empty. */
 #include <string.h>
 #include "machine.h"
 #include "net.h"
@@ -88,127 +84,26 @@ static unsigned char close_parlor(void)
     return k;
 }
 
-/* The console. Returns 1 when Open-Apple-P asks for ParlorNet mode, 0 for the start screen. A machine with no
-   serial line (MACHINE_SERIAL 0: the IIgs, whose connection is Marinetti's) has none. */
-#if !MACHINE_SERIAL
+/* The console, in the sign-in overlay (parlor.c), which OA-P's opening needs at once: the parlor waits 20 seconds
+   for it after the command that connected, with no disk load in between, and on a C64's 1541 a load takes
+   seconds. A connection to the parlor still open is closed first, as Open-Apple-Q closes it: what is typed in
+   the console ends its lines with CR alone, which the parlor would refuse. Returns 1 when Open-Apple-P asks
+   for ParlorNet mode, 0 for the start screen. A machine with no serial line (the IIgs) has none. */
 static unsigned char console(void)
 {
-    return 0;
-}
-#else
-static unsigned char console(void)
-{
-    static unsigned char k, under, shown, lastcr, typed;
-    static unsigned int blink;
-    static int c;
-    /* A connection to the parlor still open (from the name prompt, the lobby or a table, or left at the
-       start screen) is closed first, as Open-Apple-Q closes it: what is typed in the console ends its
-       lines with CR alone, which the parlor would refuse, so the console starts on the line as it is
-       without the parlor, at the modem or the shell. */
+#if MACHINE_SERIAL
+    unsigned char k;
     if (connected)
         close_parlor();
-again:
-    /* The sign-in overlay first: OA-P's opening must follow the command that connected at once (the parlor
-       waits 20 seconds for it), with no disk load in between; on a C64's 1541 that load takes seconds. */
-    ovl_load(OVL_SIGNIN);
-    txt_mode();
-    txt_top = 0;
-    txt_bot = 24;
-    txt_clear();
-    title_bar("Console", OA "P: ParlorNet  " OA "S: Settings");
-    txt_top = 1;
-    txt_goto(0, 1);
-    say("Line: ");
-    sayln(line_desc());
-    sayln("Connect to the parlor's native port");
-    sayln("(6501, not telnet), then press " OA "P.");
-    sayln("To dial a modem, type ATDT host:6501.");
-    sayln("Press " OA "Q for the start screen.");
-    txt_putc(13);
-    shown = 0;
-    lastcr = 0;
-    blink = ticks;
-    for (;;) {
-        c = ser_get();
-        if (c >= 0 || (k = kbd_get()) != 0 || ticks - blink > 20) {
-            if (shown) {
-                txt_cursor(under);
-                shown = 0;
-            }
-        }
-        if (c >= 0) {
-            c &= 0x7F;
-            if (c == 13) {
-                txt_putc(13);
-                lastcr = 1;
-            } else if (c == 10) {
-                if (!lastcr)
-                    txt_putc(13);
-                lastcr = 0;
-            } else {
-                lastcr = 0;
-                if (c == 8)
-                    txt_putc(8);
-                else if (c == 9) {
-                    do
-                        txt_putc(' ');
-                    while (txt_x & 7);
-                } else if (c >= 32 && c < 127)
-                    txt_putc(c);
-            }
-            continue;
-        }
-        if (k) {
-            if (kbd_mods() & 1) {
-                if (k >= 'a')
-                    k -= 32;
-                if (k == 'P') {
-                    /* a command typed and not yet sent (nc to the parlor, say): Return for it first,
-                       so that ParlorNet mode's opening follows it at once */
-                    if (typed)
-                        ser_put(13);
-                    typed = 0;
-                    return 1;
-                }
-                if (k == 'Q')
-                    return 0;
-                if (k == 'S') {
-                    settings();
-                    goto again;
-                }
-                k = 0;
-                continue;
-            }
-            if (k == K_LEFT)
-                k = 8;
-            typed = k != 13;
-            ser_put(k);
-            if (cfg_echo) {
-                if (k == 13)
-                    txt_putc(13);
-                else if (k == 8 || k == K_DEL) {
-                    txt_putc(8);
-                    txt_putc(' ');
-                    txt_putc(8);
-                } else
-                    txt_putc(k);
-            }
-            k = 0;
-            continue;
-        }
-        tick_poll();
-        if (!shown && ticks - blink > 20) {
-            under = txt_peek();
-            txt_cursor(0x20);           /* an inverse space */
-            shown = 1;
-            blink = ticks;
-        } else if (shown && ticks - blink > 20) {
-            blink = ticks;
-        }
+    while (ovl_load(OVL_SIGNIN)) {
+        k = SIGNIN->console();
+        if (k != 2)
+            return k;
+        settings();
     }
-}
-
 #endif
+    return 0;
+}
 
 char me[13];
 char server_name[SERVER_NAME_MAX + 1];

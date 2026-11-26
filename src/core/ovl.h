@@ -12,6 +12,7 @@ struct signin {
     unsigned char (*run)(void);         /* 0 start screen, 1 console, 3 quit, 4 signed in */
 #if MACHINE_SERIAL
     void (*hangup)(void);               /* a dialed line, after BYE */
+    unsigned char (*console)(void);     /* the console: 1 ParlorNet mode, 0 start screen, 2 the settings */
 #endif
 };
 #define SIGNIN ((const struct signin *)OVL_ADDR)
