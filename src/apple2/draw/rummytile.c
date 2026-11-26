@@ -112,8 +112,8 @@ static void rt_draw(void)
         ui_button(12, BTY, "Reset", ID_RESET);
         ui_button(19, BTY, "New", ID_NEW);
         ui_button(24, BTY, "Split", ID_SPLIT);
-        ui_target(36 * 7 / 2 + 3, BTY + 4, 4, 4, ID_UP);
-        ui_target(38 * 7 / 2 + 3, BTY + 4, 4, 4, ID_DOWN);
+        ui_target(36 * 7 / 2 + 2, BTY + 4, 4, 4, ID_UP);
+        ui_target(38 * 7 / 2 + 2, BTY + 4, 4, 4, ID_DOWN);
     }
     if (top && top >= nsets)
         top = nsets > ROWS ? nsets - ROWS : 0;
@@ -128,6 +128,8 @@ static void rt_draw(void)
     hg_x = 35;
     hg_y = BTY;
     hgr_text(nsets > ROWS ? " ^ v" : "    ");
+    /* ^ and v, the last two targets, are out of use while they are not shown */
+    t_hw[ROWS * SETMAX + MAXR + 5] = t_hw[ROWS * SETMAX + MAXR + 6] = nsets > ROWS ? 4 : 0;
     info();
 }
 

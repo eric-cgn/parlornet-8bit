@@ -144,6 +144,8 @@ static void rt_draw(void)
     hg_x = 36;
     hg_y = BTY;
     hgr_text(nsets > ROWS ? "^ v" : "   ");
+    /* ^ and v, the last two targets, are out of use while they are not shown */
+    t_hw[ROWS * SETMAX + MAXR + 5] = t_hw[ROWS * SETMAX + MAXR + 6] = nsets > ROWS ? 4 : 0;
     info();
 }
 
