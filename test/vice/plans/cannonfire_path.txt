@@ -1,9 +1,10 @@
-# Cannon Fire's shell against its path (cftrack.py checks it): four of the player's shots, high and low, to
-# the right and to the left, and the bot's answer to each from the other side. For each shot, `track` reads
-# the shell's sprite from the VIC every frame (cfp_N.csv) and takes a screenshot every 12 frames while it
-# flies (cfp_N_NNN.png), until both shells have flown. The aim is set with the keys: the angle down to 0
-# first, since the tank starts at 45 or 135 by its side, and from each shot's angle after that. The waits
-# are long, so that the plan also runs on a busy host, where VICE falls behind.
+# Cannon Fire's shell against its path (cftrack.py checks it): five of the player's shots, high and low, to
+# the right and to the left, and the last nearly straight up and out of the top of the screen, and the bot's
+# answer to each from the other side. For each shot, `track` reads the shell's sprite from the VIC every
+# frame (cfp_N.csv) and takes a screenshot every 12 frames while it flies (cfp_N_NNN.png), until both shells
+# have flown. The aim is set with the keys: the angle down to 0 first, since the tank starts at 45 or 135 by
+# its side, and from each shot's angle after that. The waits are long, so that the plan also runs on a busy
+# host, where VICE falls behind.
 waittitle 12000
 title 7200
 waittext ParlorNet: connect 1800
@@ -58,6 +59,14 @@ wait 60
 snap cfp_4_aim
 type F
 track cfp_4 9000 12 2
+wait 900
+log shot 5, nearly straight up, out of the top of the screen: angle 85, power 100
+type ......................................................................
+type ========================================
+wait 60
+snap cfp_5_aim
+type F
+track cfp_5 9000 12 2
 wait 900
 snap cfp_end
 exit

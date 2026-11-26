@@ -312,8 +312,9 @@ The plans in `vice/plans`:
   the same target ids.
 - `cannonfire_incoming.txt` (`THINK=0.5,2` for `parlor.sh`): the bot's shot flying in after the player's, as
   `plans/cannonfire_incoming.txt` shows on the Apple II.
-- `cannonfire_path.txt`: the shell against its path. The player fires four shots, high and low, to the right
-  and to the left, and the bot answers each from the other side; `track` follows the shell's sprite through
+- `cannonfire_path.txt`: the shell against its path. The player fires five shots, high and low, to the right
+  and to the left, and one nearly straight up that leaves the top of the screen, and the bot answers each from
+  the other side; `track` follows the shell's sprite through
   each pair (`cfp_N.csv`, with a screenshot every 12 frames, `cfp_N_NNN.png`). Then `vice/cftrack.py OUTDIR`
   works out from the parlor's lines in `modem.log` where the program should put the shell at each step of each
   shot, as `draw/cannonfire.c` does, and checks every place the VIC showed it in: each flight gets a line, and a
