@@ -37,6 +37,24 @@ static void cell8(unsigned char x, unsigned char y, unsigned char fg, unsigned c
     hgr_blit();
 }
 
+/* A tile at (hg_x, hg_y), in hg_fg on hg_bg: its letter, c. The font draws a capital in the top 7 lines
+   and keeps the last one for descenders, so a letter that reaches the top line and leaves the last one
+   empty goes down a line. It then has a clear line above it and does not seem to run into the tile above.
+   A blank's letter with a descender (g, j, p, q or y) needs all 8 lines and stays where it is, and the
+   other small letters sit clear of the top already. */
+static void tile8(char c)
+{
+    const unsigned char *g = (const unsigned char *)0xC000 + c * 8;     /* the font (c64.h) */
+    unsigned char s = g[0] && !g[7];
+    hg_w = 1;
+    hg_h = 8;
+    hgr_color();
+    pic[2] = 0;
+    memcpy(pic + 2 + s, g, 8 - s);
+    hg_src = pic;
+    hgr_blit();
+}
+
 /* A premium square's colors, by k (1 2L, 2 3L, 3 2W, 4 3W). */
 static unsigned char prm_col(unsigned char k)
 {
@@ -61,7 +79,7 @@ static void draw_square(unsigned char x, unsigned char y, unsigned char c)
         hg_bg = bg;
         hg_x = cx;
         hg_y = cy;
-        hgr_char(letter);
+        tile8(letter);
         return;
     }
     if (c == 1 || c == 2) {
@@ -76,7 +94,7 @@ static void draw_square(unsigned char x, unsigned char y, unsigned char c)
     if (!k)
         cell8(cx, cy, C_DGREY, C_BLACK, dot);
     else if (k == 2 || k == 4)
-        cell8(cx, cy, C_BLACK, prm_col(k), dot + 2);   /* a triple: the whole square (no pixels) */
+        cell8(cx, cy, prm_col(k), prm_col(k), dot);    /* a triple: the whole square, in both colors */
     else
         cell8(cx, cy, prm_col(k), C_BLACK, diamond);
 }
@@ -102,9 +120,11 @@ static void draw_rack(void)
         if (on) {
             hg_fg = C_BLACK;
             hg_bg = mono ? C_WHITE : c == '?' ? C_CYAN : C_LGREEN;
-        } else
+            tile8(c);
+        } else {
             ui_ink(F_WHITE, F_BLACK);
-        hgr_char(c);
+            hgr_char(c);
+        }
         ui_ink(F_WHITE, F_BLACK);
         hg_x = RACK_X + 2 * i;
         hg_y = RACK_Y + 8;
@@ -120,7 +140,7 @@ static void legend(void)
         x = k & 1 ? PX : PX + 5;
         y = k <= 2 ? 64 : 72;
         if (k == 2 || k == 4)
-            cell8(x, y, C_BLACK, prm_col(k), dot + 2);
+            cell8(x, y, prm_col(k), prm_col(k), dot);
         else
             cell8(x, y, prm_col(k), C_BLACK, diamond);
         ui_ink(F_WHITE, F_BLACK);
