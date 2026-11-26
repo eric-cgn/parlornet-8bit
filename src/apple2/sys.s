@@ -1,6 +1,6 @@
 ; ParlorNet for the Apple IIe: the machine. The Super Serial Card (6551 ACIA, received bytes taken by
-; an interrupt into a 256-byte ring), the 40-column text screen, the keyboard, a 60 Hz tick from the
-; vertical blank, and the AppleMouse II card's firmware calls.
+; an interrupt into a 256-byte ring), the 40-column text screen and the switch to Double Hi-Res, the
+; keyboard, a 60 Hz tick from the vertical blank, and the AppleMouse II card's firmware calls.
 ;
 ; The program runs with the language card's RAM switched in, so the 6502 vectors at $FFFA are ours.
 ;
@@ -370,11 +370,20 @@ rowhi:  .repeat 24, r
         .segment "CODE"
 
 _txt_mode:
+.ifndef IIGS
+        sta     $C00C           ; 40 columns
+        sta     $C05F           ; AN3 on: no Double Hi-Res
+        sta     $C000           ; 80STORE off
+.endif
         io_sta  $C051           ; text
         io_sta  $C054           ; page 1
         rts
 
 _gr_mode:
+.ifndef IIGS
+        sta     $C00D           ; 80 columns
+        sta     $C05E           ; AN3 off: Double Hi-Res
+.endif
         io_sta  $C057           ; hi-res
         io_sta  $C052           ; full screen
         io_sta  $C054           ; page 1

@@ -6,7 +6,8 @@
 ; PARLOR.DAT beside it into $4000. Then it fills in the overlay table at $0821 (each game's first page
 ; in PARLOR.DAT) and marks the disk number at $080A 0, so the program knows it runs under ProDOS, keeps
 ; ProDOS's stack pointer at $081F, switches to the auxiliary zero page, stack and language card, puts
-; the program's 6502 vectors there and starts it. tools/apple2_disk.py fills in NPAGES and OVLTAB.
+; the program's 6502 vectors there and its Double Hi-Res kit in bank 1, and starts it.
+; tools/apple2_disk.py fills in NPAGES, OVLTAB and KPAGES.
 
         .setcpu "6502"
 
@@ -21,6 +22,7 @@ HOME    = $FC58
         .byte   "PN"            ; $2003
 npages: .byte   0               ; $2005: the program's pages, then one of vectors, then the games
 ovltab: .res    80, 0           ; $2006: as the boot block's, the start a page in PARLOR.DAT
+kpages: .byte   0               ; $2056: the Double Hi-Res kit's pages, after the vectors
 
 start:  cld
         lda     $C01E           ; RDALTCHAR: the character set as we found it, for quitting (prodos.c)
@@ -118,6 +120,18 @@ have_pfx:
         bcc     :+
         jmp     nofile
 :
+        lda     #$00            ; the kit, into $3000 for now
+        sta     r_buf
+        lda     #$30
+        sta     r_buf+1
+        lda     kpages
+        sta     r_len+1
+        jsr     MLI
+        .byte   $CA
+        .word   p_read
+        bcc     :+
+        jmp     nofile
+:
         jsr     MLI
         .byte   $CC
         .word   p_close
@@ -139,6 +153,20 @@ have_pfx:
         sta     $FF00,x
         inx
         bne     :-
+        lda     $C08B           ; bank 1, to read and write: the kit
+        lda     $C08B
+        ldx     kpages
+        ldy     #0
+kfrom:  lda     $3000,y
+kto:    sta     $D000,y
+        iny
+        bne     kfrom
+        inc     kfrom+2
+        inc     kto+2
+        dex
+        bne     kfrom
+        lda     $C083           ; bank 2 again
+        lda     $C083
         jmp     $4000
 
 nofile: ldx     #m_file-msgs

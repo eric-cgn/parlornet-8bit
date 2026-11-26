@@ -6,9 +6,11 @@ Ports to other 8-bit machines are welcome. [PORTING.md](PORTING.md) explains how
 
 ## The Apple IIe and IIgs
 
-A program for the Apple IIe that plays the games of a ParlorNet parlor: Backgammon, Cannon Fire, Checkers, Dots and Boxes, Five in a Row, Grid Words, Mancala, Naval Combat, Reversi and Rummy Tile Classic, in Hi-Res color or monochrome. It works with any ParlorNet parlor, since it speaks the parlor's native protocol, PARLORNET/1, on the parlor's native port (6501); the protocol is described in [docs/protocol.md](https://github.com/eric-cgn/parlornet/blob/main/docs/protocol.md) in the ParlorNet repository (https://github.com/eric-cgn/parlornet). The parlor deals, judges every move and runs the bot, so the program only shows what the parlor sends and sends what the player chooses.
+A program for the Apple IIe that plays the games of a ParlorNet parlor: Backgammon, Cannon Fire, Checkers, Dots and Boxes, Five in a Row, Grid Words, Mancala, Naval Combat, Reversi and Rummy Tile Classic, in color or monochrome. It works with any ParlorNet parlor, since it speaks the parlor's native protocol, PARLORNET/1, on the parlor's native port (6501); the protocol is described in [docs/protocol.md](https://github.com/eric-cgn/parlornet/blob/main/docs/protocol.md) in the ParlorNet repository (https://github.com/eric-cgn/parlornet). The parlor deals, judges every move and runs the bot, so the program only shows what the parlor sends and sends what the player chooses.
 
 It reaches the parlor over a Super Serial Card (through a bridge, a WiFi modem, or a Unix shell with netcat) or an Uthernet II card, with our own driver for its W5100. It boots from its own disk, with no operating system, or runs from the player's own ProDOS. The player's guide is docs/apple2.md in the ParlorNet repository.
+
+The IIe program draws in Double Hi-Res, 560 dots a line, in the C64's colors, and in monochrome in single dots with drawings of their own. Double Hi-Res uses the IIe's auxiliary 64K, so the program needs a IIe with 128K (an extended 80-column card, or another card with the same 64K, such as a RamWorks), a IIc or a IIgs. Release 2.0.7, the last one drawn in Hi-Res, still runs on a 64K IIe. Double Hi-Res also needs a Rev B or later motherboard, which nearly every IIe has; no program can tell a Rev A board apart. The pointer is a white arrow edged in black, as on the C64, in color and in monochrome.
 
 The same program also comes as a GS/OS application for the Apple IIgs, which connects through Marinetti, the IIgs TCP/IP stack, over whatever network Marinetti is set up for: Ethernet, a SLIP or PPP line on a serial port, or MacIP over AppleTalk. See The Apple IIgs, below. On a IIgs the IIe disk and PARLOR.SYSTEM also work as they are, with a Super Serial Card or an Uthernet II in a slot.
 
@@ -36,9 +38,9 @@ A push to `main` whose version has no release yet runs the release (`.github/wor
 
 ## Connecting
 
-The program starts with its title screen, PARLOR over NET in letters of square blocks with a black gap between them, as on the C64, each row of blocks a color of its own: PARLOR white, orange and violet, NET white, green, blue and violet. It is the same with the display set to monochrome, and on a monochrome monitor the colored blocks show as fine stripes. It says "Press a key" and waits for one, then goes on to the start screen. Under ProDOS and on the IIgs the settings can turn the title screen off (T), and the program remembers that in PARLOR.CFG.
+The program starts with its title screen, PARLOR over NET in letters of square blocks with a black gap between them, as on the C64, each row of blocks a color of its own, in the C64's colors as near as Double Hi-Res has them: PARLOR yellow, pink, orange, red and brown, NET white, green, aqua, light blue, purple and blue. With the display set to monochrome every block is white. (The IIgs program draws it in Hi-Res: PARLOR white, orange and violet, NET white, green, blue and violet.) It says "Press a key" and waits for one, then goes on to the start screen. Under ProDOS and on the IIgs the settings can turn the title screen off (T), and the program remembers that in PARLOR.CFG.
 
-Every screen that names the Open-Apple key shows it as its apple and the letter after it, in the key legends, the console, the start screen, the sign-in and the help alike. On the Hi-Res screens it is a glyph of the program's own font, so every machine shows it; on the text screens it is MouseText's apple on an enhanced IIe, a IIc or a IIgs, and "OA-" on an older IIe, which has no MouseText (the program tells them apart by the processor: the enhanced machines have a 65C02 or a 65816). In Grid Words, Open-Apple-V shows the points of every letter and the blank, as the table's rules give them, until the next key. In monochrome, where the text is thin, the keys in the legends are in bold: the apple and its letter, Return, Esc and a game's own letters. In color all the text is bold already.
+Every screen that names the Open-Apple key shows it as its apple and the letter after it, in the key legends, the console, the start screen, the sign-in and the help alike. On the graphics screens it is a glyph of the program's own font, so every machine shows it; on the text screens it is MouseText's apple on an enhanced IIe, a IIc or a IIgs, and "OA-" on an older IIe, which has no MouseText (the program tells them apart by the processor: the enhanced machines have a 65C02 or a 65816). In Grid Words, Open-Apple-V shows the points of every letter and the blank, as the table's rules give them, until the next key. In monochrome, where the text is thin, the keys in the legends are in bold: the apple and its letter, Return, Esc and a game's own letters. In color all the text is bold already.
 
 The keys follow ParlorNet's design for every frontend (docs/design.md in the ParlorNet repository), so each letter has one meaning in every game, always with Open-Apple. At a table the arrows move the pointer from place to place, and Return or Space clicks the place under it. Esc lets go of what you picked, and with nothing picked it goes back to the lobby, while the game goes on. Open-Apple-T (or Tab) opens the chat, Open-Apple-R resigns and Open-Apple-Q signs out, each of those two after a dialog, and Open-Apple-L draws the table again. The game's own letters are Open-Apple-D to double in Backgammon or offer a draw in Checkers, E to end the turn, U to take back a step, H to move Backgammon's home board, P to pass, X to start an exchange and V to see the letters' points in Grid Words, G to place the fleet at random and Z to take every ship back in Naval Combat, and in Rummy Tile M for a new set, B to split a set, C to say whether the turn would count, Z to start it over and O to sort the rack. A letter a game has no use for says so. Mancala's 1 to 6 point at a pit, and Cannon Fire's < and > turn the barrel by 10, + and - change the power by 10, and [ and ] drive the tank. The buttons along the bottom are Chat, Help, Resign and Lobby. In the lobby Open-Apple-N opens New game and Open-Apple-C the console; the display is switched with D on the start screen or the lobby's Display button.
 
@@ -227,11 +229,12 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `6502/reply.inc`, `6502/clock.inc`: the reply reader and the time signed in, in 6502 assembly that each machine's `sys.s` includes.
 - `src/apple2`: the Apple IIe and IIgs (`apple2.h` declares the machine's own calls).
   - `boot.s`: the boot block. The Disk II boot ROM loads its six sectors at $0800; it reads the rest of the program with its own 6-and-2 sector reader, switches in the language card's RAM and starts the program. The reader stays in memory to load the overlays.
-  - `crt0.s`, `sys.s`, `hgr.s`, `disk.s`: the start-up, the Super Serial Card (its 6551 read by interrupt when the card's interrupt switch is on, and polled when it is off), the text screen, the keyboard, the AppleMouse II card's firmware calls, and Hi-Res drawing.
+  - `crt0.s`, `sys.s`, `hgr.s`, `disk.s`: the start-up, the Super Serial Card (its 6551 read by interrupt when the card's interrupt switch is on, and polled when it is off), the text screen, the keyboard, the AppleMouse II card's firmware calls, and the graphics screen's routines: on the IIe the entries to the Double Hi-Res kit, on the IIgs Hi-Res drawing.
+  - `dhr.s`, `dhr.h`: the IIe's Double Hi-Res kit, everything that draws on its graphics screen, in the language card's bank 1: text, fills, lines, Hi-Res pictures, places on a board drawn a byte at a time in layers (masks in a color each), columns of such places kept once worked out, sprites with what they cover kept (the pointer and a gliding piece), and lines of color pixels (the title screen).
   - `line.c`: the serial line's settings and opening, start-up and quitting.
   - `setup.c` (an overlay): the start screen and the settings.
   - `splash.c` (an overlay): the title screen.
-  - `ui.c`: text, fills, the pointer and keys on the Hi-Res screen.
+  - `ui.c`: text, fills, the pointer and keys on the graphics screen.
   - `joy.s`: the Apple joystick, read as arrow keys and Return. On the IIe it is in the vectors' page at $FF00, which the start-up loads with them.
   - `draw/`: each game's board.
   - `eth.c`, `w5100.s`, `signin_net.c`: our driver for the Uthernet II's W5100 (TCP on socket 0, UDP for DNS on socket 1) and the sign-in's DNS lookup. While a connection is up, the serial calls in sys.s go to it, so everything above them works the same over either.
@@ -262,10 +265,13 @@ The Apple IIe's (the C64's is under The Commodore 64, above):
 
 | Address | What |
 |---|---|
+| $0200-$03CE | the Double Hi-Res kit's parameters and the masks it reads (`dhr.s`) |
+| $0400-$07FF | the 40-column text screen |
 | $0800-$0DFF | the boot block and sector reader |
 | $0E00-$1FFF | the serial ring, the reply buffer, the C stack |
-| $2000-$3FFF | Hi-Res page 1 |
+| $2000-$3FFF | Double Hi-Res, its main half |
 | $4000-$BFFF | the program |
+| $D000-$DFFF | the Double Hi-Res kit (`dhr.s`, language card RAM, bank 1) |
 | $D000-$DFFF | the command line, the dialogs and the pages of text (`frame.c`, language card RAM, bank 1) |
 | $D000-$F8FF | one overlay: the title screen, the start screen and settings, the sign-in, New game, or a game (language card RAM, bank 2) |
 | $F900-$FEFF | a table's moves and chat, or the lobby's lists (language card RAM, bank 2) |
@@ -273,13 +279,15 @@ The Apple IIe's (the C64's is under The Commodore 64, above):
 
 The language card has two banks at $D000-$DFFF. The overlays use bank 2, and bank 1 holds `frame.c`, which the program loads once from its own overlay before the first lobby and copies there. Each call into it goes through `bank1_call` (`sys.s`), which cc65 puts in front of every call to a function `frame.h` declares, and which switches bank 1 in for the call and back after.
 
+In the auxiliary 64K, $2000-$3FFF is the other half of Double Hi-Res, and $0400-$05DF holds the places the kit keeps worked out, clear of the text page's screen holes. The boot block and PARLOR.SYSTEM load the kit into bank 1, which nothing else uses, and the program's graphics routines (`hgr.s`) call it there, switching bank 1 in and bank 2, the overlays', back out. While bank 1 is in, an overlay's own $D000-$DFFF cannot be seen, so what the kit reads from a game is in $0200-$03CE.
+
 Under ProDOS the program keeps out of ProDOS's way: it ends below $BF00, the boot block's page holds only the overlay table that PARLOR.SYSTEM fills in, $0900-$0CFF is ProDOS's buffer for an open file and $0D00 a page read at a time. The program runs with the auxiliary zero page, stack and language card switched in (ALTZP), so the overlays and the vectors are in the auxiliary language card while ProDOS stays in the main one; each MLI call switches back to ProDOS's side for the call. That needs 128K, and the /RAM disk is disconnected while the program runs.
 
 ## Disks and files
 
 `tools/build.sh` builds everything into `build/`: `parlornet.dsk`, the self-booting disk (DOS 3.3 sector order, 140K, with every game), and `prodos/` with `PARLOR.SYSTEM`, `PARLOR.DAT` and `parlor-files.po`, a ProDOS volume holding just those two files. ProDOS is not part of this program: the player copies the two files to a disk that has their own ProDOS. `gs/` has the IIgs program: `PARLORNET`, `PARLOR.DAT` and `parlornet-gs.po`, an 800K ProDOS volume holding just those two. GS/OS and Marinetti are not on it. `c64/` has the C64's disk, `parlornet.d64` (The Commodore 64, above).
 
-On the IIgs the program's bank has the same layout as the IIe's memory, with nothing at $2000-$3FFF (the screen is in bank $E0) and no vectors at the top; its zero page is in the direct page GS/OS gives the application. In a bank of its own $C000-$CFFF is memory like any other, so the program runs on to $CFFF there, with `frame.c` a part of it.
+On the IIgs the program's bank has the same layout as the IIe's memory, with nothing at $2000-$3FFF (the screen is Hi-Res page 1, in bank $E0), no Double Hi-Res kit and no vectors at the top; its zero page is in the direct page GS/OS gives the application. In a bank of its own $C000-$CFFF is memory like any other, so the program runs on to $CFFF there, with `frame.c` a part of it.
 
 ## License
 

@@ -1,5 +1,6 @@
-/* ParlorNet for the Apple IIe: the Hi-Res screen kit (core/machine.h), with the shared parts in
-   src/common (ui_targets.c, ui_hgr.c). */
+/* ParlorNet for the Apple IIe and IIgs: the screen kit (core/machine.h), with the shared parts in
+   src/common (ui_targets.c, ui_hgr.c). The IIe draws in Double Hi-Res (dhr.s), which takes a fill by its
+   number; the IIgs draws in Hi-Res, whose fills are the byte patterns below. */
 #include <string.h>
 #include "machine.h"
 #include "apple2.h"
@@ -9,6 +10,7 @@ static unsigned int ptr_x;
 static unsigned char ptr_y;
 static unsigned char mouse_was;
 
+#ifdef IIGS
 /* Per fill: even line (even column, odd column), odd line (even, odd). */
 static const unsigned char fills[][4] = {
     {0x00, 0x00, 0x00, 0x00},   /* black */
@@ -35,6 +37,18 @@ void __fastcall__ ui_ink(unsigned char fg, unsigned char bg)
     hg_bg[0] = fills[bg][0];
     hg_bg[1] = fills[bg][1];
 }
+#else
+void __fastcall__ ui_fill(unsigned char f)
+{
+    hg_p[0] = f;
+}
+
+void __fastcall__ ui_ink(unsigned char fg, unsigned char bg)
+{
+    hg_fg[0] = fg;
+    hg_bg[0] = bg;
+}
+#endif
 
 void ui_rect(unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char f)
 {

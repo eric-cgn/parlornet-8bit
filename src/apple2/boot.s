@@ -41,7 +41,8 @@ entry:  jmp     boot            ; $0801
 diskid: .byte   1               ; $080A: which disk this is (1 or 2), set by the disk maker
         .byte   "PN"            ; $080B
 ; $080D: the load table, set by the disk maker: up to 4 entries of linear sector (2 bytes), count,
-; first page; an entry with count 0 ends it. Then the start address.
+; first page; an entry with count 0 ends it. Then the start address. An entry for page $D0 goes into the
+; language card's bank 1 (the Double Hi-Res kit), the others where they say, with bank 2 in.
 LOADTAB:
         .res    16, 0           ; $080D-$081C
 start:  .word   0               ; $081D
@@ -133,9 +134,15 @@ ld1:    lda     LOADTAB+2,x
         sta     lin+1
         lda     LOADTAB+3,x
         sta     dpage
-        txa
+        cmp     #$D0
+        bne     :+
+        bit     $C08B           ; bank 1, to read and write
+        bit     $C08B
+:       txa
         pha
         jsr     rd_range
+        bit     $C083           ; bank 2 again
+        bit     $C083
         pla
         bcs     fail
         clc

@@ -1,27 +1,32 @@
-; ParlorNet for the Apple IIe: Hi-Res page 1 drawing.
+; ParlorNet for the Apple IIe and IIgs: the graphics screen's primitives.
 ;
-; Positions are byte columns (0-39, 7 pixels each) and lines (0-191), except for lines and the pointer,
-; which take a pixel column (0-279). The parameters are globals (hg_*), set by the caller.
-; Color fills are patterns per byte: one for even columns and one for odd ones, and a second pair for
-; odd lines, so a fill can be a color, white, black or a dither.
+; On the IIe the screen is Double Hi-Res, and everything that draws on it is in the kit (dhr.s), in the
+; language card's bank 1. The routines here are its entries: each switches bank 1 in, calls the kit and
+; switches bank 2, the overlays' bank, back in (kcall). The parameters are the same globals (hg_*) as the
+; IIgs's Hi-Res routines take, and the kit reads them from here.
+;
+; On the IIgs the screen is Hi-Res page 1 in bank $E0, drawn by the routines below. Positions are byte
+; columns (0-39, 7 pixels each) and lines (0-191), except for lines and the pointer, which take a pixel
+; column (0-279). Color fills are patterns per byte: one for even columns and one for odd ones, and a
+; second pair for odd lines, so a fill can be a color, white, black or a dither.
 
         .include "a2gs.inc"
         .importzp       ptr1, ptr2, tmp1, tmp2, tmp3, tmp4
-; HP points into the screen: ptr1 on the IIe, a long pointer into bank $E0 on the IIgs (a2gs.inc).
+; HP points into the screen: a long pointer into bank $E0 on the IIgs (a2gs.inc).
 .ifdef IIGS
         .importzp       _gs_hp
         .define HP _gs_hp
-.else
-        .define HP ptr1
 .endif
         .import         _font
-        .import         _tick_poll      ; (the IIe: in the longer loops, so that no tick is missed)
 
         .export         _hg_x, _hg_y, _hg_w, _hg_h, _hg_p, _hg_src, _hg_px, _hg_fg, _hg_bg, _hg_xor, _hg_bold
         .export         _hg_key
         .export         _hgr_clear, _hgr_rect, _hgr_blit, _hgr_char, _hgr_text, _hgr_vline, _hgr_hline
         .export         _hgr_ptr
         .export         _hgr_ylo, _hgr_yhi
+.ifndef IIGS
+        .export         _dhr_call, kfetch
+.endif
 
         .segment "DATA"
 _hg_x:  .byte   0
@@ -45,9 +50,84 @@ yhi:    .repeat 192, ln
         .byte   >($2000 + (ln .mod 8) * $400 + ((ln / 8) .mod 8) * $80 + (ln / 64) * $28)
         .endrepeat
 
-_hgr_ylo = ylo                  ; the line address tables, for drawing in C (splash.c)
+_hgr_ylo = ylo                  ; the line address tables, for the kit (dhr.s) and for drawing in C
 _hgr_yhi = yhi
 
+        .segment "DATA"
+tx_ptr: .word   0
+        .segment "CODE"
+
+; void __fastcall__ hgr_text(const char *s): characters from (hg_x, hg_y) on.
+_hgr_text:
+        sta     tx_ptr
+        stx     tx_ptr+1
+:       ldy     #0
+        lda     tx_ptr
+        sta     ptr2
+        lda     tx_ptr+1
+        sta     ptr2+1
+        lda     (ptr2),y
+        beq     :+
+        jsr     _hgr_char
+        inc     tx_ptr
+        bne     :-
+        inc     tx_ptr+1
+        bne     :-
+:       rts
+
+
+        .segment "CODE"
+
+.ifndef IIGS
+; The kit's entries (dhr.s): X is the entry's offset there. A is passed on (hgr_char's character), and A and
+; X come back (none returns a value yet). 80STORE and HIRES go on for the kit's PAGE2, which puts the
+; auxiliary memory at $2000-$3FFF only with both on; on the text screen HIRES changes nothing that shows.
+_hgr_clear:
+        ldx     #0
+        .byte   $2C             ; (BIT abs: skips the next ldx)
+_hgr_rect:
+        ldx     #3
+        .byte   $2C
+_hgr_blit:
+        ldx     #6
+        .byte   $2C
+_hgr_char:
+        ldx     #9
+        .byte   $2C
+_hgr_vline:
+        ldx     #12
+        .byte   $2C
+_hgr_hline:
+        ldx     #15
+        .byte   $2C
+_hgr_ptr:
+        ldx     #18
+kcall:  stx     kj+1
+        sta     $C001           ; 80STORE
+        bit     $C057           ; HIRES
+        bit     $C08B           ; the language card's RAM, bank 1, to read and write
+        bit     $C08B
+kj:     jsr     $D000
+        bit     $C083           ; bank 2 again
+        bit     $C083
+        rts
+
+; void __fastcall__ dhr_call(unsigned char entry): the kit's entry at that offset (dhr.h).
+_dhr_call:
+        tax
+        jmp     kcall
+
+; For the kit: the byte at (ptr2),y as bank 2 has it, with bank 1 back in after. Keeps X and Y.
+kfetch: bit     $C083
+        bit     $C083
+        lda     (ptr2),y
+        bit     $C08B
+        bit     $C08B
+        rts
+
+.else
+        .segment "DATA"
+ch_t:   .byte   0
         .segment "CODE"
 
 ; Set HP to the start of line X.
@@ -68,10 +148,6 @@ _hgr_clear:
         iny
         bne     :-
         inc     HP+1
-.ifndef IIGS
-        jsr     _tick_poll
-        lda     #0
-.endif
         ldx     HP+1
         cpx     #$40
         bcc     :-
@@ -84,9 +160,6 @@ _hgr_rect:
         sta     tmp2
         ldx     _hg_y
 rr_line:
-.ifndef IIGS
-        jsr     _tick_poll
-.endif
         cpx     #192
         bcs     rr_done
         jsr     rowx
@@ -137,9 +210,6 @@ _hgr_blit:
         inc     ptr2+1
 :       ldx     _hg_y
 bl_line:
-.ifndef IIGS
-        jsr     _tick_poll
-.endif
         lda     tmp2
         beq     bl_done
         cpx     #192
@@ -177,11 +247,6 @@ bl_done:
 ; glyph and the character after it, and after a code 1 to 31 (K1 ... in machdefs.h) that many characters,
 ; which takes no cell.
 _hgr_char:
-.ifndef IIGS
-        pha
-        jsr     _tick_poll
-        pla
-.endif
         cmp     #$7F
         bne     :+
         ldx     #2
@@ -265,29 +330,6 @@ ch_done:
         lda     _hg_key
         beq     :+
         dec     _hg_key
-:       rts
-
-        .segment "DATA"
-ch_t:   .byte   0
-tx_ptr: .word   0
-        .segment "CODE"
-
-; void __fastcall__ hgr_text(const char *s): characters from (hg_x, hg_y) on.
-_hgr_text:
-        sta     tx_ptr
-        stx     tx_ptr+1
-:       ldy     #0
-        lda     tx_ptr
-        sta     ptr2
-        lda     tx_ptr+1
-        sta     ptr2+1
-        lda     (ptr2),y
-        beq     :+
-        jsr     _hgr_char
-        inc     tx_ptr
-        bne     :-
-        inc     tx_ptr+1
-        bne     :-
 :       rts
 
 ; Split the pixel column hg_px into a byte column (tmp3) and a bit (tmp4 = the mask).
@@ -509,3 +551,4 @@ pointer:
         .word   %0010000001000  ; ...#......#..
         .word   %0011111111000  ; ...########..
         .word   %0000000000000
+.endif
