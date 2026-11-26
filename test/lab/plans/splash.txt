@@ -1,4 +1,4 @@
-wait 600
+wait 900
 snap splash
 title 1800
 waittext ParlorNet: connect 1200
