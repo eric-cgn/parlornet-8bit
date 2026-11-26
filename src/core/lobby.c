@@ -40,8 +40,7 @@ static unsigned char ninv;
 static unsigned char first;             /* the list's first line on the screen (draw_lobby; More pages on) */
 
 #define ID_TAB 0                        /* + index: open a table of yours, or join one */
-#define ID_ACC 40                       /* + index: accept an invitation */
-#define ID_DEC 60                       /* + index: decline it */
+#define ID_ACC 40                       /* + index: an invitation, answered in its dialog */
 #define B_NEW 200
 #define B_REFRESH 201
 #define B_DISPLAY 202
@@ -288,8 +287,7 @@ static void draw_lobby(void)
         strcpy(b, "from ");
         strcat(b, v->from);
         entry(nice_name(v->type), b, 0);
-        ui_button(26, row * 8, "Join", ID_ACC + i);
-        ui_button(33, row * 8, "No", ID_DEC + i);
+        ui_target(MID_X2, row * 8 + 4, MID_X2, 4, ID_ACC + i);
         ++row;
     }
     for (i = 0, t = tabs; i < ntab; ++i, ++t) {
@@ -342,8 +340,10 @@ refresh:
         }
         if (k == (U_OA | 'C'))
             return 1;
-        if (k == (U_OA | 'Q'))
-            return 2;
+        if (k == (U_OA | 'Q')) {
+            k = U_CLICK;
+            ui_clicked = B_OUT;
+        }
         if (k == K_ESC)
             continue;
         if (k == (U_OA | 'D')) {
@@ -352,8 +352,13 @@ refresh:
         }
         if (k == U_CLICK) {
             k = ui_clicked;
-            if (k == B_OUT)
-                return 0;
+            if (k == B_OUT) {           /* the sign-out dialog first */
+                k = cmd_send(0, "/quit");
+                if (k & C_OUT)
+                    return 3;
+                draw_lobby();
+                continue;
+            }
             if (k == B_REFRESH)
                 goto refresh;
             if (k == B_MORE) {
@@ -374,16 +379,27 @@ refresh:
                     return i;
                 goto refresh;
             }
-            if (k >= ID_DEC && k < ID_DEC + MAXI) {
-                i = k - ID_DEC;
-                q_set("UNV");
-                q_num(invs[i].id);
-                q_add(me);
-                net_req();
-                goto refresh;
-            }
             if (k >= ID_ACC && k < ID_ACC + MAXI) {
+                /* the invitation's dialog: Accept sits down there, Decline declines it */
                 i = k - ID_ACC;
+                strcpy(dlg_words, invs[i].from);
+                strcat(dlg_words, " invites you to play ");
+                strcat(dlg_words, nice_name(invs[i].type));
+                strcat(dlg_words, " at table ");
+                strcat(dlg_words, utoa10(invs[i].id));
+                strcat(dlg_words, ". If you accept, you sit down there.");
+                k = dialog(dlg_words, D_OFFER | D_FIRST);
+                if (k == D_AWAY) {
+                    draw_lobby();
+                    continue;
+                }
+                if (k == D_NO) {
+                    q_set("UNV");
+                    q_num(invs[i].id);
+                    q_add(me);
+                    net_req();
+                    goto refresh;
+                }
                 q_set("JON");
                 q_num(invs[i].id);
                 if (net_req() != R_OK && !net_unsure) {   /* (unsure: the table's view says) */

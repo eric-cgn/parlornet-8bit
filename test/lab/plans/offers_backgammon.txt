@@ -1,0 +1,47 @@
+# Offers and confirmations in dialogs, with lab/offers.py as ann (SETUP for the rig, or started beside the
+# plan: python3 test/lab/offers.py 16501 backgammon olly "Swordfish 1997"). ann invites olly to Backgammon:
+# Return on the invitation opens its dialog, starting on Accept (of_invitation), and Return accepts. ann
+# doubles: the double's dialog starts on Accept (of_double). Esc puts it away, and the status line says
+# that ann doubles and Return answers (of_away); Return brings it back (of_again) and Y accepts. Then the
+# Resign button opens the resign dialog (of_resign), and N answers No.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type olly\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 900
+key esc
+wait 30
+click 201
+wait 600
+snap of_lobby
+click 40
+wait 120
+snap of_invitation
+key ret
+wait 1500
+snap of_double
+key esc
+wait 200
+snap of_away
+key ret
+wait 200
+snap of_again
+type y
+wait 600
+snap of_taken
+click 249
+wait 300
+snap of_resign
+type n
+wait 300
+snap of_resign_no
+exit

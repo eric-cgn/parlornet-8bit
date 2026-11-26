@@ -1,0 +1,44 @@
+# Offers in dialogs on the C64, as lab/plans/offers_backgammon.txt shows them on the IIe, with
+# test/lab/offers.py as ann (run beside it: offers.py 16501 backgammon olly "Swordfish 1997"). The
+# invitation's dialog (of_invitation); ann's double, whose dialog starts on Accept (of_double); RUN/STOP puts
+# it away (of_away) and Return brings it back (of_again), where Y accepts (of_taken); the Resign button's
+# dialog (of_resign), answered N.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type P
+waittext Name: 4800
+type new\r
+waittext want 300
+type olly\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+bitmap 1200
+wait 900
+click 201
+wait 600
+snap of_lobby
+click 40
+wait 120
+snap of_invitation
+key ret
+wait 2400
+snap of_double
+key esc
+wait 200
+snap of_away
+key ret
+wait 200
+snap of_again
+type y
+wait 600
+snap of_taken
+click 249
+wait 300
+snap of_resign
+type n
+wait 300
+snap of_resign_no
+exit

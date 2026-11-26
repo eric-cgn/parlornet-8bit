@@ -184,7 +184,7 @@ static void rt_click(unsigned char id)
     switch (id) {
     case ID_DONE:
         unchoose();
-        g_end();
+        g_cmd("/end");                  /* (a dialog first when the turn would pass or not count) */
         break;
     case ID_UNDO:
         unchoose();

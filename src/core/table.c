@@ -56,6 +56,8 @@ static unsigned long clk_secs;
 static unsigned int clk_at;
 static char gtype[16];
 static unsigned char hover_at = 255;
+static unsigned char fresh;             /* a view has come since the offers were looked at */
+static unsigned char offer_away;        /* an offer's dialog was put away unanswered (Esc) */
 
 unsigned char __fastcall__ m_has(const char *tok)
 {
@@ -287,6 +289,7 @@ again:
                 g_full = 1;
                 break;
             }
+    fresh = 1;
     return 1;
 }
 
@@ -294,6 +297,17 @@ static void show_status(void)
 {
     static char b[56];                  /* the status (40) and " (65535d left)" */
     unsigned long left;
+    char *p;
+    if (offer_away) {
+        /* the offer's first sentence, and Return to bring its dialog back */
+        strncpy(b, dlg_words, 40);
+        b[40] = 0;
+        if ((p = strchr(b, '.')) != 0)
+            p[1] = 0;
+        ui_status(b);
+        ui_msg("Press " KEY_RET " to answer.");
+        return;
+    }
     strcpy(b, g_status);
     if (have_clk && !g_over) {
         left = clk_secs;
@@ -561,16 +575,6 @@ static void poll_events(void)
         refresh();
 }
 
-static unsigned char ask_yn(const char *s)
-{
-    unsigned char k;
-    g_message(s);
-    do
-        k = kbd_get();
-    while (!k);
-    g_message("");
-    return (k | 0x20) == 'y';
-}
 
 /* OA-T or Chat: what has been said at the table, the newest at the bottom, and a line to say more. */
 static void chat(void)
@@ -669,6 +673,36 @@ static unsigned char __fastcall__ after_cmd(unsigned char c)
     return 255;
 }
 
+/* An offer waiting for the player's answer (the game's offer): its dialog, or the line that says it waits
+   when the dialog was put away. */
+static void offer_look(void)
+{
+    unsigned char how;
+    if (!G || !G->offer || !(how = G->offer(0))) {
+        if (offer_away)
+            ui_retkey = 0;
+        offer_away = 0;
+        return;
+    }
+    if (!offer_away) {
+        how = dialog(dlg_words, how);
+        if (how == D_AWAY) {
+            offer_away = 1;
+            ui_retkey = 1;              /* (Return brings the dialog back) */
+        } else
+            G->offer(how == D_YES ? 1 : 2);
+        draw_all();
+    }
+    show_status();
+}
+
+void __fastcall__ g_cmd(const char *line)
+{
+    static char b[24];                  /* (out of the game's overlay, for frame.c on the IIe) */
+    strcpy(b, line);
+    after_cmd(cmd_send(g_table, b));
+}
+
 /* Play at a table. Returns 1 for the console, 0 for the lobby, 3 when signed out (/quit). */
 unsigned char table_play(unsigned int id)
 {
@@ -711,6 +745,10 @@ unsigned char table_play(unsigned int id)
     for (;;) {
         if (net_lost)
             return 0;
+        if (fresh) {
+            fresh = 0;
+            offer_look();
+        }
         k = ui_poll();
         if (t_cur != hover_at) {
             hover_at = t_cur;
@@ -723,21 +761,26 @@ unsigned char table_play(unsigned int id)
             k = ui_clicked;
             if (k == B_LOBBY)
                 return 0;
-            if (k == B_RESIGN) {
-                if (ask_yn("Resign this game? (" K3 "Y/N)")) {
-                    send_move("RES", 0);
-                    draw_all();
-                }
-            } else if (k == B_CHAT)
+            if (k == B_RESIGN)
+                k = U_OA | 'R';
+            else if (k == B_CHAT)
                 chat();
             else if (k == B_HELP)
                 keys_help();
             else if (G && k < 240)
                 G->click(k);
-            last = ticks;
-            continue;
+            if (k != (U_OA | 'R')) {
+                last = ticks;
+                continue;
+            }
         }
         if (k) {
+            if (k == K_RET && offer_away) {
+                offer_away = 0;
+                ui_retkey = 0;
+                offer_look();
+                continue;
+            }
             if (k == K_ESC)
                 return 0;
             if (k == '/') {
@@ -749,13 +792,10 @@ unsigned char table_play(unsigned int id)
             }
             if (k == (U_OA | 'C'))
                 return 1;
-            if (k == (U_OA | 'Q'))
-                return 2;
-            if (k == (U_OA | 'R')) {
-                if (g_seat >= 0 && !g_over && ask_yn("Resign this game? (" K3 "Y/N)")) {
-                    send_move("RES", 0);
-                    draw_all();
-                }
+            if (k == (U_OA | 'Q') || k == (U_OA | 'R')) {
+                k = after_cmd(cmd_send(k == (U_OA | 'Q') ? 0 : g_table, k == (U_OA | 'Q') ? "/quit" : "/resign"));
+                if (k != 255)
+                    return k;
             } else if (k == (U_OA | 'T'))
                 chat();
             else if (k == (U_OA | 'D'))

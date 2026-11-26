@@ -16,6 +16,10 @@ struct game {
     void (*event)(void);                /* an EVT line, in w[] (w[3] its kind), before the view is
                                            fetched again; or 0 */
     void (*hover)(unsigned char id);    /* the pointer rests on a target (255: none), or 0 */
+    /* An offer waiting for the player's answer (a double, a draw offer, an offer to resign), or 0. With 0,
+       whether one waits: its dialog's words in dlg_words (frame.h) and the dialog's flags (D_OFFER, and
+       D_FIRST to start on Accept), or 0 for none. With 1 or 2, the answer: Accept or Decline. */
+    unsigned char (*offer)(unsigned char answer);
 };
 
 /* The table, as the last view and the lobby list say. */
@@ -45,6 +49,7 @@ unsigned char __fastcall__ g_chk(const char *tokens);   /* CHK; the reply's OK t
 extern char g_chkinfo[42];
 unsigned char g_end(void);
 unsigned char g_undo(void);
+void __fastcall__ g_cmd(const char *line);  /* a command line run as if typed, such as "/pass" */
 extern unsigned char g_reply_more;      /* the last MOV said OK more (staged) */
 extern unsigned char g_reply_done;      /* ... OK done */
 

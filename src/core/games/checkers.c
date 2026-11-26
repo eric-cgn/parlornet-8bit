@@ -10,6 +10,7 @@
 #include "machine.h"
 #include "net.h"
 #include "game.h"
+#include "frame.h"
 
 #define ID_A 40                         /* the panel's two buttons */
 #define ID_B 41
@@ -70,16 +71,13 @@ static unsigned char can_go(unsigned char from, unsigned char to)
     return 0;
 }
 
-/* The panel's buttons, by the state of the turn: accepting or rejecting a draw, ending or undoing a staged
-   turn, undoing a step, or offering a draw. */
+/* The panel's buttons, by the state of the turn: ending or undoing a staged turn, undoing a step, or offering
+   a draw. A draw offered is answered in its dialog (ck_offer). */
 static void panel_offer(void)
 {
     offer_a = offer_b = "";
-    if (g_myturn) {
-        if (drawer >= 0 && drawer != g_seat) {
-            offer_a = "Accept";
-            offer_b = "Reject";
-        } else if (strcmp(phase, "done") == 0) {
+    if (g_myturn && !(drawer >= 0 && drawer != g_seat)) {
+        if (strcmp(phase, "done") == 0) {
             offer_a = "Done";
             offer_b = "Undo";
         } else if (npath)
@@ -128,10 +126,6 @@ static void ck_click(unsigned char id)
             g_end();
         else if (is(word, "Undo"))
             g_undo();
-        else if (is(word, "Accept"))
-            g_move("accept");
-        else if (is(word, "Reject"))
-            g_move("reject");
         else if (word[0] == 'O' && g_move("draw"))
             g_message("Draw offered.");
         return;
@@ -185,7 +179,21 @@ static unsigned char ck_key(unsigned char k)
     return 0;
 }
 
+/* A draw offered by the other player, waiting for the player's answer: its dialog's words, or the answer. */
+static unsigned char ck_offer(unsigned char answer)
+{
+    if (!g_myturn || drawer < 0 || drawer == g_seat)
+        return 0;
+    if (answer) {
+        g_move(answer == 1 ? "accept" : "reject");
+        return 0;
+    }
+    strcpy(dlg_words, g_name(drawer));
+    strcat(dlg_words, " offers a draw. If you accept, the game ends as a draw. If you decline, the game goes on.");
+    return D_OFFER;
+}
+
 #pragma rodata-name (push, "OVHDR")
 const struct game g_checkers = {"checkers", "Checkers", ck_begin, ck_line, ck_draw, ck_click, ck_key,
-                                "Piece, then square; " K1 "D done, " K1 "U undo"};
+                                "Piece, then square; " K1 "D done, " K1 "U undo", 0, 0, 0, ck_offer};
 #pragma rodata-name (pop)

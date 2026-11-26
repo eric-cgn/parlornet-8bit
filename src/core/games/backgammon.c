@@ -12,6 +12,7 @@
 #include "machine.h"
 #include "net.h"
 #include "game.h"
+#include "frame.h"
 
 #define ID_BAR 25
 #define ID_OFF 26
@@ -23,6 +24,8 @@ static unsigned char bar[2], off[2], dice[4], nd, dr[2], ndr, cube, ca[2];
 static signed char owner;
 static char phase[8];
 static unsigned char sel, view;
+static unsigned char rs_pts;            /* RS: an offer to resign waits, for so many points, of this kind */
+static char rs_kind;
 static unsigned char left, home_read;
 static const char *offer_a, *offer_b;   /* the buttons' words ("" for none) */
 
@@ -34,6 +37,7 @@ static void bg_begin(void)
 {
     nd = ndr = 0;
     phase[0] = 0;
+    rs_pts = 0;
 }
 
 static void bg_line(void)
@@ -62,6 +66,9 @@ static void bg_line(void)
         owner = w[2][0] == '-' ? -1 : (signed char)num(w[2]);
     } else if (is(w[0], "Q") && wn > 1) {
         strncpy(phase, w[1], 7);
+    } else if (is(w[0], "RS") && wn > 3) {
+        rs_pts = num(w[2]);
+        rs_kind = w[3][0];
     } else if (is(w[0], "CA") && wn > 2) {
         ca[0] = num(w[1]);
         ca[1] = num(w[2]);
@@ -89,7 +96,7 @@ static unsigned char from_has_moves(unsigned char p)
 }
 
 /* The buttons, by the phase of the turn: Roll (and Double, when the cube may be turned), Done (once every
-   die is played) and Undo, Take and Drop a double, Accept and Reject a resignation. */
+   die is played) and Undo. A double and an offer to resign are answered in their dialogs (bg_offer). */
 static void panel_offer(void)
 {
     offer_a = offer_b = "";
@@ -102,12 +109,6 @@ static void panel_offer(void)
     } else if (strcmp(phase, "move") == 0) {
         offer_a = nd && m_n ? "" : "Done";     /* (a die no step can use leaves the turn complete) */
         offer_b = "Undo";
-    } else if (strcmp(phase, "take") == 0) {
-        offer_a = "Take";
-        offer_b = "Drop";
-    } else if (strcmp(phase, "resign") == 0) {
-        offer_a = "Accept";
-        offer_b = "Reject";
     }
 }
 
@@ -169,14 +170,6 @@ static void bg_click(unsigned char id)
             g_end();
         else if (is(word, "Undo"))
             g_undo();
-        else if (is(word, "Take"))
-            g_move("take");
-        else if (is(word, "Drop"))
-            g_move("drop");
-        else if (is(word, "Accept"))
-            g_move("accept");
-        else if (is(word, "Reject"))
-            g_move("reject");
         return;
     }
     if (strcmp(phase, "move") != 0)
@@ -249,8 +242,48 @@ static unsigned char bg_key(unsigned char k)
     return 0;
 }
 
+/* "ann", then the rest of a sentence, into dlg_words. */
+static void words_of(const char *s)
+{
+    strcpy(dlg_words, g_name(1 - view));
+    strcat(dlg_words, s);
+}
+
+static void points(unsigned int n, const char *s)
+{
+    strcat(dlg_words, utoa10(n));
+    strcat(dlg_words, n == 1 ? " point" : " points");
+    strcat(dlg_words, s);
+}
+
+/* A double or an offer to resign, waiting for the player's answer: its dialog's words, or the answer. */
+static unsigned char bg_offer(unsigned char answer)
+{
+    unsigned char take = strcmp(phase, "take") == 0;
+    if (!g_myturn || (!take && strcmp(phase, "resign") != 0))
+        return 0;
+    if (answer) {
+        g_move(take ? (answer == 1 ? "take" : "drop") : (answer == 1 ? "accept" : "reject"));
+        return 0;
+    }
+    view = g_seat == 1 ? 1 : 0;
+    if (take) {
+        words_of(" doubles to ");
+        strcat(dlg_words, utoa10(cube * 2));
+        strcat(dlg_words, ". If you accept, the game goes on for ");
+        points(cube * 2, ". If you decline, you lose ");
+        points(cube, " and the game.");
+        return D_OFFER | D_FIRST;
+    }
+    words_of(rs_kind == 'g' ? " offers to resign a gammon." : rs_kind == 'b' ? " offers to resign a backgammon."
+             : " offers to resign.");
+    strcat(dlg_words, " If you accept, you win ");
+    points(rs_pts, " and the game. If you decline, the game goes on.");
+    return D_OFFER;
+}
+
 #pragma rodata-name (push, "OVHDR")
 const struct game g_backgammon = {"backgammon", "Backgammon", bg_begin, bg_line, bg_draw, bg_click, bg_key,
                                   K1 "R roll, " K1 "D done, " K1 "U undo, " K1 "H home side", 0,
-                                  bg_event};
+                                  bg_event, 0, bg_offer};
 #pragma rodata-name (pop)

@@ -381,16 +381,8 @@ static void gw_click(unsigned char id)
         break;
     case ID_PASS:
         clear_play();
-        g_message("Pass? Press " K1 "Y to pass.");
-        {
-            unsigned char k;
-            do
-                k = kbd_get();
-            while (!k);
-            g_message("");
-            if ((k | 0x20) == 'y')
-                g_move("PASS");
-        }
+        redraw();
+        g_cmd("/pass");                 /* (its dialog first) */
         break;
     }
 }
