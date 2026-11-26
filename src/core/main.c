@@ -125,6 +125,7 @@ unsigned char parlor(void)
                 return k;
             signed_in = 1;
         }
+        ovl_load(OVL_FRAME);            /* (the IIe's language card bank 1; ovl.h) */
         k = lobby();
         if (k == 1)
             return 1;                   /* (the console closes the connection) */
@@ -138,8 +139,10 @@ quit:
             connected = 0;
             signin_note = 2;
         } else {
-            q_set("OUT");
-            net_req();
+            if (k != 3) {               /* (3: signed out already, by /quit) */
+                q_set("OUT");
+                net_req();
+            }
             signin_note = 1;
         }
     }

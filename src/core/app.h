@@ -34,7 +34,7 @@ extern char me[13];                     /* the signed-in name */
 extern char server_name[SERVER_NAME_MAX + 1];   /* the greeting's name, always ended by a 0 */
 
 /* The lobby (lobby.c) and a table (table.c). */
-unsigned char lobby(void);              /* 0 sign out, 1 the console, 2 close the connection */
-unsigned char table_play(unsigned int id);  /* 0 the lobby, 1 the console, 2 close the connection */
+unsigned char lobby(void);              /* 0 sign out, 1 the console, 2 close the connection, 3 signed out */
+unsigned char table_play(unsigned int id);  /* 0 the lobby, 1 the console, 2 close the connection, 3 signed out */
 
 #endif

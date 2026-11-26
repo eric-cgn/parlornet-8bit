@@ -576,6 +576,58 @@ tp:     lda     $FFFF
         bne     tp
 :       rts
 
+.ifndef IIGS
+; ---------------------------------------------------------------------------------------------------
+; The language card's bank 1 ($D000-$DFFF), where the IIe keeps the command line, the dialogs and the pages
+; of text (frame.c, the overlay OVL_FRAME).
+
+        .importzp       ptr4
+        .import         callptr4
+        .export         _bank1_call, _bank1_copy
+
+; void bank1_call(void): cc65's wrapper for every call into bank 1 (frame.h), with the function in ptr4
+; and its last argument in A and X. Bank 1 is switched in for the call, and bank 2 back after it unless the
+; caller was in bank 1 itself; the function's result in A and X is kept.
+_bank1_call:
+        tay
+        lda     $C011           ; RDLCBNK2: bit 7 set while bank 2 is in
+        pha
+        bit     $C08B           ; the RAM of bank 1, to read and write (two reads)
+        bit     $C08B
+        tya
+        jsr     callptr4
+        tay
+        pla
+        bpl     :+
+        bit     $C083           ; the RAM of bank 2 again
+        bit     $C083
+:       tya
+        rts
+
+; void bank1_copy(void): $D000-$DFFF of bank 2 (the overlay just loaded) into bank 1, a byte at a time.
+_bank1_copy:
+        lda     #0
+        sta     ptr1
+        lda     #$D0
+        sta     ptr1+1
+        ldy     #0
+bc_lp:  bit     $C083
+        bit     $C083
+        lda     (ptr1),y
+        bit     $C08B
+        bit     $C08B
+        sta     (ptr1),y
+        iny
+        bne     bc_lp
+        inc     ptr1+1
+        lda     ptr1+1
+        cmp     #$E0
+        bne     bc_lp
+        bit     $C083
+        bit     $C083
+        rts
+.endif
+
 ; ---------------------------------------------------------------------------------------------------
 ; Keyboard and time
 

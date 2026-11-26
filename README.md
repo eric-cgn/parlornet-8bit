@@ -173,11 +173,11 @@ The user port's driver (`src/c64/serial.s`) receives by CIA 2's NMI: the start b
 |---|---|
 | $0400-$07FF | the serial line's receive and send rings, the C stack |
 | $0800-$14FF | the reply buffer (the loader before it) |
-| $1500-$92FF | the program (PN.MAIN), its variables, then the lobby and the tables (PN.PARLOR) |
-| $9300-$98FF | a table's moves and chat, or the lobby's lists |
-| $9900-$BFFF | one overlay: the sign-in, a game, the start screen and settings, or the title screen |
+| $1500-$98FF | the program (PN.MAIN), its variables, then the lobby, the tables and `frame.c` (PN.PARLOR) |
+| $9900-$BFFF | one overlay: the sign-in, a game, New game, the start screen and settings, or the title screen |
 | $C000-$C7FF | the character set, and the same inverted |
 | $C800-$CFFF | the text screen and the bitmap's colors (the loader, PN.BOOT, at start-up) |
+| $C400-$CBE7 | while the bitmap shows: a table's moves and chat, or the lobby's lists, over the inverted characters and the text screen, which come back with the text screen (`txt_mode` makes the inverted half again) |
 | $D000-$DFFF | the sprites' shapes, under the I/O |
 | $E000-$FF3F | the bitmap, under the KERNAL |
 
@@ -198,7 +198,8 @@ The program and the overlays are packed with the program's own LZ packing (`tool
 - `src/core`: what every machine shares.
   - `main.c`: the program's main loop.
   - `parlor.c` (an overlay): the line console, connecting, the dialer and signing in.
-  - `lobby.c`: the lobby.
+  - `lobby.c`: the lobby, and `newgame.c` (an overlay) its New game.
+  - `frame.c`: the command line, the dialogs and the pages of text, for the lobby and the tables.
   - `table.c`: the table screen every game shares, with its chat.
   - `net.c`: PARLORNET/1 requests and replies.
   - `games.c`: the catalog.
@@ -249,8 +250,12 @@ The Apple IIe's (the C64's is under The Commodore 64, above):
 | $0E00-$1FFF | the serial ring, the reply buffer, the C stack |
 | $2000-$3FFF | Hi-Res page 1 |
 | $4000-$BFFF | the program |
-| $D000-$FEFF | one overlay: the title screen, the start screen and settings, the sign-in, or a game (language card RAM, bank 2) |
+| $D000-$DFFF | the command line, the dialogs and the pages of text (`frame.c`, language card RAM, bank 1) |
+| $D000-$F8FF | one overlay: the title screen, the start screen and settings, the sign-in, New game, or a game (language card RAM, bank 2) |
+| $F900-$FEFF | a table's moves and chat, or the lobby's lists (language card RAM, bank 2) |
 | $FF00-$FFFF | the joystick's code (`joy.s`) and the 6502 vectors (the interrupt handler is ours) |
+
+The language card has two banks at $D000-$DFFF. The overlays use bank 2, and bank 1 holds `frame.c`, which the program loads once from its own overlay before the first lobby and copies there. Each call into it goes through `bank1_call` (`sys.s`), which cc65 puts in front of every call to a function `frame.h` declares, and which switches bank 1 in for the call and back after.
 
 Under ProDOS the program keeps out of ProDOS's way: it ends below $BF00, the boot block's page holds only the overlay table that PARLOR.SYSTEM fills in, $0900-$0CFF is ProDOS's buffer for an open file and $0D00 a page read at a time. The program runs with the auxiliary zero page, stack and language card switched in (ALTZP), so the overlays and the vectors are in the auxiliary language card while ProDOS stays in the main one; each MLI call switches back to ProDOS's side for the call. That needs 128K, and the /RAM disk is disconnected while the program runs.
 
@@ -258,7 +263,7 @@ Under ProDOS the program keeps out of ProDOS's way: it ends below $BF00, the boo
 
 `tools/build.sh` builds everything into `build/`: `parlornet.dsk`, the self-booting disk (DOS 3.3 sector order, 140K, with every game), and `prodos/` with `PARLOR.SYSTEM`, `PARLOR.DAT` and `parlor-files.po`, a ProDOS volume holding just those two files. ProDOS is not part of this program: the player copies the two files to a disk that has their own ProDOS. `gs/` has the IIgs program: `PARLORNET`, `PARLOR.DAT` and `parlornet-gs.po`, an 800K ProDOS volume holding just those two. GS/OS and Marinetti are not on it. `c64/` has the C64's disk, `parlornet.d64` (The Commodore 64, above).
 
-On the IIgs the program's bank has the same layout as the IIe's memory, with nothing at $2000-$3FFF (the screen is in bank $E0) and no vectors at the top; its zero page is in the direct page GS/OS gives the application.
+On the IIgs the program's bank has the same layout as the IIe's memory, with nothing at $2000-$3FFF (the screen is in bank $E0) and no vectors at the top; its zero page is in the direct page GS/OS gives the application. In a bank of its own $C000-$CFFF is memory like any other, so the program runs on to $CFFF there, with `frame.c` a part of it.
 
 ## License
 

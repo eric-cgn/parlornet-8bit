@@ -22,6 +22,11 @@
 #define K_ESC   27
 #define K_TAB   9
 #define K_DEL   127
+#define K_BACK  28                      /* the second button of a joystick or a mouse */
+#define K8 "\x08"
+#define KEY_RET K6 "RETURN"
+#define KEY_ESC K8 "RUN/STOP"
+#define COL_PX 8
 
 /* Where overlays are loaded (ovl.h). build.sh sets it (C64_OVL) for the linker too. */
 #ifndef OVL_ADDR

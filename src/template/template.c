@@ -194,6 +194,8 @@ unsigned char txt_peek(void)
    Apple's Hi-Res primitives (hgr.h) can take ui_text, ui_textn, ui_box and ui_button_draw from
    src/common/ui_hgr.c; this one writes them. */
 
+unsigned char hg_xor;                   /* (ui_box flips its pixels while it is 1) */
+
 void __fastcall__ ui_fill(unsigned char f)
 {
     (void)f;
@@ -281,7 +283,7 @@ unsigned char ui_poll(void)
     clk_show();
     if (!k)
         return 0;
-    if (k == K_LEFT || k == K_RIGHT || k == K_UP || k == K_DOWN) {
+    if ((k == K_LEFT || k == K_RIGHT || k == K_UP || k == K_DOWN) && ui_retkey < 2) {
         n = ui_nearest(k);
         if (n != 255)
             ui_point(n);

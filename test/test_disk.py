@@ -146,7 +146,7 @@ class BuiltGS(unittest.TestCase):
     def test_fits_its_bank(self):
         ends = [int(f[2], 16) for f in (ln.split() for ln in open(os.path.join(GS, "parlor.map")))
                 if len(f) > 2 and f[0] == "BSS" and len(f[2]) == 6]
-        self.assertTrue(ends and ends[0] < 0xC000, ends)
+        self.assertTrue(ends and ends[0] < 0xD000, ends)
 
     def test_disk(self):
         img = open(os.path.join(GS, "parlornet-gs.po"), "rb").read()

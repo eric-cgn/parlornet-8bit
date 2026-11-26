@@ -169,22 +169,6 @@ sys_start:
         lda     CIA2+$0D
         lda     #$35            ; RAM at $A000 and $E000, I/O at $D000
         sta     $01
-        ; the character set's inverse half
-        ldx     #0
-:       lda     CHARS,x
-        eor     #$FF
-        sta     CHARS+$400,x
-        lda     CHARS+$100,x
-        eor     #$FF
-        sta     CHARS+$500,x
-        lda     CHARS+$200,x
-        eor     #$FF
-        sta     CHARS+$600,x
-        lda     CHARS+$300,x
-        eor     #$FF
-        sta     CHARS+$700,x
-        inx
-        bne     :-
         ; the VIC: bank 3 ($C000-$FFFF), no sprites yet, the raster interrupt at line 251
         lda     CIA2+$02
         ora     #$03
@@ -657,8 +641,25 @@ tp_done:
 ; The text screen: screen codes are the character set's, ASCII; inverse is $80 up.
 
 ; void txt_mode(void), void gr_mode(void): the text screen ($C800, characters at $C000) or the bitmap
-; ($E000, colors at $CC00).
+; ($E000, colors at $CC00). While the bitmap shows, the character set's inverse half and the text screen
+; ($C400-$CBE7) hold a table's moves and chat or the lobby's lists (TABLE and LOBBY, c64.cfg), so the
+; inverse half is made again here, from the first half, each time the text screen comes back.
 _txt_mode:
+        ldx     #0
+:       lda     CHARS,x
+        eor     #$FF
+        sta     CHARS+$400,x
+        lda     CHARS+$100,x
+        eor     #$FF
+        sta     CHARS+$500,x
+        lda     CHARS+$200,x
+        eor     #$FF
+        sta     CHARS+$600,x
+        lda     CHARS+$300,x
+        eor     #$FF
+        sta     CHARS+$700,x
+        inx
+        bne     :-
         lda     #$20
         sta     VIC+$18
         lda     #$1B

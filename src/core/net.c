@@ -129,7 +129,7 @@ unsigned char net_reply(unsigned int secs)
 /* The verbs, four characters each: the first AGAIN change nothing and are sent again after a broken reply;
    after the others, which change something, the caller looks again. The rest (signing in and out) count a
    broken reply as the line lost. */
-static const char verbs[] = "SIN LST VUE TIM MOTDPRL GAM CHK IVL WHO MOV END UND RES CHT NEW JON INV UNV PRF ";
+static const char verbs[] = "SIN LST VUE TIM MOTDPRL GAM CHK IVL WHO MOV END UND RES CHT NEW JON INV UNV PRF CMD ";
 #define AGAIN 10
 
 static unsigned char verb(void)

@@ -20,7 +20,7 @@ HOME    = $FC58
         jmp     start
         .byte   "PN"            ; $2003
 npages: .byte   0               ; $2005: the program's pages, then one of vectors, then the games
-ovltab: .res    64, 0           ; $2006: as the boot block's, the start a page in PARLOR.DAT
+ovltab: .res    80, 0           ; $2006: as the boot block's, the start a page in PARLOR.DAT
 
 start:  cld
         lda     $C01E           ; RDALTCHAR: the character set as we found it, for quitting (prodos.c)
@@ -121,7 +121,7 @@ have_pfx:
         jsr     MLI
         .byte   $CC
         .word   p_close
-        ldx     #63
+        ldx     #79
 :       lda     ovltab,x
         sta     $0821,x
         dex

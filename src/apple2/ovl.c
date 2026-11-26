@@ -35,7 +35,30 @@ static void ask_disk(unsigned char d)
         ui_status("");
 }
 
+static unsigned char __fastcall__ load(unsigned char k);
+#ifndef IIGS
+void bank1_copy(void);
+static unsigned char frame_in;
+#endif
+
+/* The command line, the dialogs and the pages of text (OVL_FRAME): on the IIe, loaded once and copied into
+   the language card's bank 1; on the IIgs, part of the program. */
 unsigned char __fastcall__ ovl_load(unsigned char k)
+{
+    if (k != OVL_FRAME)
+        return load(k);
+#ifndef IIGS
+    if (!frame_in) {
+        if (!load(k))
+            return 0;
+        bank1_copy();
+        frame_in = 1;
+    }
+#endif
+    return 1;
+}
+
+static unsigned char __fastcall__ load(unsigned char k)
 {
     unsigned char *e = OVLTAB + k * 4, tries;
     if (k == loaded)

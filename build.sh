@@ -27,7 +27,8 @@ A2=src/apple2
 CORE=src/core
 COMMON=src/common
 COMMON6502=src/common/6502
-OVERLAYS="signin reversi backgammon gridwords checkers mancala fiveinarow dotsandboxes navalcombat cannonfire rummytile setup splash"
+OVERLAYS="signin reversi backgammon gridwords checkers mancala fiveinarow dotsandboxes navalcombat cannonfire rummytile setup splash newgame frame"
+FRAMEOVL=
 rm -rf "$OBJ" "$GS" "$OUT/c64" "$OUT/template"
 mkdir -p "$OBJ" "$GOBJ"
 # the version, from VERSION, for the title screens
@@ -43,6 +44,8 @@ ovl_src() {
 	signin) echo "$CORE/parlor.c $1/signin_net.c" ;;
 	setup) echo "$1/setup.c $COMMON/setting_line.c" ;;
 	splash) echo "$1/splash.c" ;;
+	newgame) echo "$CORE/newgame.c" ;;
+	frame) [ -n "$FRAMEOVL" ] && echo "$CORE/frame.c" ;;
 	*) if [ -f "$CORE/games/$2.c" ]; then echo "$CORE/games/$2.c"
 	   elif [ -f "$1/games/$2.c" ]; then echo "$1/games/$2.c"; fi ;;
 	esac
@@ -88,7 +91,9 @@ program() {
 			b=$(basename "$c" .c)
 			# Code, read-only data, data and the zeroed data each in a segment of its own (in one
 			# segment cc65 would put a function's static variables before its first instruction).
-			cc65 $pcflags $OVLOPT --code-name "OVC_$name" --rodata-name "OVR_$name" --data-name "OVD_$name" \
+			opt=$OVLOPT
+			[ "$name" = frame ] && opt=$RESOPT
+			cc65 $pcflags $opt --code-name "OVC_$name" --rodata-name "OVR_$name" --data-name "OVD_$name" \
 				--bss-name "OVB_$name" -o "$pobj/$b.s" "$c"
 			sed -i "s/\"OVHDR\"/\"OVH_$name\"/" "$pobj/$b.s"
 			ca65 --cpu 6502 -o "$pobj/$b.o" "$pobj/$b.s"
@@ -124,10 +129,15 @@ LDEXTRA=
 PFONT=$OBJ/font.s
 PART=$OBJ
 PLATE=
-program "$A2" "$OBJ" "$OUT/parlor.map" "$OUT/parlor" "$A2/parlor.cfg" "$A2FLAGS" \
+# The command line, the dialogs and the pages of text (frame.c) are the overlay "frame" on the IIe, which
+# ovl.c copies into the language card's bank 1 for good; calls into it go through bank1_call (sys.s, BANK1).
+FRAMEOVL=1
+program "$A2" "$OBJ" "$OUT/parlor.map" "$OUT/parlor" "$A2/parlor.cfg" "$A2FLAGS -D BANK1" \
 	"$A2/eth.c $CORE/games.c $A2/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
 	"sys hgr disk mli w5100 joy" crt0.o "$LIB" '$D000' '$2900'
 echo "$OVERLAYS" | tr ' ' '\n' | awk '{ printf "%s%s:%s", (NR > 1 ? " " : ""), $1, ($1 == "signin" ? "parlor" : $1) } END { print "" }' > "$OUT/overlays.txt"
+
+FRAMEOVL=
 
 # The Apple IIgs: PARLORNET's start, and the program.
 ca65 --cpu 65816 -o "$GOBJ/gsshell.o" "$A2/gsshell.s"
@@ -135,7 +145,7 @@ ld65 -C "$A2/gsshell.cfg" -o "$GS/shell.bin" "$GOBJ/gsshell.o"
 ca65 -D IIGS -o "$GOBJ/gs.o" "$A2/gs.s"
 pdef="-D IIGS"
 program "$A2" "$GOBJ" "$GS/parlor.map" "$GS/parlor" "$A2/parlorgs.cfg" "$A2FLAGS -D IIGS" \
-	"$CORE/games.c $A2/gsos.c $A2/line.c $CORE/lobby.c $CORE/main.c $A2/mt.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
+	"$CORE/games.c $A2/gsos.c $A2/line.c $CORE/frame.c $CORE/lobby.c $CORE/main.c $A2/mt.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
 	"sys hgr joy" gs.o "$LIB" '$D000' '$2900'
 cp "$OUT/overlays.txt" "$GS/overlays.txt"
 
@@ -161,17 +171,16 @@ for f in stub boot128; do
 	ld65 -C "$C64/$f.cfg" -o "$COUT/$f.bin" "$COBJ/$f.o"
 done
 ca65 --cpu 6502 -o "$COBJ/crt0.o" "$C64/crt0.s"
-high=$(printf '%04X' $((0x$C64_OVL - 0x600)))
-mainsize=$(printf '%04X' $((0x$high - 0x1500)))
-sed -e "s/@HIGH@/\$$high/g" -e "s/@MAINSIZE@/\$$mainsize/" -e "s/@OVL@/\$$C64_OVL/" "$C64/parlor.cfg" > "$COBJ/c64.cfg"
+mainsize=$(printf '%04X' $((0x$C64_OVL - 0x1500)))
+sed -e "s/@MAINSIZE@/\$$mainsize/" -e "s/@OVL@/\$$C64_OVL/" "$C64/parlor.cfg" > "$COBJ/c64.cfg"
 pdef="-D C64 -g"
 LDEXTRA="-Ln $COUT/parlor.lbl"
 PFONT=
 PART=$COBJ
-PLATE="games lobby net table ui_targets"
+PLATE="frame games lobby net table ui_targets"
 program "$C64" "$COBJ" "$COUT/parlor.map" "$COUT/parlor" "$COBJ/c64.cfg" \
 	"-t none --cpu 6502 -O -Cl -D C64 -D OVL_ADDR=0x$C64_OVL -I $C64 -I $CORE -I $OBJ" \
-	"$CORE/games.c $C64/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $C64/ovl.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $C64/ui.c" \
+	"$CORE/games.c $C64/line.c $CORE/frame.c $CORE/lobby.c $CORE/main.c $CORE/net.c $C64/ovl.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $C64/ui.c" \
 	"sys serial gfx disk" crt0.o "$LIB" "\$$C64_OVL" "\$$(printf '%04X' $((0xC000 - 0x$C64_OVL)))"
 echo "$OVERLAYS" > "$COUT/overlays.txt"
 echo "$C64_OVL" > "$COUT/ovl_addr.txt"
@@ -190,5 +199,5 @@ PART=$TOBJ
 PLATE=
 program "$TPL" "$TOBJ" "$TOUT/parlor.map" "$TOUT/parlor" "$TPL/template.cfg" \
 	"-t none --cpu 6502 -O -Cl -I $TPL -I $CORE -I $OBJ" \
-	"$CORE/games.c $CORE/lobby.c $CORE/main.c $CORE/net.c $CORE/table.c $COMMON/ui_targets.c $TPL/template.c" \
+	"$CORE/games.c $CORE/frame.c $CORE/lobby.c $CORE/main.c $CORE/net.c $CORE/table.c $COMMON/ui_targets.c $TPL/template.c" \
 	"" crt0.o "$LIB" '$9000' '$3000'

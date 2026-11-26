@@ -1,0 +1,57 @@
+# The command line (/): in the lobby, /who answers on the message line and /help is a page of the parlor's
+# commands. At a Reversi table that waits for a player, /invite bot seats the bot, and the typed move /d3
+# plays a disc. /resign opens the resign dialog, which starts on No, and Esc answers No. The lit buttons go
+# unlit while the line is open (cl_typing).
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type cleo\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+type /who
+wait 30
+snap cl_typing
+type \r
+wait 200
+snap cl_who
+type /help\r
+wait 300
+snap cl_help
+key esc
+wait 300
+click 200
+wait 200
+click 8
+wait 200
+click 1
+wait 900
+snap cl_waiting
+type /invite bot\r
+wait 300
+snap cl_invited
+wait 600
+snap cl_seated
+type /d3\r
+wait 600
+snap cl_typed_move
+type /resign\r
+wait 200
+snap cl_resign_dialog
+key esc
+wait 300
+snap cl_resign_no
+type /xyzzy\r
+wait 200
+snap cl_unknown
+type /leave\r
+wait 400
+snap cl_lobby
+exit

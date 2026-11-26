@@ -1,0 +1,53 @@
+# The command line (/), as plans/command_line.txt in lab/ shows it on the Apple IIe: in the lobby /who answers
+# on the message line, with the buttons unlit while the line is open (cl_typing). At a Reversi table that
+# waits for a player, /invite bot seats the bot and the typed move /d3 plays a disc. /resign opens the
+# resign dialog, which starts on No, and RUN/STOP answers No. An unknown command says so, and /leave goes
+# back to the lobby.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type P
+waittext Name: 4800
+type new\r
+waittext want 300
+type cleo\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+bitmap 1200
+wait 300
+type /who
+wait 30
+snap cl_typing
+type \r
+wait 200
+snap cl_who
+click 200
+wait 1200
+click 8
+wait 200
+click 1
+wait 2400
+snap cl_waiting
+type /invite bot\r
+wait 300
+snap cl_invited
+wait 600
+snap cl_seated
+type /d3\r
+wait 600
+snap cl_typed_move
+type /resign\r
+wait 200
+snap cl_resign_dialog
+key esc
+wait 300
+snap cl_resign_no
+type /xyzzy\r
+wait 200
+snap cl_unknown
+type /leave\r
+wait 600
+snap cl_lobby
+exit

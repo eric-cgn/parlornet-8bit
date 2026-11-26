@@ -8,6 +8,7 @@
 #include "game.h"
 #include "games.h"
 #include "ovl.h"
+#include "frame.h"
 
 unsigned int g_table;
 signed char g_seat;
@@ -31,6 +32,7 @@ static char part[42];
 #pragma bss-name (pop)
 #endif
 char g_chkinfo[42];
+char dlg_words[128];
 unsigned char g_reply_more, g_reply_done;
 
 /* The move tokens' text and the chat, in the language card's RAM above the overlays (TABLE in parlor.cfg). */
@@ -340,6 +342,15 @@ static void frame_buttons(void)
     ui_button(24, BUTTON_Y, "Keys", B_HELP);
 }
 
+/* The buttons drawn again, unlit while the command line is open, without making their targets again. */
+static void frame_lit(void)
+{
+    unsigned char n = t_n;
+    ui_rect(0, BUTTON_Y, 40, 8, F_BLACK);
+    frame_buttons();
+    t_n = n;
+}
+
 static void draw_all(void)
 {
     unsigned char keep = t_cur < t_n ? t_id[t_cur] : 255;
@@ -639,7 +650,26 @@ static void set_display(void)
     draw_all();
 }
 
-/* Play at a table. Returns 1 for the console, 0 for the lobby. */
+/* After a command (frame.h): what it did comes as events, and its answer goes on the message line. Returns
+   what table_play returns for a command that leaves the table, or 255 to stay. */
+static unsigned char __fastcall__ after_cmd(unsigned char c)
+{
+    if (c & C_OUT)
+        return 3;
+    if (c & C_LEAVE)
+        return 0;
+    if (c & C_HELP)
+        keys_help();
+    if (c & C_SENT)
+        poll_events();
+    if (c & C_REDRAW)
+        draw_all();
+    if (c & C_SAID)
+        cmd_show();
+    return 255;
+}
+
+/* Play at a table. Returns 1 for the console, 0 for the lobby, 3 when signed out (/quit). */
 unsigned char table_play(unsigned int id)
 {
     unsigned char k;
@@ -710,6 +740,13 @@ unsigned char table_play(unsigned int id)
         if (k) {
             if (k == K_ESC)
                 return 0;
+            if (k == '/') {
+                k = after_cmd(cmd_line(g_table, frame_lit));
+                if (k != 255)
+                    return k;
+                last = ticks;
+                continue;
+            }
             if (k == (U_OA | 'C'))
                 return 1;
             if (k == (U_OA | 'Q'))

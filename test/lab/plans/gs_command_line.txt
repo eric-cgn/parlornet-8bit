@@ -1,0 +1,52 @@
+# The command line on the IIgs, as command_line.txt shows it on the IIe: /who in the lobby, then at a Reversi
+# table that waits for a player /invite bot, the typed move /d3, and /resign's dialog answered No with Esc.
+wait 2400
+dclick 568 66
+wait 300
+dclick 86 49
+title 1800
+waittext quit to the Finder 1800
+key s
+waittext settings 300
+key 1
+wait 30
+key ctrl+x
+type parlor\r
+wait 30
+key ret
+waittext quit to the Finder 600
+key p
+waittext Name: 3600
+type new\r
+waittext want 300
+type gil\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 900
+type /who\r
+wait 300
+snap gs_cl_who
+key ret
+wait 300
+arrows DDDDDDDD
+key ret
+wait 300
+arrows D
+key ret
+wait 1200
+snap gs_cl_waiting
+type /invite bot\r
+wait 900
+snap gs_cl_seated
+type /d3\r
+wait 600
+snap gs_cl_typed_move
+type /resign\r
+wait 300
+snap gs_cl_resign_dialog
+key esc
+wait 300
+snap gs_cl_resign_no
+exit

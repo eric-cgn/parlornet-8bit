@@ -229,13 +229,13 @@ unsigned char ui_poll(void)
                 k -= 32;
             return U_OA | k;
         }
-        if (k == K_LEFT || k == K_RIGHT || k == K_UP || k == K_DOWN) {
+        if ((k == K_LEFT || k == K_RIGHT || k == K_UP || k == K_DOWN) && ui_retkey < 2) {
             n = ui_nearest(k);
             if (n < t_n)
                 ui_point(n);
             return 0;
         }
-        if ((k == K_RET && !ui_retkey || k == 0x20) && t_cur < t_n) {
+        if ((k == K_RET && !ui_retkey || k == 0x20 && ui_retkey < 2) && t_cur < t_n) {
             ui_clicked = t_id[t_cur];
             return U_CLICK;
         }

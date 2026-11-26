@@ -33,4 +33,17 @@ struct splash {
 };
 #define SPLASH ((const struct splash *)OVL_ADDR)
 
+/* The lobby's New game (newgame.c): returns the table made, or 0. */
+#define OVL_NEWGAME 13
+struct newgame {
+    unsigned int (*run)(void);
+};
+#define NEWGAME ((const struct newgame *)OVL_ADDR)
+
+/* The command line, the dialogs and the pages of text (frame.c). On the Apple IIe they are in the language
+   card's other bank (bank 1, $D000-$DFFF), which ovl_load fills from this overlay the first time; on the
+   IIgs and the C64 they are part of the program, and ovl_load(OVL_FRAME) only makes sure that the lobby and
+   the tables are in memory (the C64's PN.PARLOR). The core asks for it before the lobby. */
+#define OVL_FRAME 14
+
 #endif

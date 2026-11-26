@@ -99,7 +99,7 @@ def build(d):
             table.append((lin, pages(o), 1))
             lin = place(disk1, lin, o)
     assert lin <= SECTORS and lin2 <= SECTORS
-    assert len(table) <= 16
+    assert len(table) <= 20
 
     b = bytearray(boot)
     b[LOADTAB:LOADTAB + 8] = bytes([main_at & 255, main_at >> 8, pages(main), 0x40,
@@ -153,7 +153,7 @@ def prodos_files(d):
     end = program_end(d)
     assert end <= PRODOS_TOP, "the program ends at $%04X, past ProDOS's $BF00" % end
     dat = pad(main) + pad(vec)
-    table = bytearray(64)
+    table = bytearray(80)
     for i, o in enumerate(ovls):
         page = len(dat) // 256
         table[i * 4:i * 4 + 4] = bytes([page & 255, page >> 8, pages(o), 0])
@@ -161,7 +161,7 @@ def prodos_files(d):
     loader = bytearray(open(os.path.join(d, "prodsys.bin"), "rb").read())
     assert loader[3:5] == b"PN"
     loader[NPAGES_AT] = pages(main)
-    loader[OVLTAB_AT:OVLTAB_AT + 64] = table
+    loader[OVLTAB_AT:OVLTAB_AT + 80] = table
     out = os.path.join(d, "prodos")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "PARLOR.SYSTEM"), "wb") as f:

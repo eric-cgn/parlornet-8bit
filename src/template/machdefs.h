@@ -25,6 +25,10 @@
 #define K_ESC   27
 #define K_TAB   9
 #define K_DEL   127
+#define K_BACK  28                      /* the second button of a joystick or a mouse */
+#define KEY_RET K6 "Return"
+#define KEY_ESC K3 "Esc"
+#define COL_PX 8
 
 /* Where overlays are loaded and run (template.cfg's OVL area). */
 #define OVL_ADDR 0x9000

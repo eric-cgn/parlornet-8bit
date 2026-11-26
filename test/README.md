@@ -136,6 +136,8 @@ its crater dissolving, before the view: the program sees that the view is newer 
 read, reads those first and fetches the view again. `cfi_after` and `cfi_mono` show each tank's health over
 its letter, in color and in monochrome.
 
+`plans/command_line.txt` shows the command line. In the lobby `/who` answers on the message line, and the buttons are unlit while the line is open (`cl_typing`). At a Reversi table that waits for a player, `/invite bot` seats the bot (`cl_invited`, `cl_seated`) and the typed move `/d3` plays a disc (`cl_typed_move`). `/resign` opens the resign dialog, which starts on No (`cl_resign_dialog`), and Esc answers No (`cl_resign_no`). An unknown command says so (`cl_unknown`), and `/leave` goes back to the lobby. `plans/gs_command_line.txt` does the same on the IIgs, and `vice/plans/command_line.txt` on the C64.
+
 ## Through a Unix shell
 
 `lab/shell/` is a container with a login shell (bash 5.2, with TERM=vt100) on a pty behind a TCP port, as a
