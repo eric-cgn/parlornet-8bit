@@ -26,7 +26,7 @@ struct inv {
 };
 
 #define MAXG 20
-#define MAXTAB 16
+#define MAXTAB 24
 #define MAXI 6
 static struct gam gams[MAXG];
 static unsigned char ngam;
@@ -41,6 +41,7 @@ static struct inv invs[MAXI];
 #pragma bss-name (pop)
 static unsigned char ntab;
 static unsigned char ninv;
+static unsigned char first;             /* the list's first line on the screen (draw_lobby; More pages on) */
 
 #define ID_TAB 0                        /* + index: open a table of yours, or join one */
 #define ID_ACC 40                       /* + index: accept an invitation */
@@ -50,6 +51,7 @@ static unsigned char ninv;
 #define B_DISPLAY 202
 #define B_OUT 203
 #define B_BACK 204
+#define B_MORE 205
 
 static const char *nice_name(const char *type)
 {
@@ -125,10 +127,13 @@ static unsigned char names_have_me(char *names, char *who)
     return mine;
 }
 
+/* LOBBY's memory is a table's too and is not zeroed, so the strings copied into it are ended here. */
 static void load_lists(void)
 {
     unsigned char i;
     char *p;
+    struct tab *t;
+    struct inv *v;
     q_set("LST");
     ntab = 0;
     if (net_req() == R_OK)
@@ -136,13 +141,15 @@ static void load_lists(void)
             words(r_line[i]);
             if (wn < 7 || !is(w[0], "TAB"))
                 continue;
-            tabs[ntab].id = num(w[1]);
-            strncpy(tabs[ntab].type, w[2], 15);
-            tabs[ntab].open = is(w[5], "open");
+            t = tabs + ntab;
+            t->id = num(w[1]);
+            strncpy(t->type, w[2], 15);
+            t->type[15] = 0;
+            t->open = is(w[5], "open");
             p = strchr(w[4], '/');
-            tabs[ntab].full = p != 0 && num(w[4]) >= num(p + 1);
-            tabs[ntab].mine = names_have_me(w[6], tabs[ntab].who);
-            if (tabs[ntab].mine || (tabs[ntab].open && !tabs[ntab].full))
+            t->full = p != 0 && num(w[4]) >= num(p + 1);
+            t->mine = names_have_me(w[6], t->who);
+            if (t->mine || (t->open && !t->full))
                 ++ntab;
         }
     q_set("IVL");
@@ -152,11 +159,16 @@ static void load_lists(void)
             words(r_line[i]);
             if (wn < 5 || !is(w[0], "IVT"))
                 continue;
-            invs[ninv].id = num(w[1]);
-            strncpy(invs[ninv].type, w[2], 15);
-            strncpy(invs[ninv].from, w[4], 12);
+            v = invs + ninv;
+            v->id = num(w[1]);
+            strncpy(v->type, w[2], 15);
+            v->type[15] = 0;
+            strncpy(v->from, w[4], 12);
+            v->from[12] = 0;
             ++ninv;
         }
+    if (first >= ntab + ninv)
+        first = 0;
     clk_sync();
 }
 
@@ -188,10 +200,38 @@ static void entry(const char *a, const char *b, const char *c)
         ui_textn(30, row * 8, c, 10);
 }
 
+/* The lobby's list is the player's own tables, then the invitations, then the tables waiting for a player.
+   It is shown a screenful at a time, from its line number first, in the rows above LIST_END, where the
+   More button is. More shows the next screenful, and on the last one goes back to the start. */
+#define LIST_END 20
+static unsigned char seen;              /* the lines of the list counted so far */
+static unsigned char next;              /* the first line that did not fit, 0 when the rest all fit */
+static const char *part;                /* the heading on the screen last */
+
+/* Whether the list's next line, under heading h, is on the screen; the heading comes first when it is
+   not there yet. */
+static unsigned char __fastcall__ list_line(const char *h)
+{
+    if (seen++ < first)
+        return 0;
+    if (row + (part == h ? 1 : 3) > LIST_END) {
+        if (!next)
+            next = seen - 1;
+        return 0;
+    }
+    if (part != h)
+        heading(part = h);
+    return 1;
+}
+
+static const char h_mine[] = "Your games";
+
 static void draw_lobby(void)
 {
     static char b[42];
     unsigned char i, n;
+    struct tab *t;
+    struct inv *v;
     gr_mode();
     ui_cls();
     ui_ink(F_BLACK, F_WHITE);
@@ -206,48 +246,45 @@ static void draw_lobby(void)
     ui_textn(0, 0, b, 40);
     ui_ink(F_WHITE, F_BLACK);
     row = 1;
-    heading("Your games");
+    seen = next = 0;
+    part = 0;
     n = 0;
-    for (i = 0; i < ntab && row < 17; ++i) {
-        if (!tabs[i].mine)
+    for (i = 0, t = tabs; i < ntab; ++i, ++t) {
+        if (!t->mine)
+            continue;
+        ++n;
+        if (!list_line(h_mine))
             continue;
         strcpy(b, "v ");
-        strcat(b, tabs[i].who);
-        entry(nice_name(tabs[i].type), b, tabs[i].open ? "waiting" : game_for(tabs[i].type) ? "playing"
-                                                                                      : "(web)");
+        strcat(b, t->who);
+        entry(nice_name(t->type), b, t->open ? "waiting" : game_for(t->type) ? "playing" : "(web)");
         ui_target(MID_X2, row * 8 + 4, MID_X2, 4, ID_TAB + i);
         ++row;
-        ++n;
     }
-    if (!n) {
+    if (!n && !first) {
+        heading(h_mine);
         ui_text(1, row * 8, "None yet: start one with New game.");
         ++row;
     }
-    if (ninv) {
-        heading("Invitations");
-        for (i = 0; i < ninv && row < 19; ++i) {
-            strcpy(b, "from ");
-            strcat(b, invs[i].from);
-            entry(nice_name(invs[i].type), b, 0);
-            ui_button(26, row * 8, "Join", ID_ACC + i);
-            ui_button(33, row * 8, "No", ID_DEC + i);
-            ++row;
-        }
+    for (i = 0, v = invs; i < ninv; ++i, ++v) {
+        if (!list_line("Invitations"))
+            continue;
+        strcpy(b, "from ");
+        strcat(b, v->from);
+        entry(nice_name(v->type), b, 0);
+        ui_button(26, row * 8, "Join", ID_ACC + i);
+        ui_button(33, row * 8, "No", ID_DEC + i);
+        ++row;
     }
-    n = 0;
-    for (i = 0; i < ntab; ++i)
-        if (!tabs[i].mine)
-            ++n;
-    if (n && row < 18) {
-        heading("Waiting for a player");
-        for (i = 0; i < ntab && row < 20; ++i) {
-            if (tabs[i].mine)
-                continue;
-            entry(nice_name(tabs[i].type), tabs[i].who, 0);
-            ui_button(32, row * 8, "Join", ID_TAB + i);
-            ++row;
-        }
+    for (i = 0, t = tabs; i < ntab; ++i, ++t) {
+        if (t->mine || !list_line("Waiting for a player"))
+            continue;
+        entry(nice_name(t->type), t->who, 0);
+        ui_button(32, row * 8, "Join", ID_TAB + i);
+        ++row;
     }
+    if (first || next)
+        ui_button(1, LIST_END * 8, next ? "More" : "Back to the start", B_MORE);
     ui_button(0, BUTTON_Y, "New game", B_NEW);
     ui_button(11, BUTTON_Y, "Refresh", B_REFRESH);
     ui_button(21, BUTTON_Y, "Display", B_DISPLAY);
@@ -307,6 +344,7 @@ static unsigned int new_game(void)
     unsigned char i, j, n, g, players, k, bots;
     unsigned int id;
     const struct gameinfo *gm;
+    const struct gam *gp;
 again:
     n = 0;
     for (i = 0; i < ngam; ++i) {
@@ -331,8 +369,9 @@ again:
     g = item_gam[k];
     /* Its rules, when there are several. */
     n = 0;
+    gp = gams + g;
     for (i = 0; i < ngam; ++i)
-        if (strcmp(gams[i].type, gams[g].type) == 0) {
+        if (strcmp(gams[i].type, gp->type) == 0) {
             items[n] = gams[i].rules;
             item_gam[n++] = i;
         }
@@ -342,14 +381,15 @@ again:
             goto again;
         g = item_gam[k];
     }
-    players = gams[g].min;
-    if (gams[g].max > gams[g].min) {
+    gp = gams + g;
+    players = gp->min;
+    if (gp->max > players) {
         static const char *const counts[] = {"2 players", "3 players", "4 players", "5 players",
                                              "6 players", "7 players", "8 players"};
-        k = choose("How many players?", counts + (gams[g].min - 2), gams[g].max - gams[g].min + 1);
+        k = choose("How many players?", counts + (players - 2), gp->max - players + 1);
         if (k == 255)
             goto again;
-        players = gams[g].min + k;
+        players += k;
     }
     {
         static const char *const who[] = {"Play the bot", "Wait for anyone", "Invite a player"};
@@ -367,9 +407,9 @@ again:
     ui_cls();
     ui_status("Making the table...");
     q_set("NEW");
-    q_add(gams[g].type);
-    q_add(gams[g].rules);
-    if (players != gams[g].min) {
+    q_add(gp->type);
+    q_add(gp->rules);
+    if (players != gp->min) {
         q_add("players=");
         q_cat(utoa10(players));
     }
@@ -417,6 +457,7 @@ unsigned char lobby(void)
     unsigned char k, i;
     unsigned int last, id;
     load_gam();
+    first = 0;
 refresh:
     if (net_lost)
         return 0;
@@ -443,6 +484,11 @@ refresh:
                 return 0;
             if (k == B_REFRESH)
                 goto refresh;
+            if (k == B_MORE) {
+                first = next;
+                draw_lobby();
+                continue;
+            }
             if (k == B_DISPLAY) {
                 mono ^= 1;
                 q_set("PRF SET a2disp");

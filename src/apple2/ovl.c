@@ -1,14 +1,18 @@
 /* ParlorNet for the Apple IIe: loading overlays (ovl.h). The disk maker writes where each one is into
    the boot block's table at $0821: linear sector, sector count and which disk. Before a read the first
    sector of the disk in the drive is checked, and if it is the other disk the player is asked to swap.
-   Under ProDOS, PARLOR.SYSTEM fills in the same table with each one's first page in PARLOR.DAT. */
+   Under ProDOS, PARLOR.SYSTEM fills in the same table with each one's first page in PARLOR.DAT.
+
+   The first sector is read into the overlays' own memory, whose first page the new overlay takes anyway.
+   Low memory is not free for it: the lobby's game names, read when the lobby starts and kept while the
+   player goes to a table and back, are there with the reply buffer. */
 #include "machine.h"
 #include "apple2.h"
 #include "ovl.h"
 #include "prodos.h"
 
 #define OVLTAB ((unsigned char *)0x0821)
-#define CHECK_PAGE 0x0F                 /* the reply buffer's first page, free between requests */
+#define CHECK_PAGE (OVL_ADDR >> 8)
 
 static unsigned char loaded = 255;
 
@@ -46,13 +50,13 @@ unsigned char __fastcall__ ovl_load(unsigned char k)
         loaded = k;
         return 1;
     }
+    loaded = 255;                       /* (the check below overwrites the overlay in memory) */
     for (tries = 0; tries < 8; ++tries) {
         RD_LIN = 0;
         RD_COUNT = 1;
         RD_PAGE = CHECK_PAGE;
         if (disk_read() == 0 && ((unsigned char *)(CHECK_PAGE << 8))[0x0B] == 'P'
             && ((unsigned char *)(CHECK_PAGE << 8))[0x0A] == e[3]) {
-            loaded = 255;
             RD_LIN = e[0] | (e[1] << 8);
             RD_COUNT = e[2];
             RD_PAGE = OVL_ADDR >> 8;
