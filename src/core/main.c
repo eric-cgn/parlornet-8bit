@@ -122,7 +122,7 @@ again:
     sayln(line_desc());
     sayln("Connect to the parlor's native port");
     sayln("(6501, not telnet), then press");
-    sayln(OA_NAME "-P. A modem: ATDT host:6501");
+    sayln(OA_NAME "-P. Dial with ATDT host:6501.");
     sayln(OA_NAME "-Q: the start screen.");
     txt_putc(13);
     shown = 0;

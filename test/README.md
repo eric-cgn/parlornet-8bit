@@ -86,8 +86,9 @@ board on the right and on the left. Tall stacks show four checkers and +n. `plan
 a Row, Naval Combat and Grid Words and shows the pointer on the middle of a point or square, at the first one
 and one along and one down from it.
 
-`plans/clock.txt` shows the connected time: on the sign-in's title row ("ParlorNet  0:05"), at the right
-end of the lobby's and a table's title row, and from 0:00 again after Open-Apple-Q and a new connection. The
+`plans/clock.txt` shows the connected time in whole minutes: on the sign-in's title row ("ParlorNet  0m"), at
+the right end of the lobby's and a table's title row ("1m" at the table), and from 0m again after Open-Apple-Q
+and a new connection. The
 time comes from the parlor's TIM request (`TIM secs now`) when the parlor has it; a parlor without it
 answers ERR UNKNOWN and the program counts the ticks alone.
 
@@ -163,7 +164,7 @@ A2ROMS=~/roms test/lab/run.sh 16600 build/parlornet.dsk test/lab/plans/dial.txt 
   `ATD"parlornet.org:6501"`, which starts with AT, is sent as the whole dial command even with Pulse dial on
   (`di_atd_settings`, `di_atd`), as a Zimodem needs for a plain connection.
 - `plans/dial_errors.txt` dials BUSY (`de_busy`), and Return dials again; NOCARRIER (`de_nocarrier`); and
-  SILENT, which ends after a minute in "No CONNECT from the modem in a minute." (`de_timeout`). Return dials
+  SILENT, which ends after a minute in "The modem did not say CONNECT in a minute." (`de_timeout`). Return dials
   SILENT again (`de_dialing`), and Escape sends a Return, which stops the dial (the stand-in's NO CARRIER),
   and goes back to the start screen (`de_cancelled`).
 - `plans/dial_stay.txt` dials STAY: after Open-Apple-Q no NO CARRIER comes, so the program sends `+++`, gets

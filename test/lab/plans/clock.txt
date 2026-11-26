@@ -1,5 +1,5 @@
-# The connected time: on the sign-in's title row ("ParlorNet  0:05"), at the right end of the lobby's and
-# the table's title row, and from 0:00 again on a new connection. The parlor gives it (TIM) every 30
+# The connected time in whole minutes: on the sign-in's title row ("ParlorNet  0m"), at the right end of the
+# lobby's and the table's title row ("1m" by the table's snapshots), and from 0m again on a new connection. The parlor gives it (TIM) every 30
 # seconds or so; a parlor without TIM leaves the count to the program's ticks.
 wait 120
 caps

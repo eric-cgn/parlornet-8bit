@@ -99,9 +99,9 @@ static void setup_settings(void)
         setting_line(16, "T", "Title screen at start: ", cfg_title ? "on" : "off");
         setting_line(17, "M", "1351 mouse in port 1: ", mouse_on ? "on" : "off");
         txt_goto(1, 19);
-        say("A key to change a setting, Return when");
+        say("Press a setting's key to change it and");
         txt_goto(1, 20);
-        say("done. The parlor's native port is 6501.");
+        say("Return when done. Parlors use 6501.");
         txt_goto(1, 21);
         txt_clreol();
         do
@@ -158,26 +158,18 @@ static void start_screen(void)
     txt_clear();
     title_bar("ParlorNet", "");
     txt_goto(1, 3);
-    sayln("The games of a ParlorNet parlor, over");
+    sayln("Configure the ParlorNet online");
     txt_goto(1, 4);
-    say("a modem or a serial line.");
+    say("game service");
     setting_line(7, "P", "ParlorNet: connect and sign in", "");
-    setting_line(9, "C", "Console, to set up the line first", "");
+    setting_line(9, "C", "Console: set up the line by hand", "");
     setting_line(11, "S", "Settings: ", line_desc());
     setting_line(13, "D", "Display: ", mono ? "monochrome" : "color");
     txt_goto(1, 22);
     say(OA "-Q: quit to BASIC");
-    txt_goto(1, 16);
-    if (cfg_number[0]) {
-        sayln("P dials the modem with the number in");
-        txt_goto(1, 17);
-        sayln("the settings (S) and signs in. C is a");
-        txt_goto(1, 18);
-        sayln("plain console, to set up the line by");
-        txt_goto(1, 19);
-        say("hand.");
+    if (cfg_number[0])                  /* (P dials the number: the menu says enough) */
         return;
-    }
+    txt_goto(1, 16);
     sayln("If the line already reaches the");
     txt_goto(1, 17);
     sayln("parlor's native port (6501), press P.");

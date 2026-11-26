@@ -26,7 +26,7 @@ static void start_screen(void)
     title_bar("ParlorNet", "");
     txt_goto(0, 4);
     sayln("P  ParlorNet: connect and sign in");
-    sayln("C  Console, to set up the line first");
+    sayln("C  Console: set up the line by hand");
     sayln("S  Settings");
 }
 

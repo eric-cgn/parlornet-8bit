@@ -25,12 +25,12 @@
 
 static unsigned char auth_none;
 
-/* The connected time on the title row, after "ParlorNet", when the second changed (clk_text). */
+/* The connected time on the title row, after "ParlorNet", when the minute changed (clk_text). */
 static void txt_clock(void)
 {
     unsigned char x, y, inv, top;
     const char *p;
-    if (!connected || clk_shown == clk_t[0])
+    if (!connected || clk_shown == clk_min())
         return;
     x = txt_x;
     y = txt_y;
@@ -329,7 +329,7 @@ static unsigned char dial(void)
         }
     }
     ser_put(13);
-    q_set("No CONNECT from the modem in a minute.");
+    q_set("The modem did not say CONNECT in a minute.");
     return 0;
 stop:
     ser_put(13);                        /* a key stops a modem's dial */
@@ -547,7 +547,7 @@ connect:
         k = 1;
     }
     if (k != 1) {
-        k = ask_again(k == 2 ? err_text(q) : "No answer from the parlor. Is the line connected to its "
+        k = ask_again(k == 2 ? err_text(q) : "The parlor did not answer. Is the line connected to its "
                       "native port (6501, not telnet)?");
         if (k == 1)
             goto connect;
@@ -567,7 +567,7 @@ connect:
         if (is(w[k], "AUTH=none"))
             auth_none = 1;
     connected = 1;
-    memset(clk_t, 0, 3);                /* the connected time from 0:00, or the parlor's */
+    memset(clk_t, 0, 3);                /* the connected time from 0m, or the parlor's */
     clk_tim_off = 0;
     clk_tim_at = 0xFF;                  /* (now) */
     clk_sync();
@@ -602,7 +602,7 @@ connect:
 names:
     for (;;) {
         txt_putc(13);
-        sayln("Your name, or new for a new account.");
+        sayln("Type your name, or new to sign up.");
         sayln(NAME_KEYS);
         say("Name: ");
         k = txt_input(name, 12, 0);
