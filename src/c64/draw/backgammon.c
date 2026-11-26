@@ -1,18 +1,25 @@
 /* ParlorNet on the Commodore 64: Backgammon's board (core/games/backgammon.c includes it). The points are
    lanes of whole cells, two wide, red and green by turns on a wooden board, each ending in a tip toward the
-   middle, so that a checker (black or white, two cells by two) needs only its lane's color and its own. A
-   point shows up to four checkers, or three and +n; the bar up to two a side, or one and +n. Each step glides
-   its checker from where it was to where it goes: a sprite moves over the board. The dice and the cube are in
-   the row across the middle, the trays on the right hold the counts borne off, and the names and buttons are
-   beside the board. The columns are the Apple II's (mx, col_of): the board is 29 cells wide, mirrored when
-   the player's home is on the left. In monochrome the lanes are two grays. */
+   middle, so that a checker (a solid disc, black or white, two cells by two) needs only its lane's color and
+   its own. A point shows up to four checkers and the bar up to two a side; on a taller stack the last one
+   shown has the number not shown cut out of it, a digit up to 9 or else +, in its place's color. Each step
+   glides its checker from where it was to where it goes: a sprite moves over the board. The dice and the
+   cube are in the row across the middle, the trays on the right hold the counts borne off, and the names
+   and buttons are beside the board. The columns are the Apple II's (mx, col_of): the board is 29 cells
+   wide, mirrored when the player's home is on the left. In monochrome the board is light gray, the lanes
+   dark and middle gray and the bar's and the trays' places middle gray, so that white and black checkers
+   both stand out on every place and their counts read. */
 #include "gfx.h"
 
 extern const unsigned char pic_bg_checker[], pic_bg_tip_down[], pic_bg_tip_up[], pic_bg_lane[];
 extern const unsigned char pic_bg_die1[], pic_bg_die2[], pic_bg_die3[], pic_bg_die4[], pic_bg_die5[],
     pic_bg_die6[], spr_bg_glide[];
+extern const unsigned char pic_bg_n1[], pic_bg_n2[], pic_bg_n3[], pic_bg_n4[], pic_bg_n5[], pic_bg_n6[],
+    pic_bg_n7[], pic_bg_n8[], pic_bg_n9[], pic_bg_nplus[];
 static const unsigned char *const die_pic[] = {pic_bg_die1, pic_bg_die2, pic_bg_die3, pic_bg_die4, pic_bg_die5,
                                                pic_bg_die6};
+static const unsigned char *const num_pic[] = {pic_bg_n1, pic_bg_n2, pic_bg_n3, pic_bg_n4, pic_bg_n5, pic_bg_n6,
+                                               pic_bg_n7, pic_bg_n8, pic_bg_n9, pic_bg_nplus};
 
 #define TOP 16                          /* the top lanes: checkers from line 16 down, the tip at 80 */
 #define MID 88                          /* the row across the middle: dice and cube */
@@ -45,12 +52,12 @@ static unsigned char col_of(unsigned char p, unsigned char *top)
 
 static unsigned char wood(void)
 {
-    return mono ? C_DGREY : C_ORANGE;
+    return mono ? C_LGREY : C_ORANGE;
 }
 
 static unsigned char lane_col(unsigned char p)
 {
-    return (p & 1) ? (mono ? C_GREY : C_RED) : (mono ? C_LGREY : C_GREEN);
+    return (p & 1) ? (mono ? C_DGREY : C_RED) : (mono ? C_GREY : C_GREEN);
 }
 
 static unsigned char checker_col(unsigned char s)
@@ -90,28 +97,35 @@ static void place(unsigned char x, unsigned char y, unsigned char s, unsigned ch
     }
 }
 
-/* "+n" in a place, white on its color. */
-static void more_label(unsigned char x, unsigned char y, unsigned char n, unsigned char bg)
+/* The n checkers a stack has past the ones shown, cut out of the checker in the place at (x, y): the
+   digit, or + for 10 or more, exclusive-or over the disc's middle rows, so the place's color shows
+   through it. */
+static void cut_count(unsigned char x, unsigned char y, unsigned char n)
 {
-    place(x, y, 2, bg);
-    hg_fg = C_WHITE;
-    hg_bg = bg;
     hg_x = x;
     hg_y = y + 4;
-    hgr_char(n < 10 ? '+' : '0' + n / 10);
-    hgr_char('0' + n % 10);
+    hg_src = num_pic[n > 9 ? 9 : n - 1];
+    hg_xor = 1;
+    hgr_blit();
+    hg_xor = 0;
+}
+
+static unsigned char count(signed char v)
+{
+    return v < 0 ? -v : v;
 }
 
 /* Point p with v checkers on it (as pt[]: seat 0's more than 0). */
 static void draw_point(unsigned char p, signed char v)
 {
-    unsigned char top, x = col_of(p, &top), n, i, s = v < 0, c = lane_col(p);
-    n = v < 0 ? -v : v;
-    /* four places: up to four checkers, or three and +n in the last */
-    for (i = 0; i < 4; ++i)
-        place(x, top ? TOP + 16 * i : BOT - 16 * i, i < n && (i < 3 || n == 4) ? s : 2, c);
+    unsigned char top, x = col_of(p, &top), n = count(v), i, s = v < 0, c = lane_col(p), y;
+    /* four places: up to four checkers, the last with the count of any more */
+    for (i = 0; i < 4; ++i) {
+        y = top ? TOP + 16 * i : BOT - 16 * i;
+        place(x, y, i < n ? s : 2, c);
+    }
     if (n > 4)
-        more_label(x, top ? TOP + 48 : BOT - 48, n - 3, c);
+        cut_count(x, y, n - 4);
     hg_x = x;
     hg_y = top ? TOP + 64 : BOT - 56;
     hg_w = 2;
@@ -130,16 +144,17 @@ static void draw_cube(unsigned char bx, unsigned char tx);
 static void draw_bar_off(void)
 {
     unsigned char s, i, me = view, n, y;
-    unsigned char bx = mx(13, 2), tx = mx(27, 2), barc = mono ? C_BLACK : C_BROWN;
+    unsigned char bx = mx(13, 2), tx = mx(27, 2), barc = mono ? C_GREY : C_BROWN;
     for (s = 0; s < 2; ++s) {
         n = sbar[s];
-        /* two places a side: up to two checkers, or one and +n; mine below the middle */
+        /* two places a side: up to two checkers, the second with the count of any more; mine below the
+           middle */
         for (i = 0; i < 2; ++i) {
             y = s == me ? MID + 16 + 16 * i : MID - 32 - 16 * i;
-            place(bx, y, i < n && (i < 1 || n == 2) ? s : 2, barc);
+            place(bx, y, i < n ? s : 2, barc);
         }
         if (n > 2)
-            more_label(bx, s == me ? MID + 32 : MID - 48, n - 1, barc);
+            cut_count(bx, y, n - 2);
     }
     for (s = 0; s < 2; ++s) {
         y = s == me ? BOT : TOP;
@@ -209,16 +224,11 @@ static void glide(unsigned char s, unsigned char x0, unsigned char y0)
     spr_on &= ~4;
 }
 
-static unsigned char count(signed char v)
-{
-    return v < 0 ? -v : v;
-}
-
 static void play_step(unsigned char k)
 {
     unsigned char s = q_s[k], f = q_f[k], t = q_t[k], o = s ^ 1, n, x0, y0;
     signed char d = s ? -1 : 1;
-    /* off the place it leaves: the top checker, or the +n place of a tall stack */
+    /* off the place it leaves: the last checker shown */
     if (!f) {
         n = sbar[s];
         if (!n)
