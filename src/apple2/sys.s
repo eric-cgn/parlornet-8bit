@@ -15,6 +15,7 @@
 .ifdef IIGS
         .import         _gs_poll, _mono
 .endif
+        .import         joy_keyed, joy_idle
 
         .export         _ser_open, _ser_close, _ser_get, _ser_put, _ser_used, _ser_drop
         .export         _ser_flow, _ser_lost
@@ -578,18 +579,16 @@ tp:     lda     $FFFF
 ; ---------------------------------------------------------------------------------------------------
 ; Keyboard and time
 
-; unsigned char kbd_get(void): a key (bit 7 clear), or 0.
+; unsigned char kbd_get(void): a key (bit 7 clear), or 0. The joystick (joy.s) sees each key, and gives
+; its own when there is none.
 _kbd_get:
         jsr     _tick_poll
         io_lda  $C000
         bpl     :+
         io_sta  $C010
         and     #$7F
-        ldx     #0
-        rts
-:       lda     #0
-        tax
-        rts
+        jmp     joy_keyed
+:       jmp     joy_idle
 
 ; unsigned char kbd_mods(void): bit 0 Open-Apple held, bit 1 Closed-Apple (Option) held.
 _kbd_mods:

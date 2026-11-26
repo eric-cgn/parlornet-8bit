@@ -4,7 +4,7 @@
 # modem port's line, at 9600 baud, to slirp (SLIP in user space) in a container beside it. slirp connects
 # on to the lab parlor, a container named parlor on the same network with parlord, the bot and the
 # orchestrator (orch.py). The network is internal: nothing leaves it, and no container has extra privileges.
-# test/mame/gsrun.lua follows the plan; screenshots (704 by 462), text dumps and the logs go to OUTDIR.
+# The Apple joystick is in the game port. test/mame/gsrun.lua follows the plan; screenshots (704 by 462), text dumps and the logs go to OUTDIR.
 #
 # usage: GSROMS=dir GSHD=disk.2mg PARLORNET=checkout test/lab/gs.sh PLAN OUTDIR
 # (GSLINE=host:port sends the modem line somewhere else on the network, such as a relay that logs it.)
@@ -87,7 +87,7 @@ docker run --rm --network "$NET" -e GSPLAN=/plan.txt -v "$GSROMS:/roms:ro" -v "$
 	-v "$(cd "$(dirname "$PLAN")" && pwd)/$(basename "$PLAN"):/plan.txt:ro" -v "$OUTDIR:/out" \
 	-v "$WORK/disks:/disks" -v "$XCHG:/xchg" "$IMAGE" sh -c "cd /out && /usr/games/mame apple2gs -rompath /roms \
 		-cfg_directory /out/cfg -sl7 cffa2 -hard1 /disks/hd.2mg -flop3 /disks/parlornet-gs.2mg \
-		-modem null_modem -bitb socket.${GSLINE:-parlornet-gsslirp:2323} -nothrottle -video none -sound none -skip_gameinfo \
+		-modem null_modem -bitb socket.${GSLINE:-parlornet-gsslirp:2323} -gameio joy -nothrottle -video none -sound none -skip_gameinfo \
 		-autoboot_script /scripts/gsrun.lua 2>&1 | grep -v -E 'XDG_RUNTIME|ALSA|seconds_to_run|REDUMP|might not run' || true"
 cp "$SRV/core.log" "$SRV/bot.log" "$SRV/orch.log" "$OUTDIR/" 2>/dev/null || true
 docker rm -f parlornet-gsslirp parlornet-gsparlor >/dev/null 2>&1 || true

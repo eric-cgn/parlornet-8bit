@@ -1,0 +1,77 @@
+# The Apple joystick at a table: Reversi against the bot chosen with the stick and the buttons, a disc
+# placed with the stick and button 0, Open-Apple-T (the chat) with the joystick on, and an empty game port,
+# where the stick and the buttons do nothing.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type S
+waittext Joystick: off 300
+type J
+waittext Joystick: on 60
+key ret
+waittext ParlorNet: connect 300
+type P
+waittext Name: 1800
+type new\r
+waittext want 300
+type jg\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+joy 16
+wait 200
+where
+joy 2
+joy 2
+joy 2
+joy 2
+joy 2
+joy 2
+joy 2
+joy 2
+where
+snap jg_menu
+joy 32
+wait 200
+where
+joy 16
+wait 900
+where
+snap jg_board
+point 0
+joy 8
+joy 8
+joy 8
+joy 2
+joy 2
+where
+snap jg_pointer
+joy 16
+wait 600
+snap jg_moved
+oa T
+wait 300
+snap jg_chat
+key esc
+wait 300
+where
+snap jg_board2
+nostick 1
+joy 8
+joy 8
+where
+oaraw
+wait 30
+oaup
+wait 60
+where
+snap jg_nostick
+nostick 0
+wait 30
+joy 8
+where
+snap jg_back
+exit

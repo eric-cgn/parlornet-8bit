@@ -46,6 +46,8 @@ At a table, what the players say shows on the line above the status line as it c
 
 The start screen offers P (connect and sign in), C (a plain line console, for setting up the line by hand) and S (the settings: the serial card's slot, speed and format and the modem's dialing, or the Uthernet II's slot, addresses and the parlor's name and port).
 
+An Apple joystick moves the pointer from one place to the next, as the arrow keys do, once the settings turn it on (J). It starts off, since many Apples have no joystick. Pushing the stick past its middle gives the arrow key for that way, and holding it there repeats it as the keys repeat. The joystick's two buttons are the same lines as the Open-Apple and Closed-Apple keys, so a button pressed and let go with no key gives Return, while a button held with a key is that Apple key, as always. With the joystick on, the Open-Apple key pressed alone gives Return too. An empty game port is noticed and left alone. The IIgs program has the same setting, and under ProDOS and on the IIgs PARLOR.CFG keeps it. The AppleMouse II, or the IIgs's own mouse, works with the joystick on or off.
+
 On the Super Serial Card the program takes the line to be a modem, and P dials it. It sends the init string, `ATZ` as the settings start, and waits for OK, then dials `ATDT` and the number (`ATDP` with Pulse dial) and waits up to a minute for CONNECT. On CONNECT it sends its first line at once, so the parlor's 20 seconds for it are never a race, and signs in. The screen shows each command and what the modem answers. If the modem says NO CARRIER, BUSY, NO DIALTONE, NO ANSWER or ERROR, or nothing comes within the minute, the program says so and offers to dial again, the console (Open-Apple-C) or the start screen (Esc). Esc while it dials sends a Return, which stops a modem's dial, and goes back to the start screen.
 
 The settings for the modem are three lines under the serial card's:
@@ -211,6 +213,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `setup.c` (an overlay): the start screen and the settings.
   - `splash.c` (an overlay): the title screen.
   - `ui.c`: text, fills, the pointer and keys on the Hi-Res screen.
+  - `joy.s`: the Apple joystick, read as arrow keys and Return. On the IIe it is in the vectors' page at $FF00, which the start-up loads with them.
   - `draw/`: each game's board.
   - `eth.c`, `w5100.s`, `signin_net.c`: our driver for the Uthernet II's W5100 (TCP on socket 0, UDP for DNS on socket 1) and the sign-in's DNS lookup. While a connection is up, the serial calls in sys.s go to it, so everything above them works the same over either.
   - `prodsys.s`: PARLOR.SYSTEM, which starts the program under ProDOS.
@@ -245,7 +248,7 @@ The Apple IIe's (the C64's is under The Commodore 64, above):
 | $2000-$3FFF | Hi-Res page 1 |
 | $4000-$BFFF | the program |
 | $D000-$FEFF | one overlay: the title screen, the start screen and settings, the sign-in, or a game (language card RAM, bank 2) |
-| $FF00-$FFFF | the 6502 vectors (the interrupt handler is ours) |
+| $FF00-$FFFF | the joystick's code (`joy.s`) and the 6502 vectors (the interrupt handler is ours) |
 
 Under ProDOS the program keeps out of ProDOS's way: it ends below $BF00, the boot block's page holds only the overlay table that PARLOR.SYSTEM fills in, $0900-$0CFF is ProDOS's buffer for an open file and $0D00 a page read at a time. The program runs with the auxiliary zero page, stack and language card switched in (ALTZP), so the overlays and the vectors are in the auxiliary language card while ProDOS stays in the main one; each MLI call switches back to ProDOS's side for the call. That needs 128K, and the /RAM disk is disconnected while the program runs.
 
