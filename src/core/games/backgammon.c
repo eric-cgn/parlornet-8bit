@@ -380,7 +380,16 @@ static unsigned char bg_offer(unsigned char answer)
     return D_OFFER;
 }
 
+/* The empty board, while the table waits (game.h). */
+static void bg_empty(void)
+{
+    memset(pt, 0, sizeof pt);
+    bar[0] = bar[1] = off[0] = off[1] = 0;
+    cube = 1;
+    owner = -1;
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct game g_backgammon = {"backgammon", "Backgammon", bg_begin, bg_line, bg_draw, bg_click, bg_key,
-                                  0, bg_event, bg_hover, bg_offer, bg_say};
+const struct game g_backgammon = {"backgammon", "Backgammon", bg_begin, bg_line, bg_draw, bg_click, bg_key, 0,
+                                  bg_event, bg_hover, bg_offer, bg_say, bg_empty};
 #pragma rodata-name (pop)

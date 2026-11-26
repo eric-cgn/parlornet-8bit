@@ -186,7 +186,17 @@ static unsigned char db_key(unsigned char k)
     return 1;
 }
 
+/* The empty board, while the table waits (game.h). */
+static void db_empty(void)
+{
+    bw = bh = 5;
+    memset(hl, '.', sizeof hl);
+    memset(vl, '.', sizeof vl);
+    memset(bx, '.', sizeof bx);
+    memset(cnt, 0, 4);
+}
+
 #pragma rodata-name (push, "OVHDR")
 const struct game g_dotsandboxes = {"dotsandboxes", "Dots and Boxes", db_begin, db_line, db_draw, db_click, db_key,
-                                    1, db_event, db_hover, 0, db_say};
+                                    1, db_event, db_hover, 0, db_say, db_empty};
 #pragma rodata-name (pop)

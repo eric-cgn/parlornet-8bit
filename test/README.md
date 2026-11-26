@@ -42,6 +42,8 @@ A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammo
   use them (`uthernet.txt`).
 - `lab/pngscale.py` scales MAME's snapshots (560 by 192) to 560 by 384.
 
+`plans/waiting.txt` opens a table of each of the ten games with Wait for anyone, one after another, and shows its waiting table (`wt_NAME.png`): the game's empty board, with "Waiting for a second player." and "Type /invite bot to play the bot." under it. `plans/gs_waiting.txt` does the same on the IIgs, and `vice/plans/waiting.txt` on the C64.
+
 The step `settle` waits until the program waits for a key with everything drawn, which is when for half a second it has read the keyboard all along and the screen has not changed. The plans that save a screenshot of each step settle before each snap, so that a screen still being drawn (after a load from the 1541, say) is not taken.
 
 `plans/table_entry.txt` starts each of the ten games against the bot from the lobby, one after another on

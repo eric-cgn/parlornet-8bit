@@ -78,12 +78,9 @@ unsigned char __fastcall__ m_has(const char *tok)
 
 const char *__fastcall__ g_name(unsigned char seat)
 {
-    static char b[8];
     if (seat < 8 && g_names[seat][0] && g_names[seat][0] != '-')
         return g_names[seat];
-    strcpy(b, "seat ");
-    strcat(b, utoa10(seat));
-    return b;
+    return "open seat";
 }
 
 /* The first line of s that fits the screen, cut at a space, into part; returns the rest ("" for none). */
@@ -303,9 +300,14 @@ again:
         if (G)
             G->line();
     }
-    g_over = strncmp(g_status, "Game over", 9) == 0 || (g_started && g_turn < 0);
     if (strcmp(g_status, "Waiting for players") == 0)
         g_started = 0;
+    if (!g_started) {                   /* the game's empty board, while the table waits */
+        g_turn = -1;
+        if (G && G->empty)
+            G->empty();
+    }
+    g_over = strncmp(g_status, "Game over", 9) == 0 || (g_started && g_turn < 0);
     g_myturn = g_seat >= 0 && g_turn == g_seat && !g_over && g_started;
     /* The geometry (G) comes once the game has begun: until then, ask for it again; when it comes,
        draw everything (a board drawn before it lacks what the geometry says). */
@@ -478,9 +480,9 @@ static void draw_all(void)
     ui_cls();
     g_title();
     g_full = 1;
-    if (G && g_started)
+    if (G)
         G->draw();
-    else if (!G)
+    else
         ui_text(2, 60, "This game is not on " MACHINE_NAME " yet.");
     g_full = 0;
     frame_buttons();
@@ -504,7 +506,7 @@ void g_redraw(void)
 static void redraw(void)
 {
     ui_hide();
-    if (G && g_started)
+    if (G)
         G->draw();
     show_status();
     ui_show();
@@ -822,7 +824,7 @@ static unsigned char __fastcall__ keys(unsigned char k)
         else if (k == B_HELP)
             k = '?';
         else {
-            if (G && k < 240)
+            if (G && k < 240 && g_started)     /* (a waiting table's board only shows) */
                 G->click(k);
             return 255;
         }

@@ -169,7 +169,15 @@ static unsigned char cf_key(unsigned char k)
     return 0;
 }
 
+/* The empty board, while the table waits (game.h). */
+static void cf_empty(void)
+{
+    aw = 72;
+    memset(ht, 10, aw);                 /* (level ground) */
+    wind = 0;
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct game g_cannonfire = {"cannonfire", "Cannon Fire", cf_begin, cf_line, cf_draw, cf_click, cf_key,
-                                  1, cf_said, cf_hover, 0, cf_say};
+const struct game g_cannonfire = {"cannonfire", "Cannon Fire", cf_begin, cf_line, cf_draw, cf_click, cf_key, 1,
+                                  cf_said, cf_hover, 0, cf_say, cf_empty};
 #pragma rodata-name (pop)

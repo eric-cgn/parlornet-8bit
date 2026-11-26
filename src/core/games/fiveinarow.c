@@ -109,7 +109,15 @@ static void fr_event(void)
     }
 }
 
+/* The empty board, while the table waits (game.h). */
+static void fr_empty(void)
+{
+    size = 15;
+    too_big = 0;
+    stones[0] = stones[1] = 0;
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct game g_fiveinarow = {"fiveinarow", "Five in a Row", fr_begin, fr_line, fr_draw, fr_click, 0,
-                                  0, fr_event, fr_hover};
+const struct game g_fiveinarow = {"fiveinarow", "Five in a Row", fr_begin, fr_line, fr_draw, fr_click, 0, 0,
+                                  fr_event, fr_hover, 0, 0, fr_empty};
 #pragma rodata-name (pop)

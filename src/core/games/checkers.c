@@ -255,7 +255,14 @@ static unsigned char ck_offer(unsigned char answer)
     return D_OFFER;
 }
 
+/* The empty board, while the table waits (game.h). */
+static void ck_empty(void)
+{
+    memset(cells, '.', 33);
+    memset(cnt, 0, 4);
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct game g_checkers = {"checkers", "Checkers", ck_begin, ck_line, ck_draw, ck_click, ck_key,
-                                0, ck_event, ck_hover, ck_offer, ck_say};
+const struct game g_checkers = {"checkers", "Checkers", ck_begin, ck_line, ck_draw, ck_click, ck_key, 0, ck_event,
+                                ck_hover, ck_offer, ck_say, ck_empty};
 #pragma rodata-name (pop)

@@ -24,6 +24,9 @@ struct game {
     /* The first sentence of the sentence line when the game has its own ("Your shot.", "You must
        jump."), or 0 for the table's ("Your turn.", "Waiting for ann."); or 0 for none. */
     const char *(*say)(void);
+    /* The game's empty board, made ready for draw, which a table shows while it waits for players (the
+       parlor has no view of a game that has not begun); or 0 when begin leaves it empty. */
+    void (*empty)(void);
 };
 
 /* The table, as the last view and the lobby list say. */
@@ -67,7 +70,7 @@ char *__fastcall__ g_who(unsigned char seat);
 void g_redraw(void);                    /* clear the screen and draw it all again */
 void __fastcall__ g_help(unsigned char k);  /* help k (machine.h, ovl_help) as pages over the screen */
 void g_title(void);
-const char *__fastcall__ g_name(unsigned char seat);   /* the seat's player, or "bot" */
+const char *__fastcall__ g_name(unsigned char seat);   /* the seat's player, or "open seat" */
 
 /* Ids of the frame's buttons; games use ids below 200. */
 #define B_LOBBY 250

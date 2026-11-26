@@ -102,7 +102,15 @@ static unsigned char mc_key(unsigned char k)
     return 0;
 }
 
+/* The empty board, while the table waits (game.h). */
+static void mc_empty(void)
+{
+    memset(cnt, 0, sizeof cnt);
+    strncpy(rules, g_rules, 7);         /* (the table's rules, as the lobby's list says) */
+    seeds = 4;
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct game g_mancala = {"mancala", "Mancala", mc_begin, mc_line, mc_draw, mc_click, mc_key,
-                               0, mc_event, mc_hover};
+const struct game g_mancala = {"mancala", "Mancala", mc_begin, mc_line, mc_draw, mc_click, mc_key, 0, mc_event,
+                               mc_hover, 0, 0, mc_empty};
 #pragma rodata-name (pop)

@@ -92,7 +92,15 @@ static void rv_event(void)
     }
 }
 
+/* The empty board, while the table waits (game.h). */
+static void rv_empty(void)
+{
+    size = 8;
+    memset(board, '.', sizeof board);
+    count[0] = count[1] = 0;
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct game g_reversi = {"reversi", "Reversi", rv_begin, rv_line, rv_draw, rv_click, 0,
-                               0, rv_event, rv_hover};
+const struct game g_reversi = {"reversi", "Reversi", rv_begin, rv_line, rv_draw, rv_click, 0, 0, rv_event, rv_hover,
+                               0, 0, rv_empty};
 #pragma rodata-name (pop)
