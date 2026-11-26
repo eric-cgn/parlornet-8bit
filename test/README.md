@@ -18,7 +18,8 @@ A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammo
 ```
 
 - `mame/run.lua` is the step runner MAME loads; it reads the plan (wait, waittext, title, type, key,
-  arrows, click, point, oa, caps, snap, dumptext, set, hold, need, exit) one step per line. The title
+  arrows, click, point, oa, caps, snap, dumptext, set, hold, need, joy, stick, button, nostick, where,
+  exit) one step per line. The title
   screen waits for a key, so every plan has a `title` step, which waits for the title screen and presses
   Return (`gsrun.lua` has the same step for the IIgs). `splash.txt` shows the title screen on a color
   monitor, and `splash_mono.txt` on a monochrome monitor, with `hold mono 1 900` keeping the program's
@@ -91,6 +92,18 @@ the right end of the lobby's and a table's title row ("1m" at the table), and fr
 and a new connection. The
 time comes from the parlor's TIM request (`TIM secs now`) when the parlor has it; a parlor without it
 answers ERR UNKNOWN and the program counts the ticks alone.
+
+The machine has the Apple joystick in its game port (`-gameio joy`), and `mame/joy.lua` sets it for the
+runners. `joy BITS [N]` holds it for N frames as the VICE runner's `joy` does (1 up, 2 down, 4 left, 8 right,
+16 button 0, 32 button 1), with the stick all the way over, then lets go. `stick X Y` holds the stick
+anywhere (0 to 255 on each axis, 128 the middle), and `button B V` holds a button. `nostick 1` makes the port
+read as an empty one does, whose paddle timers never run out. `where` logs the id of the target the pointer
+is on, so the run's log shows where each push took it. `plans/joystick.txt` shows the setting (J, off at
+first, then on) and the joystick in the lobby: a push right and left moves the pointer one place, a push held
+for a second and a half repeats, the stick within its middle does nothing, Open-Apple-D changes the display
+with the joystick on and gives no Return, and button 0 is Return. `plans/joystick_game.txt` chooses Reversi
+and the bot with the stick and both buttons, places a disc with the stick and button 0, opens the chat with
+Open-Apple-T, and then, with the port empty, shows that the stick and the Open-Apple key alone do nothing.
 
 `plans/keys.txt` shows the Open-Apple key in the console and the sign-in (MouseText on the enhanced IIe), in
 the lobby and at the table (the font's glyph), Grid Words' letter points (Open-Apple-V), and its tiles in
@@ -230,6 +243,9 @@ GSROMS=~/roms GSHD=~/gs/marinetti.2mg PARLORNET=~/src/parlornet test/lab/gs.sh t
   the display set to color, then to monochrome (where the IIgs shows the same title screen in black and
   white) and then not at all, each set in the settings and kept in PARLOR.CFG across a quit and a new
   start. `plans/gs_gridwords.txt` plays some words of Grid Words, in color and monochrome.
+- The IIgs has the Apple joystick in its game port too, and `gsrun.lua` has the IIe runner's joystick steps.
+  `plans/gs_joystick.txt` turns the joystick on in the settings, moves in the lobby, chooses Reversi and the
+  bot, places a disc, opens the chat with Open-Apple-T, and shows an empty port doing nothing.
 
 ## The C64 program in VICE
 

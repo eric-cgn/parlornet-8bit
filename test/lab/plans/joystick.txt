@@ -1,0 +1,61 @@
+# The Apple joystick: the setting (J, off at first), the stick moving the pointer in the lobby, held to
+# repeat, a dead zone in the middle, button 0 as Return, and Open-Apple shortcuts with the joystick on.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+joy 8
+joy 16
+wait 30
+dumptext js_start_off
+type S
+waittext Joystick: off 300
+dumptext js_settings_off
+type J
+waittext Joystick: on 60
+dumptext js_settings_on
+key ret
+waittext ParlorNet: connect 300
+type P
+waittext Name: 1800
+type new\r
+waittext want 300
+type jo\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap js_lobby
+where
+joy 8
+where
+snap js_lobby_right
+joy 8
+where
+joy 4
+where
+stick 100 160
+wait 60
+where
+stick
+joy 8 90
+where
+snap js_lobby_held
+joy 4 90
+where
+oa D
+wait 300
+where
+snap js_lobby_mono
+oa D
+wait 300
+where
+joy 16
+wait 300
+where
+snap js_newgame
+key esc
+wait 300
+where
+exit

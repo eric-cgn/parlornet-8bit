@@ -17,6 +17,9 @@ void txt_detect(void);
    (parity_name) and flow control; cfg_conn picks the Uthernet II instead (eth.h). */
 extern unsigned char cfg_slot, cfg_baud, cfg_parity, cfg_flow;
 
+/* The Apple joystick (joy.s): 1 when the settings turn it on */
+extern unsigned char joy_on;
+
 /* AppleMouse II */
 unsigned char mouse_find(void);
 void __fastcall__ mouse_call(unsigned int call);     /* low byte: entry offset, high byte: A */

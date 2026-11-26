@@ -11,6 +11,14 @@
 --   hold NAME V N      keep the byte at the program's variable NAME (from the link map) at V for the
 --                      next N frames, while the steps go on (the program's settings before it draws)
 --   dumptext NAME      write the text screen to /out/NAME.txt
+--   joy BITS [N]       the Apple joystick held (bits: 1 up, 2 down, 4 left, 8 right, 16 button 0, 32 button 1)
+--                      for N frames (default 10), the stick all the way over, then let go, and 10 frames more
+--   stick [X Y]        the stick held at X and Y (0 to 255, 128 the middle) until the next stick step; a
+--                      stick step with no numbers lets it go back to the middle
+--   button B V         joystick button B (0 or 1) down (V 1) or up (V 0) until the next button step for it
+--   where              log the id of the target the pointer is on ("where 3", or "where none")
+--   nostick V          V 1: the game port reads as a real one does with no joystick in it, its timers never
+--                      running out; V 0: the joystick again
 --   exit
 -- Addresses of the pointer's targets, from the link map (/xchg/addr.txt: name hex per line).
 -- The Uthernet II test double, when the lab asks for it.
@@ -57,6 +65,9 @@ local function field(tag, name)
   return port and port.fields[name]
 end
 
+local joy = dofile("/scripts/joy.lua")    -- the Apple joystick (run.sh gives MAME -gameio joy)
+local joy_until = nil
+
 local frame = 0
 sub = emu.add_machine_frame_notifier(function()
   frame = frame + 1
@@ -72,6 +83,9 @@ sub = emu.add_machine_frame_notifier(function()
   if release_caps and frame >= release_caps then
     field(":keyb_special", "Caps Lock"):clear_value()
     release_caps = nil
+  end
+  if joy_until and frame >= joy_until then
+    joy.release(); joy_until = nil
   end
   if waiting > 0 then waiting = waiting - 1 return end
   local step = steps[i]
@@ -201,6 +215,25 @@ sub = emu.add_machine_frame_notifier(function()
     hold_addr, hold_v, hold_until = ADDR[name], tonumber(v), frame + tonumber(n)
     if not hold_addr then log:write("no address for " .. name .. "\n") end
     i = i + 1
+  elseif cmd == "joy" then
+    local bits, n = rest:match("^(%d+)%s*(%d*)$")
+    n = tonumber(n) or 10
+    joy.bits(tonumber(bits))
+    log:write(frame .. " joy " .. rest .. "\n")
+    joy_until = frame + n; waiting = n + 10; i = i + 1
+  elseif cmd == "where" then
+    local c = space:read_u8(ADDR.t_cur)
+    local n = space:read_u8(ADDR.t_n)
+    log:write(frame .. " where " .. (c < n and tostring(space:read_u8(ADDR.t_id + c)) or "none") .. "\n")
+    i = i + 1
+  elseif cmd == "stick" then
+    local x, y = rest:match("^(%d+)%s+(%d+)$")
+    joy.stick(tonumber(x), tonumber(y)); i = i + 1
+  elseif cmd == "button" then
+    local b, v = rest:match("^(%d)%s+(%d)$")
+    joy.button(tonumber(b), tonumber(v)); i = i + 1
+  elseif cmd == "nostick" then
+    joy.nostick(space, rest == "1"); i = i + 1
   elseif cmd == "exit" then
     log:write(frame .. " exit\n"); log:close()
     manager.machine:exit()

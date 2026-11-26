@@ -30,6 +30,9 @@
 --   findpn               log the bank the program runs in
 --   dump HEX N NAME      N bytes from address HEX into /out/NAME.bin; dumppn: the address in the program's bank
 --   dbg COMMAND          a MAME debugger command (when MAME runs with -debug)
+--   joy BITS [N]         the Apple joystick held (bits: 1 up, 2 down, 4 left, 8 right, 16 button 0,
+--                        32 button 1) for N frames (default 10), then let go, and 10 frames more
+--   stick [X Y], button B V, nostick V, where: as in run.lua
 local plan_path = os.getenv("GSPLAN") or "/scripts/plan.txt"
 local steps = {}
 for line in io.lines(plan_path) do
@@ -114,6 +117,7 @@ local function findpn()
   return nil
 end
 local deadline = nil
+local joy = dofile("/scripts/joy.lua")    -- the Apple joystick (gs.sh gives MAME -gameio joy)
 
 local i, wait, frame = 1, 0, 0
 local task = nil                 -- a coroutine-like table {fn=function() return done end}
@@ -336,6 +340,19 @@ sub = emu.add_machine_frame_notifier(function()
           end
           L(frame .. " " .. cmd .. " " .. id)
         else L(frame .. " NO TARGET " .. id) end
+      elseif cmd == "joy" then
+        local bits, n = rest:match("^(%d+)%s*(%d*)$")
+        L(frame .. " joy " .. rest)
+        task = seq({ act(function() joy.bits(tonumber(bits)) end), delay(tonumber(n) or 10), act(joy.release),
+          delay(10) })
+      elseif cmd == "stick" then joy.stick(a, b)
+      elseif cmd == "button" then joy.button(a, b)
+      elseif cmd == "nostick" then joy.nostick(space, rest == "1", 0xE0C064)
+      elseif cmd == "where" then
+        PNBANK = PNBANK or findpn()
+        local base = (PNBANK or 0) * 0x10000
+        local c, n = space:read_u8(base + ADDR.t_cur), space:read_u8(base + ADDR.t_n)
+        L(frame .. " where " .. (c < n and tostring(space:read_u8(base + ADDR.t_id + c)) or "none"))
       elseif cmd == "exit" then L(frame .. " exit"); log:close(); manager.machine:exit()
       else L("unknown step " .. s) end
     end

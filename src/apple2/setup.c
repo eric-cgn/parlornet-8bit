@@ -112,6 +112,7 @@ static void setup_settings(void)
         setting_line(6, "2", "Port: ", utoa10(cfg_port));
         setting_line(8, "D", "Display: ", mono ? "monochrome" : "color");
         setting_line(9, "T", "Title screen at start: ", cfg_title ? "on" : "off");
+        setting_line(10, "J", "Joystick: ", joy_on ? "on" : "off");
         txt_goto(1, 19);
         say("Press a setting's key to change it and");
         txt_goto(1, 20);
@@ -127,6 +128,8 @@ static void setup_settings(void)
             mono ^= 1;
         else if (k == 'T')
             cfg_title ^= 1;
+        else if (k == 'J')
+            joy_on ^= 1;
         else if (k == K_RET || k == K_ESC)
             return;
         else if (k == '1') {
@@ -185,10 +188,8 @@ static void setup_settings(void)
             setting_line(13, "6", "Init string: ", cfg_init[0] ? cfg_init : "none");
             setting_line(14, "7", "Number: ", cfg_number[0] ? cfg_number : "none, no dialing");
             setting_line(15, "8", cfg_pulse ? "[x] " : "[ ] ", "Pulse dial");
-            txt_clrrow(16);
         } else {
             txt_clrrow(13);
-            txt_clrrow(16);
             b[0] = '0' + cfg_eslot;
             b[1] = 0;
             setting_line(4, "1", "Uthernet II in slot ", b);
@@ -199,6 +200,7 @@ static void setup_settings(void)
             setting_line(14, "6", "Parlor: ", cfg_host);
             setting_line(15, "7", "Port: ", utoa10(cfg_port));
         }
+        setting_line(16, "J", "Joystick: ", joy_on ? "on" : "off");
         setting_line(17, "D", "Display: ", mono ? "monochrome" : "color");
         if (PRODOS)
             setting_line(18, "T", "Title screen at start: ", cfg_title ? "on" : "off");
@@ -217,6 +219,8 @@ static void setup_settings(void)
             cfg_conn ^= 1;
         else if (k == 'D')
             mono ^= 1;
+        else if (k == 'J')
+            joy_on ^= 1;
         else if (k == 'T' && PRODOS)
             cfg_title ^= 1;
         else if (k == K_RET || k == K_ESC)
@@ -314,9 +318,10 @@ static void start_screen(void)
 static const char cfg_name[] = "\012PARLOR.CFG";
 
 /* The settings, in this order, after a version byte (CFG_VER, one more whenever the layout changes); then
-   the addresses, the port and the parlor's name, then whether the title screen is off; then, on the IIe,
-   the modem's init string, number and pulse dial. A file of another version or size is left alone: the
-   settings stay as they start until they are saved again. */
+   the addresses, the port and the parlor's name, then whether the title screen is off (bit 0) and whether
+   the joystick is on (bit 1, which older versions left clear); then, on the IIe, the modem's init string,
+   number and pulse dial. A file of another version or size is left alone: the settings stay as they start
+   until they are saved again. */
 #define CFG_VER 3
 #ifdef IIGS
 #define CFG_LEN 60
@@ -339,7 +344,7 @@ static void pack(unsigned char *b)
     b[25] = cfg_port;
     b[26] = cfg_port >> 8;
     memcpy(b + 27, cfg_host, 32);
-    b[59] = !cfg_title;
+    b[59] = !cfg_title | joy_on << 1;
 #ifndef IIGS
     memcpy(b + 60, cfg_init, DIAL_INIT_MAX + 1);
     memcpy(b + 60 + DIAL_INIT_MAX + 1, cfg_number, DIAL_NUM_MAX + 1);
@@ -363,7 +368,8 @@ static void pd_load(void)
         cfg_port = b[25] | (b[26] << 8);
         memcpy(cfg_host, b + 27, 32);
         cfg_host[31] = 0;
-        cfg_title = !b[59];
+        cfg_title = !(b[59] & 1);
+        joy_on = b[59] >> 1 & 1;
 #ifndef IIGS
         memcpy(cfg_init, b + 60, DIAL_INIT_MAX);
         memcpy(cfg_number, b + 60 + DIAL_INIT_MAX + 1, DIAL_NUM_MAX);
