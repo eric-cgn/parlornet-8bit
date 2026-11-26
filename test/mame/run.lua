@@ -105,12 +105,16 @@ sub = emu.add_machine_frame_notifier(function()
   elseif cmd == "title" then
     -- the title screen: graphics ($C01A bit 7 clear) in Hi-Res ($C01D bit 7 set). Return every second
     -- while it is up (one pressed while the program still loads is not taken), until text mode is back.
-    if not deadline then deadline = frame + (tonumber(rest) or 1800); title_key = nil end
+    -- (up after 30 frames of Hi-Res, and gone after 30 of text: the start-up shows Hi-Res for a moment
+    -- before the title)
+    if not deadline then deadline = frame + (tonumber(rest) or 1800); title_key = nil; title_text = 0; title_up = 0 end
     local up = space:read_u8(0xC01A) < 0x80 and space:read_u8(0xC01D) >= 0x80
-    if up and (not title_key or frame - title_key >= 60) then
+    title_text = up and 0 or title_text + 1
+    title_up = up and title_up + 1 or 0
+    if title_up >= 30 and (not title_key or frame - title_key >= 60) then
       if not title_key then log:write(frame .. " title\n") end
       manager.machine.natkeyboard:post("\r"); title_key = frame
-    elseif not up and title_key then
+    elseif title_text >= 30 and title_key then
       log:write(frame .. " title gone\n"); deadline = nil; i = i + 1
     elseif frame > deadline then
       log:write(frame .. (title_key and " title stays\n" or " no title\n")); deadline = nil; i = i + 1
