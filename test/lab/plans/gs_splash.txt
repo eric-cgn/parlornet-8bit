@@ -1,5 +1,6 @@
-# The IIgs program's title screen (test/lab/gs.sh): in color at the first start, then with the display
-# set to monochrome in the settings (kept in PARLOR.CFG), then turned off with T, which is kept too.
+# The IIgs program's title screen (test/lab/gs.sh): at the first start, then with the display set to
+# monochrome in the settings (kept in PARLOR.CFG), where the IIgs shows the same title screen in black and
+# white, then turned off with T, which is kept too.
 wait 2400
 dclick 568 66
 wait 300

@@ -240,6 +240,7 @@ void ui_button(unsigned char x, unsigned char y, const char *s, unsigned char id
 
 void ui_cls(void)
 {
+    clk_shown = 255;                    /* (the connected time drawn again: clk_show) */
     ui_targets_clear();
 }
 
@@ -352,13 +353,38 @@ void __fastcall__ clk_set(const char *secs)
     clk_t[2] = n >> 16;
 }
 
+static unsigned long clk_secs(void)
+{
+    return clk_t[0] | ((unsigned int)clk_t[1] << 8) | ((unsigned long)clk_t[2] << 16);
+}
+
+unsigned char clk_min(void)
+{
+    return clk_secs() / 60 % 60;
+}
+
+/* The units of n (under 100) before *x, and its tens when it has them. */
+static void clk_num(unsigned char n, unsigned char *x)
+{
+    clk_buf[--*x] = '0' + n % 10;
+    if (n >= 10)
+        clk_buf[--*x] = '0' + n / 10;
+}
+
 const char *clk_text(void)
 {
-    unsigned long n = clk_t[0] | ((unsigned int)clk_t[1] << 8) | ((unsigned long)clk_t[2] << 16);
-    strcpy(clk_buf, "    0:00");
-    clk_buf[7] = '0' + n % 10;
-    clk_buf[6] = '0' + n / 10 % 6;
-    clk_buf[4] = '0' + n / 60 % 10;
+    unsigned long m = clk_secs() / 60;
+    unsigned char x = 8;
+    memset(clk_buf, ' ', 8);
+    clk_shown = m % 60;
+    clk_buf[--x] = 'm';
+    clk_num(m % 60, &x);
+    if (m >= 60) {
+        x -= 2;
+        clk_buf[x + 1] = ' ';
+        clk_buf[x] = 'h';
+        clk_num(m / 60, &x);
+    }
     return clk_buf;
 }
 
@@ -369,9 +395,8 @@ void clk_sync(void)
 
 void clk_show(void)
 {
-    if (!connected || clk_t[0] == clk_shown)
+    if (!connected || clk_min() == clk_shown)
         return;
-    clk_shown = clk_t[0];
     ui_textn(32, 0, clk_text(), 8);
 }
 

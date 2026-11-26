@@ -20,9 +20,9 @@ A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammo
 - `mame/run.lua` is the step runner MAME loads; it reads the plan (wait, waittext, title, type, key,
   arrows, click, point, oa, caps, snap, dumptext, set, hold, need, exit) one step per line. The title
   screen waits for a key, so every plan has a `title` step, which waits for the title screen and presses
-  Return (`gsrun.lua` has the same step for the IIgs). `hold mono 1 900` keeps the program's mono setting
-  on while it starts, so `splash_mono.txt` shows the title screen in monochrome; `splash.txt` shows it in
-  color.
+  Return (`gsrun.lua` has the same step for the IIgs). `splash.txt` shows the title screen on a color
+  monitor, and `splash_mono.txt` on a monochrome monitor, with `hold mono 1 900` keeping the program's
+  mono setting on while it starts; the title screen is the same in either setting.
 - `lab/orch.py` answers a plan's `need` lines: it signs in as the player on a connection of its own,
   reads the table's view and writes the clicks and keys of a legal move back to the runner.
 - `lab/bridge.py` is the other end of the serial line: a plain relay to the parlor (port 16601) or a
@@ -86,8 +86,9 @@ board on the right and on the left. Tall stacks show four checkers and +n. `plan
 a Row, Naval Combat and Grid Words and shows the pointer on the middle of a point or square, at the first one
 and one along and one down from it.
 
-`plans/clock.txt` shows the connected time: on the sign-in's title row ("ParlorNet  0:05"), at the right
-end of the lobby's and a table's title row, and from 0:00 again after Open-Apple-Q and a new connection. The
+`plans/clock.txt` shows the connected time in whole minutes: on the sign-in's title row ("ParlorNet  0m"), at
+the right end of the lobby's and a table's title row ("1m" at the table), and from 0m again after Open-Apple-Q
+and a new connection. The
 time comes from the parlor's TIM request (`TIM secs now`) when the parlor has it; a parlor without it
 answers ERR UNKNOWN and the program counts the ticks alone.
 
@@ -163,7 +164,7 @@ A2ROMS=~/roms test/lab/run.sh 16600 build/parlornet.dsk test/lab/plans/dial.txt 
   `ATD"parlornet.org:6501"`, which starts with AT, is sent as the whole dial command even with Pulse dial on
   (`di_atd_settings`, `di_atd`), as a Zimodem needs for a plain connection.
 - `plans/dial_errors.txt` dials BUSY (`de_busy`), and Return dials again; NOCARRIER (`de_nocarrier`); and
-  SILENT, which ends after a minute in "No CONNECT from the modem in a minute." (`de_timeout`). Return dials
+  SILENT, which ends after a minute in "The modem did not say CONNECT in a minute." (`de_timeout`). Return dials
   SILENT again (`de_dialing`), and Escape sends a Return, which stops the dial (the stand-in's NO CARRIER),
   and goes back to the start screen (`de_cancelled`).
 - `plans/dial_stay.txt` dials STAY: after Open-Apple-Q no NO CARRIER comes, so the program sends `+++`, gets
@@ -225,9 +226,10 @@ GSROMS=~/roms GSHD=~/gs/marinetti.2mg PARLORNET=~/src/parlornet test/lab/gs.sh t
   desktop (`mto`, `click`, `dclick`, `drag`) and the ADB keys (`key cmd+q`), and finds the program's bank by
   its first bytes, so that `click ID` can point at a target as the arrow keys would.
 - `plans/gs_reversi.txt` opens the program from the Finder, signs up, plays Reversi against the bot to the
-  end, closes the connection and quits to the Finder. `plans/gs_splash.txt` shows the title screen in
-  color, then in monochrome and then not at all, each set in the settings and kept in PARLOR.CFG across a
-  quit and a new start. `plans/gs_gridwords.txt` plays some words of Grid Words, in color and monochrome.
+  end, closes the connection and quits to the Finder. `plans/gs_splash.txt` shows the title screen with
+  the display set to color, then to monochrome (where the IIgs shows the same title screen in black and
+  white) and then not at all, each set in the settings and kept in PARLOR.CFG across a quit and a new
+  start. `plans/gs_gridwords.txt` plays some words of Grid Words, in color and monochrome.
 
 ## The C64 program in VICE
 

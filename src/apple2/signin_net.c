@@ -140,7 +140,7 @@ unsigned char eth_connect(void)
     if (!eth_init()) {
         q_set("No Uthernet II answers in slot ");
         q_cat(utoa10(cfg_eslot));
-        q_cat(" (settings: S).");
+        q_cat(". Check the settings (S).");
         return 0;
     }
     say("Looking up ");

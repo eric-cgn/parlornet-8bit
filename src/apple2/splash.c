@@ -1,9 +1,9 @@
 /* ParlorNet for the Apple IIe: the title screen shown at start-up, an overlay (ovl.h). PARLOR over NET in
    the title's block letters (art/splash.txt, tools/apple2_art.py), each block filled solid, 4 color pixels
-   across and 6 lines down. On a color monitor the rows of blocks are bands of the Hi-Res colors: PARLOR
-   white, orange and violet, NET white, green and blue. Each screen line has one color, so no screen byte
-   mixes the two palette groups. In monochrome every block is white. main.c keeps it up until a key is
-   pressed. */
+   across and 6 lines down. The rows of blocks are bands of the Hi-Res colors: PARLOR white, orange and
+   violet, NET white, green and blue. Each screen line has one color, so no screen byte mixes the two
+   palette groups. The screen is the same with the display set to monochrome, and on a monochrome monitor
+   the colored bands show as fine stripes. main.c keeps it up until a key is pressed. */
 #include "machine.h"
 #include "apple2.h"
 #include "ovl.h"
@@ -76,7 +76,7 @@ static void word(const unsigned char *const *w, unsigned char y0, const unsigned
         for (r = 0; r < 9; ++r)
             for (l = 0; l < 6; ++l) {
                 LINE(y0 + r * 6 + l);
-                col = mono ? WHITE : colors[r][l >= 3];
+                col = colors[r][l >= 3];
                 bits = g[1 + r];
                 for (c = 0; c < g[0]; ++c, bits <<= 1) {
                     if (!(bits & 0x80))
@@ -104,7 +104,7 @@ static void show(void)
     word(parlor_word, 14, warm);
     word(net_word, 82, cool);
     ui_ink(F_WHITE, F_BLACK);
-    hg_bold = !mono;
+    hg_bold = 1;
 #ifdef IIGS
     ui_text(4, 150, "ParlorNet for the Apple IIgs " PN_VERSION);
 #else

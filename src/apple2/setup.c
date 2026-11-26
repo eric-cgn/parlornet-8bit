@@ -105,17 +105,17 @@ static void setup_settings(void)
     title_bar("ParlorNet settings", "");
     for (;;) {
         txt_goto(1, 2);
-        say("Connection: Marinetti, as set up in");
+        say("Marinetti makes the connection. Set it");
         txt_goto(1, 3);
-        say("the TCP/IP control panel.");
+        say("up in the TCP/IP control panel.");
         setting_line(5, "1", "Parlor: ", cfg_host);
         setting_line(6, "2", "Port: ", utoa10(cfg_port));
         setting_line(8, "D", "Display: ", mono ? "monochrome" : "color");
         setting_line(9, "T", "Title screen at start: ", cfg_title ? "on" : "off");
         txt_goto(1, 19);
-        say("A key to change a setting, Return when");
+        say("Press a setting's key to change it and");
         txt_goto(1, 20);
-        say("done. The parlor's native port is 6501.");
+        say("Return when done. Parlors use 6501.");
         txt_goto(1, 21);
         txt_clreol();
         do
@@ -149,9 +149,9 @@ static void start_screen(void)
     txt_clear();
     title_bar("ParlorNet", "");
     txt_goto(1, 3);
-    sayln("The games of a ParlorNet parlor, over");
+    sayln("Configure the ParlorNet online");
     txt_goto(1, 4);
-    say("Marinetti, the IIgs TCP/IP stack.");
+    say("game service");
     setting_line(7, "P", "ParlorNet: connect and sign in", "");
     setting_line(9, "S", "Settings: ", "");
     txt_goto(13, 9);
@@ -159,12 +159,6 @@ static void start_screen(void)
     say(" ");
     say(utoa10(cfg_port));
     setting_line(11, "D", "Display: ", mono ? "monochrome" : "color");
-    txt_goto(1, 14);
-    sayln("P connects to the parlor named in the");
-    txt_goto(1, 15);
-    sayln("settings (S), on its native port, over");
-    txt_goto(1, 16);
-    say("the network set up in Marinetti.");
     txt_goto(1, 22);
     say("Open-Apple-Q: quit");
 }
@@ -209,9 +203,9 @@ static void setup_settings(void)
         if (PRODOS)
             setting_line(18, "T", "Title screen at start: ", cfg_title ? "on" : "off");
         txt_goto(1, 19);
-        say("A key to change a setting, Return when");
+        say("Press a setting's key to change it and");
         txt_goto(1, 20);
-        say("done. The parlor's native port is 6501.");
+        say("Return when done. Parlors use 6501.");
         txt_goto(1, 21);
         txt_clreol();
         do
@@ -278,11 +272,11 @@ static void start_screen(void)
     txt_clear();
     title_bar("ParlorNet", "");
     txt_goto(1, 3);
-    sayln("The games of a ParlorNet parlor, over");
+    sayln("Configure the ParlorNet online");
     txt_goto(1, 4);
-    say(cfg_conn ? "an Uthernet II card." : "the Super Serial Card.");
+    say("game service");
     setting_line(7, "P", "ParlorNet: connect and sign in", "");
-    setting_line(9, "C", "Console, to set up the line first", "");
+    setting_line(9, "C", "Console: set up the line by hand", "");
     setting_line(11, "S", "Settings: ", "");
     txt_goto(13, 11);
     if (cfg_conn) {
@@ -300,23 +294,9 @@ static void start_screen(void)
         txt_goto(1, 22);
         say("Open-Apple-Q: back to ProDOS");
     }
+    if (cfg_conn || cfg_number[0])      /* (P connects or dials: the menu says enough) */
+        return;
     txt_goto(1, 16);
-    if (cfg_conn) {
-        sayln("P connects to the parlor named in the");
-        txt_goto(1, 17);
-        say("settings (S), on its native port.");
-        return;
-    }
-    if (cfg_number[0]) {
-        sayln("P dials the modem with the number in");
-        txt_goto(1, 17);
-        sayln("the settings (S) and signs in. C is a");
-        txt_goto(1, 18);
-        sayln("plain console, to set up the line by");
-        txt_goto(1, 19);
-        say("hand.");
-        return;
-    }
     sayln("If the line already reaches the");
     txt_goto(1, 17);
     sayln("parlor's native port (6501), press P.");

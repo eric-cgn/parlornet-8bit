@@ -1,4 +1,7 @@
-# The title screen as it comes up, after the program has loaded at the 1541's own speed.
+# The title screen as it comes up, after the program has loaded at the 1541's own speed, while the settings
+# load (their bar on the status row), and once they have, with "Press a key" on that row again.
 waittitle 6000
 snap title
+wait 1500
+snap title_ready
 exit

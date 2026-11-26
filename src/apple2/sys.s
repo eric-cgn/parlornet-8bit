@@ -21,7 +21,7 @@
         .export         _txt_clear, _txt_goto, _txt_putc, _txt_puts, _txt_clreol, _txt_clrrow
         .export         _txt_x, _txt_y, _txt_inv, _txt_top, _txt_bot, _txt_cursor, _txt_peek
         .export         _kbd_get, _kbd_mods, _tick_poll, _ticks
-        .export         _clk_t, _clk_sub, _clk_set, _clk_text, _clk_buf, _clk_shown, _clk_show, _clk_sync
+        .export         _clk_t, _clk_sub, _clk_set, _clk_text, _clk_buf, _clk_shown, _clk_show, _clk_sync, _clk_min
         .export         _clk_tim_off, _clk_tim_at
         .import         _q_set, _net_req, _r_n, _r_line
         .import         _connected, _ui_hide, _ui_show, _ui_ink, _hgr_text, _hg_x, _hg_y, pusha
