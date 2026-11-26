@@ -62,7 +62,8 @@ SMALLOVL="frame backgammon"
 # program MACHINEDIR OBJDIR MAPOUT PROGRAMOUT CONFIG CFLAGS CSRC ASM CRT0 LIB OVLSTART OVLSIZE
 #   compiles the C files in CSRC (paths, in link order; those named in $PLATE with their code and read-only
 #   data in the segments PCODE and PRODATA), assembles the files in ASM (in MACHINEDIR) and the
-#   font ($PFONT, when set), then the overlays with their art ($PART/NAME_art.s), and links them after CRT0
+#   font ($PFONT, when set), then the overlays with their art ($PART/NAME_art.s, or on the IIe NAME_dhr.s
+#   where there is one), and links them after CRT0
 #   (an object in OBJDIR) with ld65 and CONFIG (a path; its #OVLMEM and #OVLSEG lines get the overlays).
 program() {
 	pm=$1 pobj=$2 pmap=$3 pout=$4 pcfg=$5 pcflags=$6 pcsrc=$7 pasm=$8 pcrt=$9
@@ -101,9 +102,12 @@ program() {
 			ca65 --cpu 6502 -o "$pobj/$b.o" "$pobj/$b.s"
 			objs="$objs $pobj/$b.o"
 		done
-		if [ -f "$PART/${name}_art.s" ]; then
-			sed -i "s/\"RODATA\"/\"OVR_$name\"/" "$PART/${name}_art.s"
-			ca65 --cpu 6502 -o "$pobj/${name}_art.o" "$PART/${name}_art.s"
+		# (on the IIe a game drawn in Double Hi-Res has its masks, NAME_dhr.s, for its Hi-Res pictures)
+		art=$PART/${name}_art.s
+		if [ -z "$pdef" ] && [ -f "$PART/${name}_dhr.s" ]; then art=$PART/${name}_dhr.s; fi
+		if [ -f "$art" ]; then
+			sed -i "s/\"RODATA\"/\"OVR_$name\"/" "$art"
+			ca65 --cpu 6502 -o "$pobj/${name}_art.o" "$art"
 			objs="$objs $pobj/${name}_art.o"
 		fi
 		mem="$mem    OV_$name: file = \"%O.$name\", start = $povl, size = $povlsize;\\n"
