@@ -29,7 +29,11 @@ arrows L
 wait 30
 settle 600
 snap dhr_color_ptr
-oa D
+hold mono 1 30
+wait 40
+type ?
+wait 120
+key esc
 wait 300
 set :a2video:a2_video_config Monitor type 5
 wait 30
@@ -49,7 +53,11 @@ wait 30
 settle 600
 snap dhr_amber
 set :a2video:a2_video_config Monitor type 0
-oa D
+hold mono 0 30
+wait 40
+type ?
+wait 120
+key esc
 wait 300
 need bgsnapa ida Swordfish 1997
 wait 120

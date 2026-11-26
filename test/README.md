@@ -100,8 +100,8 @@ then in monochrome on MAME's green, white and amber monitors (`dhr_green`, `dhr_
 Monitor type N`: 0 color, 4 white, 5 green, 6 amber.
 
 `plans/dhr_timing.txt` times Backgammon's drawing. Build with `-D DHR_TIMING` added to `A2FLAGS` in build.sh,
-and draw/backgammon.c marks each drawing at $03CF, which the plan's `watch 03CF` logs frame by frame:
-three full boards in color and two in monochrome (Open-Apple-D draws the board again in the other display),
+and draw/backgammon.c marks each drawing at $FEFF (in the language card, which the kit's switches to the auxiliary memory do not move), which the plan's `watch FEFF` logs frame by frame:
+full boards in color and in monochrome (the plan sets the display with `hold mono`, and closing help draws the whole table again),
 a step of the player's and the bot's turn. `python3 test/lab/marks.py OUTDIR/run.log` prints the frames each
 took. The machine runs at 1.023 MHz, 60 frames a second, so a frame is about 17,000 cycles. The `poke` step
 writes bytes into the program's memory (into an overlay's, it waits for a frame where the language card's bank

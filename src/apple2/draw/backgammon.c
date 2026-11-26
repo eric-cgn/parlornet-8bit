@@ -21,7 +21,7 @@
 #include "dhr.h"
 
 #ifdef DHR_TIMING
-#define MARK(v) (*(unsigned char *)0x03CF = (v))   /* for timing in MAME (test/mame/run.lua's watch) */
+#define MARK(v) (*(unsigned char *)0xFEFF = (v))   /* for timing in MAME (run.lua's watch); $FEFF is free */
 #else
 #define MARK(v)
 #endif

@@ -1,4 +1,4 @@
-"""Reads the run.log of plans/dhr_timing.txt, played by a build with DHR_TIMING (run.lua's watch on $03CF,
+"""Reads the run.log of plans/dhr_timing.txt, played by a build with DHR_TIMING (run.lua's watch on $FEFF,
 where draw/backgammon.c marks its drawing: 3 a full board, 1 a partial one, 2 a checker's step, 0 done),
 and prints how many frames each drawing took. Usage: python3 marks.py OUTDIR/run.log"""
 import sys

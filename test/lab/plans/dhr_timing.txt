@@ -2,6 +2,7 @@ wait 120
 caps
 title 1800
 waittext ParlorNet: connect 1200
+hold cfg_tutor 1 30
 type P
 waittext Name: 900
 type new\r
@@ -16,25 +17,49 @@ key ret
 wait 200
 key ret
 wait 200
-watch 03CF
+watch FEFF
 key ret
 wait 1200
 snap t_start
-oa D
+hold mono 1 30
+wait 40
+type ?
+wait 120
+key esc
 wait 300
-oa D
+hold mono 0 30
+wait 40
+type ?
+wait 120
+key esc
 wait 300
-oa D
+hold mono 1 30
+wait 40
+type ?
+wait 120
+key esc
 wait 300
-oa D
+hold mono 0 30
+wait 40
+type ?
+wait 120
+key esc
 wait 300
 need bgsnapa tia Swordfish 1997
 wait 300
 need bgplay tia Swordfish 1997
 wait 300
 snap t_after
-oa D
+hold mono 1 30
+wait 40
+type ?
+wait 120
+key esc
 wait 300
-oa D
+hold mono 0 30
+wait 40
+type ?
+wait 120
+key esc
 wait 300
 exit

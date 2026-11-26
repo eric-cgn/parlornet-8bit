@@ -25,7 +25,7 @@
 --   poke HEX V ...     write the bytes V (negative ones as their two's complement) from address HEX on; at
 --                      $D000-$DFFF it waits for a frame where the language card's bank 2 (the overlays') is in
 --   watch HEX          from now on, log the frame whenever the byte at HEX changes ("120 mark 3"): a build
---                      with DHR_TIMING marks Backgammon's drawing at $03CF (draw/backgammon.c)
+--                      with DHR_TIMING marks Backgammon's drawing at $FEFF (draw/backgammon.c)
 --   exit
 -- Addresses of the pointer's targets, from the link map (/xchg/addr.txt: name hex per line).
 -- The Uthernet II test double, when the lab asks for it.

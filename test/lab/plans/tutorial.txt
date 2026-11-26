@@ -78,6 +78,7 @@ settle
 snap tu_15
 key esc
 wait 60
+settle
 oa R
 settle
 snap tu_16
