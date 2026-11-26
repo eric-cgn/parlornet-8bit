@@ -1,0 +1,48 @@
+wait 560
+snap dhr_title
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type ida\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+snap dhr_lobby
+key ret
+wait 200
+key ret
+wait 200
+key ret
+wait 1200
+snap dhr_color
+point 5
+arrows L
+wait 30
+snap dhr_color_ptr
+oa D
+wait 300
+set :a2video:a2_video_config Monitor type 5
+wait 30
+snap dhr_green
+point 5
+arrows L
+wait 30
+snap dhr_green_ptr
+set :a2video:a2_video_config Monitor type 4
+wait 30
+snap dhr_white
+set :a2video:a2_video_config Monitor type 6
+wait 30
+snap dhr_amber
+set :a2video:a2_video_config Monitor type 0
+oa D
+wait 300
+need bgsnapa ida Swordfish 1997
+wait 120
+exit

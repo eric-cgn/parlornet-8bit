@@ -1,0 +1,4 @@
+wait 400
+snap k64
+dumptext k64_text
+exit
