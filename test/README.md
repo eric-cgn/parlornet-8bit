@@ -142,6 +142,8 @@ its letter, in color and in monochrome.
 
 `plans/letters.txt` shows one meaning per letter, with Open-Apple, against the bot: the lobby's Open-Apple-N opens New game (`lt_newgame`); Mancala's 3 moves the pointer to pit 3 (`lt_mancala_3`); Open-Apple-H says it does nothing in Reversi (`lt_nothing`); Cannon Fire's < and + aim by 10, with the pointer on Fire (`lt_cannon`); Esc lets go of a picked dot in Dots and Boxes (`lt_dots_picked`, `lt_dots_dropped`) and goes back to the lobby when nothing is picked; Grid Words' Open-Apple-X starts an exchange (`lt_exchange`); Rummy Tile's Open-Apple-O sorts the rack and Open-Apple-C says whether the turn would count (`lt_sorted`, `lt_check`); Naval Combat's Open-Apple-G places the fleet at random (`lt_random`); and Backgammon's panel shows Roll and Double over Chat, Help, Resign and Lobby (`lt_backgammon`). `vice/plans/letters.txt` does the same on the C64.
 
+`plans/sentences.txt` shows the sentence line: the status line says whose turn it is and the clock, and the message line says what Return does on the place under the pointer or the other player's move as it comes. It shows a Reversi table waiting for a player (`se_waiting`), Reversi against the bot on a square where no disc goes and on d3 (`se_reversi_a1`, `se_reversi_d3`), the bot's answer in words (`se_reversi_bot`), Five in a Row (`se_five`, `se_five_bot`), Mancala (`se_mancala`), Naval Combat while the fleet is placed (`se_naval`), Rummy Tile (`se_rummy`), Checkers (`se_checkers`) and Backgammon (`se_backgammon`). `vice/plans/sentences.txt` does the same on the C64.
+
 ## Through a Unix shell
 
 `lab/shell/` is a container with a login shell (bash 5.2, with TERM=vt100) on a pty behind a TCP port, as a

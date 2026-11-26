@@ -59,24 +59,57 @@ static void fr_line(void)
 /* The machine's drawing: fr_draw. */
 #include "draw/fiveinarow.c"
 
+static char pt[4];
+
+/* The point with this target id, as its name ("h8"), in pt; 1 when it is taken. */
+static unsigned char pt_of(unsigned char id)
+{
+    unsigned char x = id % size, y = id / size;
+    pt[0] = 'a' + x;
+    strcpy(pt + 1, utoa10(y + 1));
+    return cell[y][x] & 3;
+}
+
 static void fr_click(unsigned char id)
 {
-    static char p[4];
-    unsigned char x = id % size, y = id / size;
     if (!g_myturn) {
-        g_message("Not your turn.");
+        g_message("It's not your turn.");
         return;
     }
-    if (cell[y][x] & 3) {
+    if (pt_of(id)) {
         g_message("That point is taken.");
         return;
     }
-    p[0] = 'a' + x;
-    strcpy(p + 1, utoa10(y + 1));
-    g_move(p);
+    g_move(pt);
+}
+
+/* What Return does on the point under the pointer. */
+static void fr_hover(unsigned char id)
+{
+    static char b[42];
+    if (id == 255) {
+        g_message("Move to an empty point.");
+        return;
+    }
+    strcpy(b, pt_of(id) ? "That point is taken." : "Press " KEY_RET " to place a stone on ");
+    if (b[0] == 'P') {
+        strcat(b, pt);
+        strcat(b, ".");
+    }
+    g_message(b);
+}
+
+/* The other player's move in words: "ann placed a stone on h8." */
+static void fr_event(void)
+{
+    if (is(w[3], "PUT") && wn > 5 && num(w[4]) != (unsigned char)g_seat) {
+        strcat(g_who(num(w[4])), " placed a stone on ");
+        strcat(g_last, w[5]);
+        strcat(g_last, ".");
+    }
 }
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_fiveinarow = {"fiveinarow", "Five in a Row", fr_begin, fr_line, fr_draw, fr_click, 0,
-                                  "Click an empty point to play it"};
+                                  "Click an empty point to play it", 0, fr_event, fr_hover};
 #pragma rodata-name (pop)

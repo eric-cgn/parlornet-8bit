@@ -42,7 +42,6 @@ static char pl[7];                      /* the letter (lower case for a blank) *
 static unsigned char used;              /* bit per rack tile placed */
 static unsigned char swap_mode, swap_marks;
 static void preview(void);
-static unsigned char hovered;
 
 static void gw_begin(void)
 {
@@ -266,26 +265,26 @@ static void play(void)
 }
 
 /* As the tiles are laid, the parlor's CHK says what the play would score, or why it would be refused. */
+static char pv[64];                     /* what the play laid out would score (preview), for gw_hover */
+
 static void preview(void)
 {
-    static char b[50];                  /* g_chkinfo (40) and " points: " */
     char *p;
     if (!np)
         return;
     build();
     if (g_chk(tok)) {
+        /* "32 QUIZ": "QUIZ scores 32. Press Return to play it." */
         p = strchr(g_chkinfo, ' ');
         if (p)
             *p++ = 0;
-        strcpy(b, g_chkinfo);
-        strcat(b, " points");
-        if (p && strlen(b) < 38) {
-            strcat(b, ": ");
-            strncat(b, p, 40 - strlen(b));
-        }
-        g_message(b);
+        strcpy(pv, p ? p : "It");
+        strcat(pv, " scores ");
+        strcat(pv, g_chkinfo);
+        strcat(pv, strlen(pv) < 18 ? ". Press " KEY_RET " to play it." : ".");
     } else
-        g_message(g_chkinfo);
+        strcpy(pv, g_chkinfo);
+    g_message(pv);
 }
 
 static void gw_click(unsigned char id)
@@ -293,7 +292,7 @@ static void gw_click(unsigned char id)
     static char b[12];
     unsigned char i;
     if (!g_myturn) {
-        g_message("Not your turn.");
+        g_message("It's not your turn.");
         return;
     }
     if (id < N * N) {
@@ -321,7 +320,7 @@ static void gw_click(unsigned char id)
             sy = y;
             down = 0;
         }
-        g_message(down ? "Down: type the letters." : "Across: type the letters.");
+        g_message(down ? "Your word goes down from here." : "Your word goes across from here.");
         redraw();
         return;
     }
@@ -423,41 +422,75 @@ static unsigned char gw_key(unsigned char k)
     return 0;
 }
 
-/* The pointer rests on a target: a tile's points on the message line. */
+/* What Return does under the pointer on your turn: a tile's points, where a word starts, the score of the
+   word laid out so far, or a button's action. */
 static void gw_hover(unsigned char id)
 {
-    static char b[24];
+    static char b[42];
     char c = 0;
+    const char *s;
     if (id < N * N)
         c = tile[id / N][id % N];
     else if (id >= ID_RACK && id < ID_RACK + 7 && id - ID_RACK < nrack)
         c = rack[id - ID_RACK];
-    if (!c) {
-        if (hovered)
-            g_message("");
-        hovered = 0;
+    if (c) {
+        if (c == '_' || c >= 'a') {
+            strcpy(b, "A blank");
+            if (c >= 'a') {
+                strcat(b, " for ");
+                b[strlen(b) + 1] = 0;
+                b[strlen(b)] = c - 32;
+            }
+            strcat(b, " scores 0 points.");
+        } else {
+            b[0] = c;
+            b[1] = 0;
+            strcat(b, " scores ");
+            strcat(b, utoa10(val[c - 'A']));
+            strcat(b, val[c - 'A'] == 1 ? " point." : " points.");
+        }
+        g_message(b);
         return;
     }
-    hovered = 1;
-    if (c == '_' || c >= 'a') {
-        strcpy(b, "A blank");
-        if (c >= 'a') {
-            strcat(b, " for ");
-            b[strlen(b) + 1] = 0;
-            b[strlen(b)] = c - 32;
-        }
-        strcat(b, ": 0 points");
-    } else {
-        b[0] = c;
-        b[1] = 0;
-        strcat(b, ": ");
-        strcat(b, utoa10(val[c - 'A']));
-        strcat(b, val[c - 'A'] == 1 ? " point" : " points");
+    if (swap_mode)
+        s = "Pick tiles to put back, then Exchange.";
+    else if (np)
+        s = pv;
+    else if (id == ID_PASS)
+        s = "Press " KEY_RET " to pass.";
+    else if (id == ID_SWAP)
+        s = "Press " KEY_RET " to exchange tiles.";
+    else if (sx >= 0)
+        s = id == sx + sy * N ? "Type the letters, or " KEY_RET " to turn it." : "Type the letters of your word.";
+    else if (id < N * N)
+        s = "Press " KEY_RET " to start your word here.";
+    else
+        s = "Press " KEY_RET " where your word starts.";
+    g_message(s);
+}
+
+/* The other player's turn in words: "ann played DOZE for 19 points.", "ann passed.", "ann exchanged 3
+   tiles." */
+static void gw_event(void)
+{
+    if (num(w[4]) == (unsigned char)g_seat)
+        return;
+    if (is(w[3], "PLAY") && wn > 9) {
+        strcat(g_who(num(w[4])), " played ");
+        strcat(g_last, w[8]);
+        strcat(g_last, " for ");
+        strcat(g_last, w[9]);
+        strcat(g_last, " points.");
+    } else if (is(w[3], "PASS"))
+        strcat(g_who(num(w[4])), " passed.");
+    else if (is(w[3], "EXCH") && wn > 5) {
+        strcat(g_who(num(w[4])), " exchanged ");
+        strcat(g_last, w[5]);
+        strcat(g_last, " tiles.");
     }
-    g_message(b);
 }
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_gridwords = {"gridwords", "Grid Words", gw_begin, gw_line, gw_draw, gw_click, gw_key,
-                                 OA "P pass, " OA "X exchange, " OA "V points", 0, 0, gw_hover};
+                                 OA "P pass, " OA "X exchange, " OA "V points", 0, gw_event, gw_hover};
 #pragma rodata-name (pop)

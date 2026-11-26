@@ -75,8 +75,39 @@ static void bg_line(void)
     }
 }
 
+/* The other player's turn in words, step by step: "ann rolled 6 and 3 and moved 12-18 and 12-15.",
+   "ann doubled to 4.", "ann accepted the double." */
+static unsigned char moved;
+
+static void said(void)
+{
+    unsigned char s = num(w[4]);
+    if (s == (unsigned char)g_seat)
+        return;
+    if (is(w[3], "ROLL") && wn > 6) {
+        strcat(g_who(s), " rolled ");
+        strcat(g_last, w[5]);
+        strcat(g_last, " and ");
+        strcat(g_last, w[6]);
+        moved = 0;
+    } else if (is(w[3], "STEP") && wn > 6 && g_last[0] && strlen(g_last) < 36) {
+        strcat(g_last, moved ? " and " : " and moved ");
+        strcat(g_last, w[5]);
+        strcat(g_last, "-");
+        strcat(g_last, w[6]);
+        moved = 1;
+    } else if (is(w[3], "DBL") && wn > 5) {
+        strcat(g_who(s), " doubled to ");
+        strcat(g_last, w[5]);
+    } else if (is(w[3], "TAKE") || is(w[3], "DROP"))
+        strcat(g_who(s), w[3][0] == 'T' ? " accepted the double" : " declined the double");
+    else if (is(w[3], "PASS"))
+        strcat(g_who(s), " could not move");
+}
+
 static void bg_event(void)
 {
+    said();
     if (nq < MAXQ && is(w[3], "STEP") && wn > 6) {
         q_s[nq] = num(w[4]) & 1;
         q_f[nq] = w[5][0] == 'b' ? 0 : num(w[5]);        /* 0 the bar */
@@ -155,7 +186,7 @@ static void bg_click(unsigned char id)
 {
     static char tok[10];
     if (!g_myturn) {
-        g_message("Not your turn.");
+        g_message("It's not your turn.");
         return;
     }
     if (id == ID_A || id == ID_B) {
@@ -180,7 +211,7 @@ static void bg_click(unsigned char id)
             ui_hide();
             mark(1);
             ui_show();
-            g_message("Now the point to move to.");
+            g_message("");
         } else
             g_message("No checker of yours can move from there.");
         return;
@@ -215,8 +246,63 @@ static void bg_click(unsigned char id)
     ui_show();
     sel = 0;
     g_move(tok);
-    if (g_reply_done)
-        g_message("Your dice are played.");
+
+}
+
+/* What Return does on the place under the pointer, by the phase of the turn. */
+static void bg_hover(unsigned char id)
+{
+    static char b[48], tok[10];
+    const char *s = 0;
+    unsigned char n = 0;
+    if (strcmp(phase, "roll") == 0) {
+        if (id == ID_B && offer_b[0]) {
+            s = "Press " KEY_RET " to double to ";
+            n = cube * 2;
+        } else
+            s = ca[g_seat == 1] ? "Press " KEY_RET " to roll, or " OA "D to double." : "Press " KEY_RET " to roll the dice.";
+    } else if (id == ID_A && offer_a[0])
+        s = "Press " KEY_RET " to end your turn.";
+    else if (id == ID_B && offer_b[0])
+        s = "Press " KEY_RET " to undo a step.";
+    else if (offer_a[0])
+        s = "Press " OA "E to end your turn or " OA "U to undo.";
+    else if (sel) {
+        s = "Press " KEY_RET " on a marked point.";
+        if (id <= ID_OFF && id != ID_BAR) {
+            strcpy(tok, sel == ID_BAR ? "bar" : utoa10(sel));
+            strcat(tok, "-");
+            strcat(tok, id == ID_OFF ? "off" : utoa10(id));
+            if (m_has(tok)) {
+                s = id == ID_OFF ? "Press " KEY_RET " to bear it off." : "Press " KEY_RET " to move it to ";
+                n = id;
+            }
+        }
+    } else if (id <= ID_BAR && from_has_moves(id)) {
+        s = id == ID_BAR ? "Press " KEY_RET " to pick up a checker." : "Press " KEY_RET " to pick up a checker on ";
+        n = id;
+    } else
+        s = "Pick up a checker that can move.";
+    strcpy(b, s);
+    if (b[strlen(b) - 1] == ' ') {
+        strcat(b, utoa10(n));
+        strcat(b, ".");
+    }
+    g_message(b);
+}
+
+/* The first sentence while a double the player made waits for the other's answer. */
+static const char *bg_say(void)
+{
+    static char b[40];
+    if (g_myturn || strcmp(phase, "take") != 0)
+        return 0;
+    strcpy(b, "You doubled to ");
+    strcat(b, utoa10(cube * 2));
+    strcat(b, ". Waiting for ");
+    strcat(b, g_name(g_seat == 1 ? 0 : 1));
+    strcat(b, ".");
+    return b;
 }
 
 /* The keys: Esc puts a picked checker back, OA-D doubles, OA-E ends the turn, OA-U takes back a step and OA-H
@@ -297,5 +383,5 @@ static unsigned char bg_offer(unsigned char answer)
 #pragma rodata-name (push, "OVHDR")
 const struct game g_backgammon = {"backgammon", "Backgammon", bg_begin, bg_line, bg_draw, bg_click, bg_key,
                                   OA "D double, " OA "E end, " OA "U undo, " OA "H home", 0,
-                                  bg_event, 0, bg_offer};
+                                  bg_event, bg_hover, bg_offer, bg_say};
 #pragma rodata-name (pop)

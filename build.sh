@@ -53,9 +53,10 @@ ovl_src() {
 
 # The resident program is optimized for size: without cc65's -Oi, which writes many calls (strlen, strcpy and
 # the runtime's helpers) out in line, it takes about 1.4K less, and nothing it does is held up by the calls.
-# The overlays keep -Oi, for the drawing.
+# The overlays keep -Oi, for the drawing, but for those named in SMALLOVL, which need the room.
 RESOPT=-Ors
 OVLOPT=-Oirs
+SMALLOVL="frame backgammon"
 
 # program MACHINEDIR OBJDIR MAPOUT PROGRAMOUT CONFIG CFLAGS CSRC ASM CRT0 LIB OVLSTART OVLSIZE
 #   compiles the C files in CSRC (paths, in link order; those named in $PLATE with their code and read-only
@@ -92,7 +93,7 @@ program() {
 			# Code, read-only data, data and the zeroed data each in a segment of its own (in one
 			# segment cc65 would put a function's static variables before its first instruction).
 			opt=$OVLOPT
-			[ "$name" = frame ] && opt=$RESOPT
+			case " $SMALLOVL " in *" $name "*) opt=$RESOPT ;; esac
 			cc65 $pcflags $opt --code-name "OVC_$name" --rodata-name "OVR_$name" --data-name "OVD_$name" \
 				--bss-name "OVB_$name" -o "$pobj/$b.s" "$c"
 			sed -i "s/\"OVHDR\"/\"OVH_$name\"/" "$pobj/$b.s"
@@ -151,8 +152,8 @@ cp "$OUT/overlays.txt" "$GS/overlays.txt"
 
 # The Commodore 64 (build/c64): PARLORNET (stub.s, which LOAD"*",8,1 starts by itself), the loader PN.BOOT,
 # the C128's boot sector, the character set, the program and its overlays, which
-# tools/c64_disk.py puts on parlornet.d64. The overlays are loaded at C64_OVL; a table's moves and chat, or
-# the lobby's lists, are in the $600 below it; the program ends below those. The lobby, the tables, the
+# tools/c64_disk.py puts on parlornet.d64. The overlays are loaded at C64_OVL, and the program ends below
+# them; a table's moves and chat, or the lobby's lists, are under the text screen (c64.cfg). The lobby, the tables, the
 # parlor's protocol, the catalog and the bitmap's buttons (PLATE, and the parts of ui.c marked PCODE) are
 # linked after the program's zeroed data, and tools/c64_disk.py makes them a file of their own, PN.PARLOR,
 # which the program loads before the first sign-in (ovl.c): the start-up loads only what the title, the
@@ -160,7 +161,8 @@ cp "$OUT/overlays.txt" "$GS/overlays.txt"
 C64=src/c64
 COUT=$OUT/c64
 COBJ=$COUT/obj
-C64_OVL=9900
+C64_OVL=9B00
+SMALLOVL="frame backgammon cannonfire gridwords"     # (for the room the C64's program needs below them)
 mkdir -p "$COBJ"
 python3 tools/c64_art.py "$COBJ"
 cp "$COBJ/chars.bin" "$COUT/chars.bin"

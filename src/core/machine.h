@@ -20,6 +20,9 @@
                       dialer; 0: it connects only through its network (the IIgs, through Marinetti).
      MACHINE_LOWBSS   defined: a table's move tokens and chat parts go in the LOWBSS segment (the IIgs, whose
                       program space is full; its low memory has no serial ring).
+     MACHINE_GRBSS    defined: the buffers of the command line, the dialogs and the status line go in the
+                      GRBSS segment, memory that is theirs only while the graphics screen shows (the C64's
+                      text screen).
    Names and key legends
      MACHINE_NAME     "the Apple II", "the C64": in "This game is not on ... yet."
      OA, CA           the font's characters for the command key ("\x7F") and a second one ("\x80"). Every

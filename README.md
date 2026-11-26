@@ -42,6 +42,8 @@ Every screen that names the Open-Apple key shows it as its apple and the letter 
 
 The keys follow ParlorNet's design for every frontend (docs/design.md in the ParlorNet repository), so each letter has one meaning in every game, always with Open-Apple. At a table the arrows move the pointer from place to place, and Return or Space clicks the place under it. Esc lets go of what you picked, and with nothing picked it goes back to the lobby, while the game goes on. Open-Apple-T (or Tab) opens the chat, Open-Apple-R resigns and Open-Apple-Q signs out, each of those two after a dialog, and Open-Apple-L draws the table again. The game's own letters are Open-Apple-D to double in Backgammon or offer a draw in Checkers, E to end the turn, U to take back a step, H to move Backgammon's home board, P to pass, X to start an exchange and V to see the letters' points in Grid Words, G to place the fleet at random and Z to take every ship back in Naval Combat, and in Rummy Tile M for a new set, B to split a set, C to say whether the turn would count, Z to start it over and O to sort the rack. A letter a game has no use for says so. Mancala's 1 to 6 point at a pit, and Cannon Fire's < and > turn the barrel by 10, + and - change the power by 10, and [ and ] drive the tank. The buttons along the bottom are Chat, Help, Resign and Lobby. In the lobby Open-Apple-N opens New game and Open-Apple-C the console; the display is switched with D on the start screen or the lobby's Display button.
 
+Under the board the status line says whose turn it is and the clock, as "Your turn. You have 4m left." or "Waiting for ann. ann has 2m left.", with the seconds in the last minute. The line above it says what Return does on the place under the pointer, as "Press Return to place a disc on d3.", and when another player moves it says the move in words as it comes, as "ann placed a disc on c3 and flipped 1." A refusal, or the answer to a command, stays there until the next key.
+
 A double, a draw offer, an offer to resign and an invitation come as dialogs, with Accept and Decline, and resigning, passing, ending a Rummy Tile turn that won't count and signing out ask first in a dialog with Yes and No. Y and N answer a dialog, the arrows and Tab move between its buttons, and Return presses the one marked. Esc answers No to a question; an offer put away with Esc waits, and Return brings it back. With the joystick turned on in the settings (J), button 0 clicks and button 1 cancels as Esc does, but never leaves a table.
 
 In Backgammon each step glides its checker from where it was to where it goes, yours as you play them and the other player's one after another when their turn comes in, a hit checker to the bar first. A point with more than five checkers shows four and +n for the rest, and the bar more than three as two and +n. With checkers of yours on the bar, the pointer for the bar sits on them, below the cube.
@@ -177,11 +179,11 @@ The user port's driver (`src/c64/serial.s`) receives by CIA 2's NMI: the start b
 |---|---|
 | $0400-$07FF | the serial line's receive and send rings, the C stack |
 | $0800-$14FF | the reply buffer (the loader before it) |
-| $1500-$98FF | the program (PN.MAIN), its variables, then the lobby, the tables and `frame.c` (PN.PARLOR) |
-| $9900-$BFFF | one overlay: the sign-in, a game, New game, the start screen and settings, or the title screen |
+| $1500-$9AFF | the program (PN.MAIN), its variables, then the lobby, the tables and `frame.c` (PN.PARLOR) |
+| $9B00-$BFFF | one overlay: the sign-in, a game, New game, the start screen and settings, or the title screen |
 | $C000-$C7FF | the character set, and the same inverted |
 | $C800-$CFFF | the text screen and the bitmap's colors (the loader, PN.BOOT, at start-up) |
-| $C400-$CBE7 | while the bitmap shows: a table's moves and chat, or the lobby's lists, over the inverted characters and the text screen, which come back with the text screen (`txt_mode` makes the inverted half again) |
+| $C400-$CBE7 | while the bitmap shows: a table's moves and chat, or the lobby's lists, then the buffers of the command line, the dialogs and the status line, over the inverted characters and the text screen, which come back with the text screen (`txt_mode` makes the inverted half again) |
 | $D000-$DFFF | the sprites' shapes, under the I/O |
 | $E000-$FF3F | the bitmap, under the KERNAL |
 

@@ -5,10 +5,13 @@
 #include "app.h"
 #include "frame.h"
 
+#ifdef MACHINE_GRBSS
+#pragma bss-name (push, "GRBSS")        /* (machine.h: only while the graphics screen shows) */
+#endif
 char cmd_said[81];
 static char line[41];                   /* one line cut from a longer text (cut) */
 static char cmd[CMD_MAX + 2];
-static char words_[128];                /* the words of a confirmation, from the parlor's INF lines */
+static char words_[120];                /* the words of a confirmation, from the parlor's INF lines */
 
 /* The first line of s that fits in w columns, cut at a space, into line; returns the rest of s. */
 static const char *__fastcall__ cut(const char *s, unsigned char w)
@@ -302,3 +305,7 @@ unsigned char __fastcall__ cmd_line(unsigned int table, void (*lit)(void))
     }
     return cmd_send(table, cmd);
 }
+
+#ifdef MACHINE_GRBSS
+#pragma bss-name (pop)
+#endif

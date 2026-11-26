@@ -103,7 +103,7 @@ static void cf_click(unsigned char id)
 {
     static char t[16];
     if (!g_myturn) {
-        g_message("Not your turn.");
+        g_message("It's not your turn.");
         return;
     }
     switch (id) {
@@ -130,6 +130,31 @@ static void cf_click(unsigned char id)
     }
 }
 
+/* What Return does on the button under the pointer. */
+static void cf_hover(unsigned char id)
+{
+    g_message(id == ID_FIRE ? "Press " KEY_RET " to fire, or [ ] to drive first." :
+              "Press " KEY_RET " to aim, or < > + - by 10.");
+}
+
+/* A shot in words, as it comes ("ann fired at angle 45 with power 60."), then on the screen (cf_event). */
+static void cf_said(void)
+{
+    if (is(w[3], "FIRE") && wn > 6 && num(w[4]) != (unsigned char)g_seat) {
+        strcat(g_who(num(w[4])), " fired at angle ");
+        strcat(g_last, w[5]);
+        strcat(g_last, " with power ");
+        strcat(g_last, w[6]);
+        strcat(g_last, ".");
+    }
+    cf_event();
+}
+
+static const char *cf_say(void)
+{
+    return g_myturn ? "Your shot." : 0;
+}
+
 /* < and > turn the barrel by 10, + and - change the power by 10, and [ and ] drive the tank. */
 static unsigned char cf_key(unsigned char k)
 {
@@ -147,5 +172,5 @@ static unsigned char cf_key(unsigned char k)
 #pragma rodata-name (push, "OVHDR")
 const struct game g_cannonfire = {"cannonfire", "Cannon Fire", cf_begin, cf_line, cf_draw, cf_click, cf_key,
                                   K3 "< > angle " K3 "- + power " K3 "[ ] drive", 1,
-                                  cf_event};
+                                  cf_said, cf_hover, 0, cf_say};
 #pragma rodata-name (pop)

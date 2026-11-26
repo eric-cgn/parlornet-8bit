@@ -33,6 +33,13 @@ static char part[42];
 #endif
 char g_chkinfo[42];
 char dlg_words[128];
+char g_last[48];
+
+char *__fastcall__ g_who(unsigned char seat)
+{
+    strcpy(g_last, g_name(seat));
+    return g_last;
+}
 unsigned char g_reply_more, g_reply_done;
 
 /* The move tokens' text and the chat, in the language card's RAM above the overlays (TABLE in parlor.cfg). */
@@ -111,16 +118,32 @@ static void chat_show(void)
 }
 
 /* A message; with nothing to say, the line shows the last thing said. */
+/* A message on the message line, kept there until the next key or click; with nothing to say, the
+   second sentence of the sentence line (hint). */
+static unsigned char g_hold;
+static void hint(void);
 void g_message(const char *s)
 {
     chat_run = 0;
-    chat_on = !*s && chat_n;
-    if (chat_on) {
-        chat_tk = chat_n - 1;
-        chat_pg = 0;
-        chat_show();
-    } else
-        ui_msg(s);
+    chat_on = 0;
+    if (!*s) {
+        hint();
+        return;
+    }
+    ui_msg(s);
+    g_hold = 1;
+}
+
+/* The second sentence: what Return does on the target under the pointer and which keys apply now, which
+   the game says on its turn (hover), and otherwise the table's own. */
+static void hint(void)
+{
+    if (G && G->hover && g_myturn && !offer_away)
+        G->hover(t_cur < t_n ? t_id[t_cur] : 255);
+    else
+        ui_msg(offer_away ? "Press " KEY_RET " to answer." : g_over ? "Press " KEY_ESC " to go back to the lobby."
+               : "Press " OA "T to chat, or ? for help.");
+    g_hold = 0;
 }
 
 /* The next part or line of new chat on the message line. */
@@ -293,40 +316,113 @@ again:
     return 1;
 }
 
+/* The seconds left on the clock now. */
+static unsigned long clk_left(void)
+{
+    unsigned int gone = (ticks - clk_at) / 60;
+    return clk_secs > gone ? clk_secs - gone : 0;
+}
+
+/* The status line: the first sentence of the sentence line (docs/design.md), whose turn it is in the
+   shared words, then the clock: "Your turn. You have 4m left." or "Waiting for ann. ann has 2m left." */
+static unsigned int st_at;              /* (ticks when it was drawn, to count the last minute down) */
+static unsigned char st_dirty;          /* something else is on the status line until the next key */
+#ifdef MACHINE_GRBSS
+#pragma bss-name (push, "GRBSS")
+#endif
+static char sb[80];                     /* the status line being made */
+static char ov[42];                     /* (show_status's copy of the parlor's words at the game's end) */
+#ifdef MACHINE_GRBSS
+#pragma bss-name (pop)
+#endif
+
+static void __fastcall__ put(const char *s)
+{
+    strcat(sb, s);
+}
+
+static void __fastcall__ putn(unsigned int n)
+{
+    put(utoa10(n));
+}
+
 static void show_status(void)
 {
-    static char b[56];                  /* the status (40) and " (65535d left)" */
     unsigned long left;
+    unsigned int m;
     char *p;
+    sb[0] = 0;
     if (offer_away) {
-        /* the offer's first sentence, and Return to bring its dialog back */
-        strncpy(b, dlg_words, 40);
-        b[40] = 0;
-        if ((p = strchr(b, '.')) != 0)
+        /* the offer's first sentence (the dialog's words), the message line saying how to answer */
+        strncpy(sb, dlg_words, 40);
+        sb[40] = 0;
+        if ((p = strchr(sb, '.')) != 0)
             p[1] = 0;
-        ui_status(b);
-        ui_msg("Press " KEY_RET " to answer.");
-        return;
-    }
-    strcpy(b, g_status);
-    if (have_clk && !g_over) {
-        left = clk_secs;
-        if (left > 0) {
-            strcat(b, g_status[0] ? " (" : "(");
-            if (left >= 86400) {
-                strcat(b, utoa10((unsigned int)(left / 86400)));
-                strcat(b, "d");
-            } else if (left >= 3600) {
-                strcat(b, utoa10((unsigned int)(left / 3600)));
-                strcat(b, "h");
-            } else {
-                strcat(b, utoa10((unsigned int)(left / 60)));
-                strcat(b, "m");
-            }
-            strcat(b, " left)");
+    } else if (!g_started)
+        put("Waiting for a second player.");
+    else if (g_over) {
+        /* "Game over: win 1 37-27", "Game over: ann resigned": the parlor's words, in a sentence */
+        put("Game over.");
+        strncpy(ov, g_status + 10, 40);
+        words(ov);
+        if (wn > 1 && is(w[0], "win")) {
+            put(" ");
+            put(g_name(num(w[1])));
+            put(" won.");
+        } else if (wn && (is(w[0], "draw") || is(w[0], "a")))
+            put(" It's a draw.");
+        else if (wn > 1 && is(w[1], "resigned")) {
+            put(" ");
+            put(w[0]);
+            put(" resigned.");
         }
+    } else if (g_seat < 0) {
+        put("You are watching ");
+        put(g_name(0));
+        put(" and ");
+        put(g_name(1));
+        put(".");
+    } else if (G && G->say && (p = (char *)G->say()) != 0)
+        put(p);
+    else if (g_myturn)
+        put("Your turn.");
+    else if (g_turn >= 0) {
+        put("Waiting for ");
+        put(g_name(g_turn));
+        put(".");
     }
-    ui_status(b);
+    if (have_clk && !g_over && g_started && (left = clk_left()) != 0) {
+        if (clk_seat == (unsigned char)g_seat)
+            put(" You have ");
+        else {
+            put(" ");
+            put(g_name(clk_seat));
+            put(" has ");
+        }
+        if (left < 60) {
+            put(left < 10 ? "0:0" : "0:");
+            putn(left);
+        } else {
+            m = left / 60;
+            if (m >= 1440) {
+                putn(m / 1440);
+                put("d ");
+                putn(m / 60 % 24);
+                put("h");
+            } else if (m >= 60) {
+                putn(m / 60);
+                put("h ");
+                putn(m % 60);
+                put("m");
+            } else {
+                putn(m);
+                put("m");
+            }
+        }
+        put(" left.");
+    }
+    st_at = ticks;
+    ui_status(sb);
 }
 
 void g_title(void)
@@ -382,11 +478,15 @@ static void draw_all(void)
     g_full = 0;
     frame_buttons();
     show_status();
-    chat_show();
     if (keep != 255 && ui_find(keep) != 255)
         ui_point(ui_find(keep));
     else
         ui_point(0);
+    hover_at = t_cur;
+    if (chat_on)
+        chat_show();
+    else
+        hint();
 }
 
 void g_redraw(void)
@@ -574,6 +674,9 @@ static void poll_events(void)
     }
     if (stale && !in_view)
         refresh();
+    if (g_last[0] && !said && !in_view)     /* the other player's move, in a sentence (the game's event) */
+        g_message(g_last);
+    g_last[0] = 0;
 }
 
 
@@ -657,8 +760,10 @@ static unsigned char __fastcall__ after_cmd(unsigned char c)
         poll_events();
     if (c & C_REDRAW)
         draw_all();
-    if (c & C_SAID)
+    if (c & C_SAID) {
         cmd_show();
+        g_hold = st_dirty = 1;
+    }
     return 255;
 }
 
@@ -692,10 +797,69 @@ void __fastcall__ g_cmd(const char *line)
     after_cmd(cmd_send(g_table, b));
 }
 
+/* A key or a click at the table: what table_play returns when it leaves the table, or 255 to stay. */
+static unsigned char __fastcall__ keys(unsigned char k)
+{
+    static unsigned char back;
+    if (k == U_CLICK) {
+        k = ui_clicked;
+        if (k == B_LOBBY)
+            return 0;
+        if (k == B_RESIGN)
+            k = U_OA | 'R';
+        else if (k == B_CHAT)
+            k = U_OA | 'T';
+        else if (k == B_HELP)
+            k = '?';
+        else {
+            if (G && k < 240)
+                G->click(k);
+            return 255;
+        }
+    }
+    if (k == K_RET && offer_away) {
+        offer_away = 0;
+        ui_retkey = 0;
+        offer_look();
+        return 255;
+    }
+    /* The game's keys first, then the table's: Esc (or a pointer's second button) cancels the game's
+       pick when there is one, and Esc alone goes back to the lobby when there is none. */
+    back = k == K_BACK;
+    if (back)
+        k = K_ESC;
+    if ((G && G->key && G->key(k)) || back)
+        return 255;
+    if (k == K_ESC)
+        return 0;
+    if (k == '/')
+        return after_cmd(cmd_line(g_table, frame_lit));
+    if (k == '?')
+        keys_help();
+    else if (k == (U_OA | 'T') || k == K_TAB)
+        chat();
+    else if (k == (U_OA | 'L'))
+        refresh();
+    else if (k == (U_OA | 'Q') || k == (U_OA | 'R'))
+        return after_cmd(cmd_send(k == (U_OA | 'Q') ? 0 : g_table, k == (U_OA | 'Q') ? "/quit" : "/resign"));
+    else if (k > U_OA && k < U_OA + 'Z' + 1) {
+        /* a letter that means nothing in this game */
+        static char b[40];
+        strcpy(b, OA "H does nothing in ");
+        b[1] = k & 0x7F;
+        strcat(b, G ? G->name : (const char *)"this game");
+        strcat(b, ".");
+        g_message(b);
+        ui_status("Press ? to see the keys.");
+        st_dirty = 1;
+    }
+    return 255;
+}
+
 /* Play at a table. Returns 1 for the console, 0 for the lobby, 3 when signed out (/quit). */
 unsigned char table_play(unsigned int id)
 {
-    unsigned char k, back;
+    unsigned char k;
     unsigned int last;
     g_table = id;
     g_seat = -1;
@@ -739,77 +903,32 @@ unsigned char table_play(unsigned int id)
             offer_look();
         }
         k = ui_poll();
-        if (t_cur != hover_at) {
+        if (t_cur != hover_at) {        /* the pointer moved: what Return would do there */
             hover_at = t_cur;
-            if (G && G->hover)
-                G->hover(t_cur < t_n ? t_id[t_cur] : 255);
+            chat_run = 0;
+            hint();
         }
         if (!k)
             goto idle;
         last = ticks;
+        g_hold = 0;
+        if (st_dirty) {                 /* (a second line of an answer, or a refusal's, was there) */
+            st_dirty = 0;
+            show_status();
+        }
         if (chat_run)
             g_message("");
-        if (k == U_CLICK) {
-            k = ui_clicked;
-            if (k == B_LOBBY)
-                return 0;
-            if (k == B_RESIGN)
-                k = U_OA | 'R';
-            else if (k == B_CHAT)
-                k = U_OA | 'T';
-            else if (k == B_HELP)
-                k = '?';
-            else {
-                if (G && k < 240)
-                    G->click(k);
-                continue;
-            }
-        }
-        if (k == K_RET && offer_away) {
-            offer_away = 0;
-            ui_retkey = 0;
-            offer_look();
-            continue;
-        }
-        /* The game's keys first, then the table's: Esc (or a pointer's second button) cancels the game's
-           pick when there is one, and Esc alone goes back to the lobby when there is none. */
-        back = k == K_BACK;
-        if (back)
-            k = K_ESC;
-        if (G && G->key && G->key(k))
-            continue;
-        if (back)
-            continue;
-        if (k == K_ESC)
-            return 0;
-        if (k == '/') {
-            k = after_cmd(cmd_line(g_table, frame_lit));
-            if (k != 255)
-                return k;
-        } else if (k == '?')
-            keys_help();
-        else if (k == (U_OA | 'T') || k == K_TAB)
-            chat();
-        else if (k == (U_OA | 'L'))
-            refresh();
-        else if (k == (U_OA | 'Q') || k == (U_OA | 'R')) {
-            k = after_cmd(cmd_send(k == (U_OA | 'Q') ? 0 : g_table, k == (U_OA | 'Q') ? "/quit" : "/resign"));
-            if (k != 255)
-                return k;
-        } else if (k > U_OA && k < U_OA + 'Z' + 1) {
-            /* a letter that means nothing in this game */
-            static char b[40];
-            strcpy(b, OA "H does nothing in ");
-            b[1] = k & 0x7F;
-            strcat(b, G ? G->name : (const char *)"this game");
-            strcat(b, ".");
-            g_message(b);
-            ui_status("Press ? to see the keys.");
-        }
+        k = keys(k);
+        if (k != 255)
+            return k;
+        if (!g_hold && !chat_run)       /* (a refusal or a move said stays until the next key) */
+            hint();
         continue;
 idle:
         if (chat_run && ticks - chat_at > 180)
             chat_step();
+        if (have_clk && !st_dirty && ticks - st_at >= 60 && clk_left() < 61)
+            show_status();              /* (the last minute, in seconds) */
         /* While waiting for others, ask what happened every 3 seconds; on our own move, every 15. After
            the game, for what is said. */
         if (ticks - last > (g_myturn ? 900 : 180)) {

@@ -114,7 +114,7 @@ static void ck_click(unsigned char id)
 {
     static char tok[8];
     if (!g_myturn) {
-        g_message("Not your turn.");
+        g_message("It's not your turn.");
         return;
     }
     if (id == ID_A || id == ID_B) {
@@ -126,8 +126,8 @@ static void ck_click(unsigned char id)
             g_end();
         else if (is(word, "Undo"))
             g_undo();
-        else if (word[0] == 'D' && g_move("draw"))
-            g_message("Draw offered.");
+        else if (word[0] == 'D')
+            g_move("draw");
         return;
     }
     if (strcmp(phase, "move") != 0)
@@ -138,7 +138,6 @@ static void ck_click(unsigned char id)
             return;
         }
         sel = id;
-        g_message("Now the square to move to.");
         redraw();
         return;
     }
@@ -159,10 +158,68 @@ static void ck_click(unsigned char id)
     strcat(tok, utoa10(id));
     sel = 0;
     g_move(tok);
-    if (g_reply_more)
-        g_message("Jump again with the same piece.");
-    else if (g_reply_done)
-        g_message("Your turn's steps are played.");
+}
+
+/* What Return does on the square under the pointer. */
+static void ck_hover(unsigned char id)
+{
+    static char b[42];
+    const char *s;
+    unsigned char n = id;
+    if (strcmp(phase, "done") == 0)
+        s = id == ID_A ? "Press " KEY_RET " to end your turn." : id == ID_B ? "Press " KEY_RET " to undo a step." :
+            "Press " OA "E to end your turn or " OA "U to undo.";
+    else if (id == ID_B && offer_b[0])
+        s = offer_b[0] == 'D' ? "Press " KEY_RET " to offer a draw." : "Press " KEY_RET " to undo a step.";
+    else if (sel && id != sel)
+        s = id < ID_A && can_go(sel, id) ? "Press " KEY_RET " to move it to " : "Press " KEY_RET " on a marked square.";
+    else if (sel)
+        s = npath ? "You must jump on with this piece." : "Press " KEY_RET " on a marked square.";
+    else if (id < ID_A && can_go(id, 0))
+        s = cells[id] == 'X' || cells[id] == 'O' ? "Press " KEY_RET " to pick up the king on " :
+            "Press " KEY_RET " to pick up the man on ";
+    else
+        s = "Pick up a piece that can move.";
+    strcpy(b, s);
+    if (b[strlen(b) - 1] == ' ') {
+        strcat(b, utoa10(n));
+        strcat(b, ".");
+    }
+    g_message(b);
+}
+
+/* The other player's move in words: "ann moved 24-19." or "ann jumped 15x22x31." */
+static void ck_event(void)
+{
+    if (num(w[4]) == (unsigned char)g_seat || wn < 7)
+        return;
+    if (is(w[3], "STEP")) {
+        strcat(g_who(num(w[4])), " moved ");
+        strcat(g_last, w[5]);
+        strcat(g_last, "-");
+    } else if (is(w[3], "JUMP")) {
+        if (!g_last[0]) {
+            strcat(g_who(num(w[4])), " jumped ");
+            strcat(g_last, w[5]);
+        }
+        strcat(g_last, "x");
+    } else
+        return;
+    strcat(g_last, w[6]);
+}
+
+/* The first sentence: a jump that must go on, or a draw the player offered. */
+static const char *ck_say(void)
+{
+    static char b[40];
+    if (g_myturn && npath && strcmp(phase, "move") == 0)
+        return "You must jump.";
+    if (g_myturn || drawer != g_seat)
+        return 0;
+    strcpy(b, "You offered a draw. Waiting for ");
+    strcat(b, g_name(1 - g_seat));
+    strcat(b, ".");
+    return b;
 }
 
 /* The keys: Esc puts a picked piece back (not in the middle of a jump), OA-D offers a draw, OA-E ends the
@@ -200,5 +257,5 @@ static unsigned char ck_offer(unsigned char answer)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_checkers = {"checkers", "Checkers", ck_begin, ck_line, ck_draw, ck_click, ck_key,
-                                OA "D draw, " OA "E end, " OA "U undo", 0, 0, 0, ck_offer};
+                                OA "D draw, " OA "E end, " OA "U undo", 0, ck_event, ck_hover, ck_offer, ck_say};
 #pragma rodata-name (pop)

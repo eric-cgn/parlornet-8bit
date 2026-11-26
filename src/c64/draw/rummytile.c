@@ -97,16 +97,16 @@ static void info(void)
     b[0] = 0;
     if (g_myturn) {
         if (tp_code == 'n')
-            strcpy(b, "Nothing played: Done draws a tile");
+            strcpy(b, "Nothing played. End takes a tile.");
         else {
             strcpy(b, utoa10(tp_n));
-            strcat(b, tp_n == 1 ? " tile" : " tiles");
+            strcat(b, tp_n == 1 ? " tile played" : " tiles played");
             if (tp_pts[0] != '-') {
-                strcat(b, ", meld ");
+                strcat(b, " for ");
                 strcat(b, tp_pts);
             }
-            strcat(b, tp_code == 'o' ? ": Done keeps it" : tp_code == 's' ? ": a set is not valid"
-                          : tp_code == 'm' ? ": 30 needed" : tp_code == 'j' ? ": joker rule" : "");
+            strcat(b, tp_code == 'o' ? ". End keeps them." : tp_code == 's' ? ". A set is not valid."
+                          : tp_code == 'm' ? ". A meld needs 30." : tp_code == 'j' ? ". A joker needs its tile." : ".");
         }
     }
     ui_textn(0, INFO2, b, 40);
