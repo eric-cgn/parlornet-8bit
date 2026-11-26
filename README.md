@@ -50,7 +50,7 @@ Your own table shows the game's empty board while it waits for a second player, 
 
 ? opens help, two pages for each game: how to move with its keys and commands on the first, and the facts you look up on the second. Space or Right turns the page, Left turns back, and Esc or Return closes it; the buttons under it do the same for a pointer. The lobby's help is one page. The pages are in `src/core/help`, and `tools/help.py` makes them for each machine's key names: one overlay of them all on the Apple II, read a help at a time into the reply buffer, and a file each on the C64 (PN.HELP0 to PN.HELP11).
 
-The tutorial is a game of Tic Tac Toe against the tutorial partner, in 18 steps that show how every game works: the pointer and Return, a shortcut, the command line, a typed move, the chat, help and a dialog. It runs only on your own screen and never reaches the parlor. The first sign-in offers it once, in a dialog, and the answer is kept with the settings (under ProDOS, on the IIgs and on the C64, in PARLOR.CFG; the self-booting disk keeps it only until the Apple is switched off). After that it starts from the start screen (T), from the end of the lobby's list and with /tutorial. It is an overlay of its own, so none of it stays in memory during a game.
+The tutorial is a game of Tic Tac Toe against the tutorial partner, in 18 steps that show how every game works: the pointer and Return, a shortcut, the command line, a typed move, the chat, help and a dialog. It runs only on your own screen and never reaches the parlor. The first sign-in offers it once, in a dialog, and the answer is kept with the settings (under ProDOS, on the IIgs and on the C64, in PARLOR.CFG; the self-booting disk keeps it only until the Apple is switched off). After that it starts from the start screen (T), from the end of the lobby's list and with /tutorial. It is an overlay of its own, so none of it stays in memory during a game. Its board is drawn like the games' boards: your X is two thick white strokes and the partner's O a black ring, each on a green square, and in monochrome they are drawn in single dots on an outlined square.
 
 Stay signed in, in the settings (K), keeps the player signed in on this computer. With it on, the first sign-in with the password asks the parlor for a sign-in key for this computer (KEY NEW, labeled "Apple IIe", "Apple IIgs" or "Commodore 64"), and the program keeps the name and the key in PARLOR.CFG, never the password. The next time, it signs in with the key and asks nothing. If the parlor refuses the key (ERR NOKEY: the player signed out elsewhere, or changed the password), the program forgets it and asks for the password as usual. Signing out forgets the key, on the parlor and in the file. Turning the setting off keeps the key until the next sign-in, which uses it once more and then forgets it on the parlor (KEY DEL) and in the file, since the settings screen is only reached while signed out. The self-booting Apple disk writes no settings file, so it does not offer Stay signed in; ProDOS, the IIgs and the C64 do.
 
@@ -216,7 +216,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `parlor.c` (an overlay): the line console, connecting, the dialer and signing in.
   - `lobby.c`: the lobby, and `newgame.c` (an overlay) its New game.
   - `frame.c`: the command line, the dialogs and the pages of text, for the lobby and the tables.
-  - `tutorial.c` (an overlay): the tutorial, a game of Tic Tac Toe that never reaches the parlor.
+  - `tutorial.c` (an overlay): the tutorial, a game of Tic Tac Toe that never reaches the parlor. It includes the machine's drawing of its squares, `draw/tutorial.c`.
   - `help/`: the help pages, which `tools/help.py` makes for each machine.
   - `table.c`: the table screen every game shares, with its chat.
   - `net.c`: PARLORNET/1 requests and replies.
@@ -236,7 +236,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `splash.c` (an overlay): the title screen.
   - `ui.c`: text, fills, the pointer and keys on the graphics screen.
   - `joy.s`: the Apple joystick, read as arrow keys and Return. On the IIe it is in the vectors' page at $FF00, which the start-up loads with them.
-  - `draw/`: each game's board.
+  - `draw/`: each game's board, and the tutorial's squares.
   - `eth.c`, `w5100.s`, `signin_net.c`: our driver for the Uthernet II's W5100 (TCP on socket 0, UDP for DNS on socket 1) and the sign-in's DNS lookup. While a connection is up, the serial calls in sys.s go to it, so everything above them works the same over either.
   - `prodsys.s`: PARLOR.SYSTEM, which starts the program under ProDOS.
   - `lz.s`: unpacking an overlay or a help in place (docs/overlay-packing.md).
@@ -249,7 +249,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `gfx.s`, `ui.c`: the bitmap and sprites.
   - `disk.s`, `ovl.c`: the KERNAL's disk, the overlays and the progress bar.
   - `line.c`, `setup.c`, `splash.c`: the line's settings, the start screen and the title screen.
-  - `draw/`: each game's board.
+  - `draw/`: each game's board, and the tutorial's squares.
 - `src/template`: a machine with every call of the interface stubbed, which the build compiles and links with the core and every game, as the start of a port (PORTING.md).
 - `art/`: the font, the title screen's letters (`splash.txt`, each a grid of blocks) and each machine's pictures (`art/apple2`, `art/c64`, with the C64's Grid Words tile letters in `art/c64/tiles.txt`), as text: in `art/apple2`, `NAME.spr` are Hi-Res pictures and `NAME.dhr` the masks of a game drawn in Double Hi-Res, which go into the auxiliary memory with the kit, and `src/apple2/draw/NAME_kinds.s` the kinds of place such a game gives the kit. `tools/apple2_art.py` and `tools/c64_art.py` turn them into assembly (the title letters as a byte a row of blocks; the C64's character set and tile letters made bold).
 - `Dockerfile`, `build.sh`: the pinned toolchain (cc65 2.19, whose ca65 also assembles the 65816 parts) and the build of every program.

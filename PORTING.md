@@ -55,7 +55,7 @@ For a Z80 machine (the ZX Spectrum, the MSX, the Amstrad CPC, CP/M) the likely r
 - **Input.** `kbd_get` and `kbd_mods`, with the key codes in `machdefs.h`.
 - **The text screen**, 40 by 24, for the console, the sign-in and the dialer: the `txt_` calls and variables.
 - **Drawing.** The graphics screen kit, the `ui_` calls: text, fills, buttons, the status and message lines, the pointer, targets, input on the graphics screen, and line editing.
-- **The games' drawing.** The contract for `draw/NAME.c` is in `machine.h`, and each game's rules file says in its first comment which functions its drawing defines and which target ids it uses. `src/template/draw/` has a stub for each.
+- **The games' drawing.** The contract for `draw/NAME.c` is in `machine.h`, and each game's rules file says in its first comment which functions its drawing defines and which target ids it uses. `src/template/draw/` has a stub for each, and one for the tutorial's squares (`draw/tutorial.c`).
 - **Storage and settings.** There are no calls here, since the setup overlay reads and writes the settings file itself.
 - **Overlays and memory.** `ovl_load`, `OVL_ADDR`, and the two flags `connected` and `signin_note`.
 - **The progress bar.** There are no calls here either. A machine with a slow disk shows the load's progress itself, inside `ovl_load`.

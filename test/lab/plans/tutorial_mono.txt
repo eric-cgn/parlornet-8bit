@@ -1,0 +1,81 @@
+# The tutorial in monochrome on the IIe, started from the start screen without signing in: D turns the
+# display to monochrome (tm_start), T starts the tutorial, and the steps go as in tutorial.txt (tm_01 to
+# tm_17), the marks drawn in single dots. Esc at the end goes back to the start screen (tm_lobby).
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type D
+wait 120
+snap tm_start
+type T
+settle
+snap tm_01
+key ret
+wait 60
+arrows RD
+settle
+snap tm_02
+key ret
+settle
+snap tm_03
+arrows UR
+key ret
+settle
+snap tm_04
+oa U
+settle
+snap tm_05
+key ret
+settle
+snap tm_06
+type /
+settle
+snap tm_07
+type time\r
+settle
+snap tm_08
+type /
+wait 30
+type xyz
+wait 30
+key esc
+settle
+snap tm_09
+type /
+wait 30
+type c3\r
+settle
+snap tm_10
+oa T
+settle
+snap tm_11
+type hello\r
+settle
+snap tm_12
+key esc
+settle
+snap tm_13
+type /
+wait 30
+type say good game\r
+wait 60
+settle
+snap tm_14
+type ?
+settle
+snap tm_15
+key esc
+wait 60
+oa R
+settle
+snap tm_16
+key esc
+wait 60
+click 5
+settle
+snap tm_17
+key esc
+settle
+snap tm_lobby
+exit
