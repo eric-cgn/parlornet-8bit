@@ -5,6 +5,9 @@
 
 /* 1: a serial line, with the console and the dialer (most machines); 0: only a network connection. */
 #define MACHINE_SERIAL 1
+/* 1: the console does not load the sign-in, and its command-P sends the opening before the sign-in is
+   loaded (for a slow drive); 0: the console loads the sign-in as it opens (machine.h). */
+#define MACHINE_LATE_SIGNIN 0
 /* Define MACHINE_LOWBSS to put the table's move tokens in a LOWBSS segment of the linker configuration. */
 
 #define MACHINE_NAME "this computer"    /* "This game is not on this computer yet." */

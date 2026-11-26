@@ -1,5 +1,6 @@
 # The console on the serial line (run.sh's IFACE and BAUD), through the WiFi-modem stand-in: AT gets OK,
-# ATDT connects, and C=-P goes into ParlorNet mode on the line as it is, to the name prompt.
+# ATDT connects, and C=-P goes into ParlorNet mode on the line as it is, to the name prompt. The console
+# opens with nothing loaded; C=-P sends the opening, then loads the lobby and the sign-in.
 waittitle 6000
 title 3600
 waittext ParlorNet: connect 600
@@ -12,7 +13,7 @@ type ATDT parlornet.org:6501\r
 waittext CONNECT 600
 snap console
 oa P
-waittext Name: 600
+waittext Name: 4800
 snap signin
 dumptext signin
 exit

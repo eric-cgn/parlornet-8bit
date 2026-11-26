@@ -131,7 +131,7 @@ So far it has been played in VICE (x64sc, and x128 for the C128's start), with V
 
 The disk can be written to a real 1541 or 1571 with OpenCBM and a ZoomFloppy or a similar cable, or used as it is on an SD2IEC, a Pi1541, a 1541 Ultimate or an Ultimate 64. The program needs the disk in the drive while it runs, since each game is loaded from it when it is played, and the drive it was loaded from is the one it uses.
 
-A 1541 is slow, so the files on the disk are packed, and the start-up loads only what the title, the start screen, the settings and the console need. On a stock 1541 the title screen is up about 37 seconds after `LOAD"*",8,1`. The start screen and settings then load for about 10 seconds, with their bar on the title's bottom row, and the title says "Press a key" once they have loaded. The lobby and the tables load once, in about 30 seconds, the first time P or C is pressed, and the sign-in follows in about 11; a game loads in 4 to 17 seconds. A bar on the screen's bottom row fills as each loads. On an SD2IEC, a Pi1541 or a drive with a faster DOS it takes less.
+A 1541 is slow, so the files on the disk are packed, and the start-up loads only what the title, the start screen, the settings and the console need. On a stock 1541 the title screen is up about 37 seconds after `LOAD"*",8,1`. The start screen and settings then load for about 10 seconds, with their bar on the title's bottom row, and the title says "Press a key" once they have loaded. C opens the console at once, with nothing more to load. The lobby and the tables load once, in about 33 seconds, the first time you go into ParlorNet mode, with P on the start screen or Commodore-P in the console, and the sign-in follows in about 12; a game loads in 4 to 17 seconds. Commodore-P sends ParlorNet mode's first line before it loads them, so a connection made by hand in the console meets the parlor's 20 seconds however long the load takes, and the name prompt comes once the load is done. A bar on the screen's bottom row fills as each loads. On an SD2IEC, a Pi1541 or a drive with a faster DOS it takes less.
 
 ### Keys, joystick and mouse
 
@@ -187,7 +187,7 @@ The disk (`tools/c64_disk.py`) holds:
 - PN.BOOT, the loader;
 - PN.CHARS, the character set's first half;
 - PN.MAIN, the program: what the title, the start screen, the settings and the console need;
-- PN.PARLOR, the lobby, the tables and the parlor's protocol, loaded once, before the first sign-in;
+- PN.PARLOR, the lobby, the tables and the parlor's protocol, loaded once, before the first sign-in (P on the start screen, or Commodore-P in the console);
 - one PN.<NAME> file for each overlay;
 - PARLOR.CFG with the settings as they start.
 

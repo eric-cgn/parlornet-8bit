@@ -36,6 +36,13 @@ void net_reset(void)
     r_final = 0;
 }
 
+/* A line and the opening go in the resident part on every machine (in PN.MAIN on the C64, whose console
+   sends the opening before PN.PARLOR is loaded). The opening is an array, not a literal: cc65 puts a file's
+   literals where the file's last read-only data goes. */
+#pragma code-name (push, "CODE")
+#pragma rodata-name (push, "RODATA")
+static const char opening[] = "PARLORNET/1";
+
 void net_send_line(const char *s)
 {
     while (*s)
@@ -46,8 +53,10 @@ void net_send_line(const char *s)
 
 void net_opening(void)
 {
-    net_send_line("PARLORNET/1");
+    net_send_line(opening);
 }
+#pragma rodata-name (pop)
+#pragma code-name (pop)
 
 static unsigned char final_kind(const char *s)
 {

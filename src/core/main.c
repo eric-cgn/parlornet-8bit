@@ -7,6 +7,8 @@
    OA-P (Open-Apple on the Apple II, the Commodore key on the C64). When a line has been typed
    and not yet sent, OA-P sends its Return first, so that a command that connects to the parlor (nc in a
    Unix shell) is followed at once by ParlorNet mode's opening line: the parlor waits 20 seconds for it.
+   Where the sign-in loads slowly (MACHINE_LATE_SIGNIN, the C64), OA-P sends the opening before the sign-in
+   is loaded.
    OA-C comes back to the console from ParlorNet mode, closing the connection to the parlor first, and
    OA-S opens the settings from either. P on the start screen dials the
    modem first (parlor.c), unless the settings' number is empty. */
@@ -88,6 +90,32 @@ static unsigned char close_parlor(void)
     return k;
 }
 
+#if MACHINE_LATE_SIGNIN
+/* OA-P with the sign-in not loaded: the opening now, since the parlor waits only 20 seconds for it after the
+   line connects (and 15 minutes after it). Its answer is left in the ring until it has all come (a second
+   with no more of it, or four seconds with none), and the sign-in reads it there after its load
+   (signin_note 3). */
+static void send_opening(void)
+{
+    static unsigned char n, quiet, at;
+    ser_drop();
+    net_opening();
+    n = quiet = 0;
+    do {
+        if (ser_used() != n) {
+            n = ser_used();
+            quiet = 0;
+        }
+        tick_poll();
+        if ((unsigned char)ticks != at) {
+            at = ticks;
+            ++quiet;
+        }
+    } while (quiet < (n ? 60 : 240));
+    signin_note = 3;
+}
+#endif
+
 /* The console. Returns 1 when Open-Apple-P asks for ParlorNet mode, 0 for the start screen. A machine with no
    serial line (MACHINE_SERIAL 0: the IIgs, whose connection is Marinetti's) has none. */
 #if !MACHINE_SERIAL
@@ -108,9 +136,11 @@ static unsigned char console(void)
     if (connected)
         close_parlor();
 again:
+#if !MACHINE_LATE_SIGNIN
     /* The sign-in overlay first: OA-P's opening must follow the command that connected at once (the parlor
-       waits 20 seconds for it), with no disk load in between; on a C64's 1541 that load takes seconds. */
+       waits 20 seconds for it), with no disk load in between. */
     ovl_load(OVL_SIGNIN);
+#endif
     txt_mode();
     txt_top = 0;
     txt_bot = 24;
@@ -168,6 +198,9 @@ again:
                     if (typed)
                         ser_put(13);
                     typed = 0;
+#if MACHINE_LATE_SIGNIN
+                    send_opening();
+#endif
                     return 1;
                 }
                 if (k == 'Q')
@@ -221,8 +254,10 @@ unsigned char parlor(void)
     for (;;) {
         if (!signed_in || net_lost) {
             signed_in = 0;
-            if (!ovl_load(OVL_SIGNIN))
+            if (!ovl_load(OVL_SIGNIN)) {
+                signin_note = 0;
                 return 0;
+            }
             k = SIGNIN->run();
             if (k == 3)
                 goto quit;

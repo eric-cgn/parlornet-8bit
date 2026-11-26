@@ -534,8 +534,10 @@ connect:
         sayln(")...");
         sayln("(" OA "C: the console  Esc: start screen)");
     }
-    ser_drop();
-    net_opening();
+    if (k != 3) {                       /* (3: the console sent it, and the answer is in the ring) */
+        ser_drop();
+        net_opening();
+    }
     k = greet();
     if (k >= 4)
         return k == 4;

@@ -9,6 +9,7 @@
 #else
 #define MACHINE_SERIAL 1                /* the Super Serial Card (or the Uthernet II) */
 #endif
+#define MACHINE_LATE_SIGNIN 0           /* the console loads the sign-in as it opens (machine.h) */
 
 #define MACHINE_NAME "the Apple II"
 

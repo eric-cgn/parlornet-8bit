@@ -3,6 +3,9 @@
 #define MACHDEFS_H
 
 #define MACHINE_SERIAL 1                /* the user port or a SwiftLink: the console and the dialer */
+/* The sign-in loads slowly from a 1541 (PN.PARLOR first, the first time), so the console does not load it:
+   Commodore-P sends the opening at once, and the sign-in is loaded after it (machine.h). */
+#define MACHINE_LATE_SIGNIN 1
 
 /* The Commodore key, which stands for commands as Open-Apple does on the Apple II: OA, wherever a screen
    names it, is the font's Commodore logo (C=), on the text screen and the bitmap alike. */
