@@ -143,6 +143,7 @@ static void hint(void)
         G->hover(t_cur < t_n ? t_id[t_cur] : 255);
     else
         ui_msg(offer_away ? "Press " KEY_RET " to answer." : g_over ? "Press " KEY_ESC " to go back to the lobby."
+               : !g_started && g_seat >= 0 ? "Type /invite bot to play the bot."  /* (your own table, waiting) */
                : "Press " OA "T to chat, or ? for help.");
     g_hold = 0;
 }
@@ -471,10 +472,8 @@ static void draw_all(void)
     g_full = 1;
     if (G && g_started)
         G->draw();
-    else if (!G) {
+    else if (!G)
         ui_text(2, 60, "This game is not on " MACHINE_NAME " yet.");
-    } else
-        ui_text(2, 60, "Waiting for players...");
     g_full = 0;
     frame_buttons();
     show_status();
