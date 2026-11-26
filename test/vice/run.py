@@ -18,6 +18,14 @@ VICE's binary monitor (127.0.0.1:6502), as test/mame/run.lua does in MAME. Runs 
   point ID           make the target with this id the current one, without a key
   joy BITS [N]       the joystick in port 2 held (bits: 1 up, 2 down, 4 left, 8 right, 16 fire) for N frames
                      (default 10), then let go
+  press CHORD...     real key presses on VICE's window: each chord is X key names joined by + (Shift_L+a,
+                     Shift_R+slash, Caps_Lock), pressed in order, held about 150 ms and let go in reverse
+  xtype TEXT         TEXT typed with real key presses, as on a US keyboard: Shift_L for capitals and the
+                     shifted symbols (? is Shift_L+slash), \\r for Return
+  bitmap [N]         until the bitmap is up (the lobby after a sign-in, say), at most N frames
+  log TEXT           a line in the log
+  memfind TEXT       log where TEXT is in the program's memory ($0800-$BFFF), as typed into a field (a
+                     password, which the screen shows as stars), or that it is not there
   snap NAME          save the screen as /out/NAME.png (with the border)
   dumptext NAME      write the text screen to /out/NAME.txt
   hold NAME V N      keep the byte at the program's variable NAME at V for the next N frames
@@ -26,14 +34,17 @@ VICE's binary monitor (127.0.0.1:6502), as test/mame/run.lua does in MAME. Runs 
   need GAME NAME PW  ask the lab's orchestrator (orch.py) for the next steps
   exit
 
-Keys are put in the program's own key queue (kq_key, kq_mod, kq_head in sys.s), as its keyboard scan
-puts them; `joy` goes through the emulated joystick port. The program's addresses come from the
+The type, key, oa, arrows, click and title steps put keys in the program's own key queue (kq_key, kq_mod,
+kq_head in sys.s), as its keyboard scan puts them, so they do not go through the scan. press and xtype do:
+they press keys on VICE's window with xdotool, VICE's keymap sets its keyboard matrix, and the program's
+scan reads it. `joy` goes through the emulated joystick port. The program's addresses come from the
 linker's label file (/xchg/labels.txt).
 
 usage: run.py PLAN OUTDIR XCHG
 """
 import os
 import socket
+import subprocess
 import struct
 import sys
 import time
@@ -205,6 +216,47 @@ def push_key(code, mod=0):
     wait(3)
 
 
+def xdo(*args):
+    return subprocess.run(["xdotool"] + list(args), capture_output=True, text=True).stdout.strip()
+
+
+xwin = []
+
+
+def press(chord):
+    """One chord of X key names (Shift_L+a) pressed on VICE's window, held about 150 ms, let go."""
+    if not xwin:
+        found = xdo("search", "--sync", "--onlyvisible", "--class", "x64").split()
+        xwin.append(found[0] if found else "")
+        if xwin[0]:
+            xdo("windowfocus", "--sync", xwin[0])
+            xdo("mousemove", "--window", xwin[0], "20", "20")
+        note("VICE's window %s" % (xwin[0] or "NOT FOUND"))
+    names = chord.split("+")
+    for n in names:
+        xdo("keydown", n)
+    time.sleep(0.15)
+    for n in reversed(names):
+        xdo("keyup", n)
+    wait(6)
+
+
+XSHIFT = {"!": "1", "@": "2", "#": "3", "$": "4", "%": "5", "^": "6", "&": "7", "*": "8", "(": "9", ")": "0",
+          "_": "minus", "+": "equal", "{": "bracketleft", "}": "bracketright", "|": "backslash",
+          ":": "semicolon", '"': "apostrophe", "<": "comma", ">": "period", "?": "slash", "~": "grave"}
+XPLAIN = {" ": "space", "\r": "Return", "-": "minus", "=": "equal", "[": "bracketleft", "]": "bracketright",
+          "\\": "backslash", ";": "semicolon", "'": "apostrophe", ",": "comma", ".": "period", "/": "slash",
+          "`": "grave"}
+
+
+def chord_for(ch):
+    if ch.isupper():
+        return "Shift_L+" + ch.lower()
+    if ch in XSHIFT:
+        return "Shift_L+" + XSHIFT[ch]
+    return XPLAIN.get(ch, ch)
+
+
 KEYS = {"left": 8, "right": 21, "up": 11, "down": 10, "ret": 13, "esc": 27, "del": 127, "tab": 9, "space": 32}
 
 
@@ -303,6 +355,34 @@ def run():
             mon.joy(1, 0x1F)
             mon.resume()
             wait(10)
+        elif cmd == "press":
+            for chord in rest.split():
+                press(chord)
+            note("press " + rest)
+        elif cmd == "xtype":
+            text = rest.replace("\\r", "\r")
+            for ch in text:
+                press(chord_for(ch))
+            note("xtype " + rest)
+        elif cmd == "bitmap":
+            end = time.time() + (int(rest) if rest else 1800) * FRAME
+            while True:
+                up = mon.bitmap()
+                mon.resume()
+                if up:
+                    note("bitmap up")
+                    break
+                if time.time() > end:
+                    note("TIMEOUT waiting for the bitmap")
+                    break
+                wait(10)
+        elif cmd == "log":
+            note(rest)
+        elif cmd == "memfind":
+            mem = mon.get(0x0800, 0xB800)
+            mon.resume()
+            at = mem.find(rest.encode())
+            note("memfind %s: %s" % (rest, "at $%04X" % (0x0800 + at) if at >= 0 else "NOT FOUND"))
         elif cmd == "snap":
             mon.snap(os.path.join(OUT, rest + ".png"))
             mon.resume()
@@ -348,8 +428,9 @@ def run():
 
 
 try:
-    mon.joy(1, 0x1F)                    # the joystick in port 2 let go (VICE's simulated port reads 0 as all on)
-    mon.resume()
+    if any(l.startswith("joy ") for l in steps):
+        mon.joy(1, 0x1F)                # the joystick in port 2 let go (VICE's simulated port reads 0 as all on)
+        mon.resume()
     run()
 finally:
     log.close()

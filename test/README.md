@@ -255,14 +255,24 @@ test/vice/run.sh build/c64/parlornet.d64 test/vice/plans/reversi.txt test/out/c6
   `ACIA=0xdf00`), as the program's settings start (SwiftLink compatible), or the user port's RS-232 (Supra 2400
   compatible).
   `ATTACH=1` only puts the disk in drive 8, for plans that type the LOAD themselves; `C128=1` runs x128, which boots
-  the disk. `NTSC=1` runs an NTSC machine. VICE emulates the 1541 in full, at its own speed. VICE works on a copy
+  the disk. `NTSC=1` runs an NTSC machine. `KEYMAP=1` runs VICE's positional keymap for the keys a plan presses
+  (`KEYMAP=0`, the symbolic one, is VICE's default). VICE emulates the 1541 in full, at its own speed. VICE works on a copy
   of the disk, left in the output directory as `disk-after.d64`.
 - `vice/run.py` is the step runner. It speaks VICE's binary monitor: it reads the text screen and the program's
   variables (by the linker's label file, `build/c64/parlor.lbl`), puts keys in the program's key queue as its
   keyboard scan does, moves the joystick in port 2 through VICE's simulated port, and takes screenshots. Its steps
   are those of `mame/run.lua` (wait, waittext, title, type, key, oa, arrows, click, point, snap, dumptext, hold,
   set, need, exit), plus `waittitle` (until the title screen is up, after the load), `basic` (typing into BASIC
-  before the program runs), `joy` and `peek`.
+  before the program runs), `joy`, `peek`, `bitmap` (until the bitmap is up, as the lobby is after a sign-in),
+  `log`, and `memfind` (where a text is in the program's memory, such as a password typed into its field).
+- The keys that `type`, `key`, `oa`, `arrows`, `click` and `title` put in the key queue never go through the
+  program's keyboard scan, so a plan made of them alone cannot show a fault in the scan. `press` and `xtype` press
+  real keys on VICE's window with xdotool, as a player does: `press` takes chords of X key names
+  (`Shift_L+a`, `Shift_R+slash`, `Caps_Lock` for Shift Lock), and `xtype` types a text as on a US keyboard, with
+  the left Shift for capitals and shifted symbols. VICE's symbolic keymap (its default) turns them into the C64's
+  keys, and the scan reads them from the keyboard's matrix. VICE's simulated device in port 2 holds port A's lines
+  5 to 7 low, which the scan would read as three columns always chosen, so `run.sh` plugs it in only for a plan
+  with `joy` steps.
 
 The plans in `vice/plans`:
 - `title.txt`, `start.txt`: the title screen after the load at a 1541's speed, the start screen and the settings.
@@ -271,6 +281,14 @@ The plans in `vice/plans`:
 - `boot128.txt` (with `C128=1`): a C128 boots the disk, goes to 64 mode and starts the program.
 - `console.txt`: the console through the modem stand-in at 2400 baud, AT and ATDT, then Commodore-P to the name
   prompt.
+- `keys_shift.txt`: the Shift keys pressed for real. In the console, capitals, `?` and shifted symbols with the
+  left Shift, `?` and a capital with the right Shift, and capitals with Shift Lock, echoed by the modem stand-in
+  (`shift_console`); capitals and `?` at the name prompt (`shift_name`); a sign-up whose password is typed the same
+  way (`shift_password`, where `memfind` finds the password in the field before Return), and a second sign-in
+  with that password put in the key queue as text, which reaches the lobby (`shift_lobby2`) only if the field
+  had it exactly. In VICE the right Shift holds both of the C64's Shift keys, and with both down Z and / are
+  ghosts of each other in the matrix; the program takes / (? with Shift), as the KERNAL does, so in VICE a
+  capital Z needs the left Shift.
 - `dial.txt`: the dialer (ATZ, ATDT, CONNECT), signing up, closing the connection and dialing again.
 - `dial_init.txt`: Pulse dial, which dials `ATDP`, and a number that starts with AT, sent as the whole dial
   command (`ATD"parlornet.org:6501"`).

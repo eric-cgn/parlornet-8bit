@@ -45,6 +45,7 @@ iz4:    .res    1
 iz5:    .res    1
 iz6:    .res    1
 izp:    .res    2
+kbm:    .res    8               ; the keyboard's rows down, column by column
 
         .segment "DATA"
 _txt_x:         .byte   0
@@ -101,7 +102,7 @@ rowhi:  .repeat 25, r
         .endrepeat
 
 ; The keyboard matrix (column on port A, row on port B; index column * 8 + row) to ASCII, without and with
-; shift. 0 is no key; $FE, $FD and $FC are shift, C= and CTRL.
+; shift. 0 is no key; $FE, $FD and $FB are shift, C= and CTRL.
 ESC = 27
 keys:   .byte   127, 13, 21,  0,  0,  0,  0, 10     ; DEL RETURN CRSR-RIGHT F7 F1 F3 F5 CRSR-DOWN
         .byte   '3','w','a','4','z','s','e',$FE
@@ -110,7 +111,7 @@ keys:   .byte   127, 13, 21,  0,  0,  0,  0, 10     ; DEL RETURN CRSR-RIGHT F7 F
         .byte   '9','i','j','0','m','k','o','n'
         .byte   '+','p','l','-','.',':','@',','
         .byte   '\',  '*',';',  0,$FE,'=','^','/'    ; pound HOME RSHIFT up-arrow
-        .byte   '1',ESC,$FC,'2',' ',$FD,'q',ESC     ; left-arrow CTRL C= RUN/STOP
+        .byte   '1',ESC,$FB,'2',' ',$FD,'q',ESC     ; left-arrow CTRL C= RUN/STOP
 skeys:  .byte     0, 13,  8,  0,  0,  0,  0, 11
         .byte   '#','W','A','$','Z','S','E',$FE
         .byte   '%','R','D','&','C','F','T','X'
@@ -118,7 +119,7 @@ skeys:  .byte     0, 13,  8,  0,  0,  0,  0, 11
         .byte   ')','I','J','0','M','K','O','N'
         .byte   '{','P','L','}','>','[','`','<'
         .byte   '|','*',']',  0,$FE,'=','~','?'
-        .byte   '!','_',$FC,'"',' ',$FD,'Q',ESC
+        .byte   '!','_',$FB,'"',' ',$FD,'Q',ESC
 
         .segment "CODE"
 
@@ -330,85 +331,100 @@ scan:
         jmp     joystick
 
 keyboard:
-        lda     #0
-        sta     iz3             ; modifiers: 1 shift, 2 C=, 4 CTRL
-        lda     #$FF
-        sta     iz4             ; the first key (matrix index)
-        ldx     #0              ; column
+        ldx     #7
 kb_col: lda     colsel,x
         sta     CIA1
         lda     CIA1+1
         eor     #$FF
-        beq     kb_next
-        sta     izp             ; the rows down in this column
-        txa
-        asl     a
-        asl     a
-        asl     a
-        sta     izp+1           ; the column's first index
-        ldy     #0              ; row
-kb_row: lsr     izp
-        bcc     kb_rnext
-        sty     iz2
-        tya
-        ora     izp+1
-        tay
-        lda     keys,y
-        cmp     #$FE
-        bne     :+
-        lda     #1
-        bne     kb_mod
-:       cmp     #$FD
-        bne     :+
-        lda     #2
-        bne     kb_mod
-:       cmp     #$FC
-        bne     :+
-        lda     #4
-kb_mod: ora     iz3
-        sta     iz3
-        jmp     kb_rest
-:       lda     iz4
-        bpl     kb_rest         ; (one key at a time: the first)
-        sty     iz4
-kb_rest:
-        ldy     iz2
-kb_rnext:
-        iny
-        cpy     #8
-        bcc     kb_row
-kb_next:
-        inx
-        cpx     #8
-        bcc     kb_col
+        sta     kbm,x           ; the rows down in each column
+        dex
+        bpl     kb_col
         lda     #$7F            ; (port A left so: the SID reads port 1's potentiometers, the mouse)
         sta     CIA1
+        ; Both Shift keys down (Shift Lock with the right Shift, or VICE's right Shift, which holds both) make
+        ; Z and / ghosts of each other: Z is dropped, so / comes through (? with Shift), as the KERNAL takes it.
+        bit     kbm+1
+        bpl     :+
+        lda     #$10
+        bit     kbm+6
+        beq     :+
+        lda     kbm+1
+        and     #$EF
+        sta     kbm+1
+:       lda     #0
+        sta     iz3             ; modifiers: 1 shift, 2 C=, 4 CTRL
+        lda     #$FF
+        sta     iz4             ; the key (matrix index)
+        ; The modifiers, and the key: the last one down in the matrix's order, as the KERNAL takes it, but not
+        ; one that may be a ghost. Three keys down at three corners of a rectangle (two columns, two rows)
+        ; show the fourth corner down too, so a key with another column that shares its row and another row
+        ; with it is left out.
+        ldx     #7              ; column
+kb_c:   lda     kbm,x
+        beq     kb_cnext
+        sta     izp             ; the rows down in this column
+        stx     iz5
+        txa
+        asl     a
+        asl     a
+        asl     a
+        ora     #7
+        tay                     ; the column's last index
+        lda     #$80
+        sta     izp+1           ; the row's bit
+kb_r:   lda     izp
+        and     izp+1
+        beq     kb_rnext
+        lda     keys,y
+        beq     kb_rnext        ; (no code: the function keys)
+        cmp     #$FB
+        bcc     kb_key
+        eor     #$FF            ; $FE shift 1, $FD C= 2, $FB CTRL 4
+        ora     iz3
+        sta     iz3
+        bne     kb_rnext
+kb_key: lda     iz4
+        bpl     kb_rnext        ; (a later one has it)
+        ldx     #7
+kb_gh:  cpx     iz5
+        beq     kb_gnext
+        lda     kbm,x
+        and     izp             ; the rows down in both columns
+        cmp     izp+1
+        beq     kb_gnext        ; (this row only)
+        and     izp+1
+        bne     kb_ghost        ; this row and another: perhaps a ghost
+kb_gnext:
+        dex
+        bpl     kb_gh
+        sty     iz4
+kb_ghost:
+        ldx     iz5
+kb_rnext:
+        dey
+        lsr     izp+1
+        bne     kb_r
+kb_cnext:
+        dex
+        bpl     kb_c
         ldy     iz4
         bmi     kb_none
-        ; the key's code: shifted (not with C=), or a control code with CTRL
-        lda     iz3
-        cmp     #1
-        bne     :+
-        lda     skeys,y
-        jmp     :++
-:       and     #3
-        cmp     #3
-        bne     :+
-        lda     skeys,y         ; shift and C=: as shifted
-        jmp     :++
-:       lda     keys,y
-:       beq     kb_none
-        tax
-        lda     iz3
-        and     #4
-        beq     :+
+        ; the key's code: with CTRL, a letter's control code; else shifted with Shift (with C= or without)
+        ldx     iz3
+        cpx     #4
+        bcs     kb_ctrl
         txa
+        lsr     a
+        lda     keys,y
+        bcc     :+
+        lda     skeys,y
+:       beq     kb_none
+        jmp     press
+kb_ctrl:
+        lda     keys,y
         cmp     #'a'
         bcc     kb_none
-        and     #$1F            ; CTRL and a letter
-        tax
-:       txa
-        ldx     iz3
+        and     #$1F
         jmp     press
 
 kb_none:
