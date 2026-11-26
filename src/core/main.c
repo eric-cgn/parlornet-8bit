@@ -16,6 +16,13 @@ unsigned char connected;
 unsigned char signin_note;
 unsigned char cfg_echo;
 unsigned char cfg_title = 1;
+unsigned char cfg_tutor;
+
+void tutorial(void)
+{
+    if (ovl_load(OVL_FRAME) && ovl_load(OVL_TUTORIAL))
+        TUTORIAL->run();
+}
 #if MACHINE_SERIAL
 char cfg_init[DIAL_INIT_MAX + 1] = "ATZ";
 unsigned char cfg_pulse;
@@ -116,7 +123,9 @@ unsigned char parlor(void)
     for (;;) {
         if (!signed_in || net_lost) {
             signed_in = 0;
-            if (!ovl_load(OVL_SIGNIN))
+            /* (the frame first: on the IIe it goes through the overlays' memory into the language card's
+               bank 1, ovl.h) */
+            if (!ovl_load(OVL_FRAME) || !ovl_load(OVL_SIGNIN))
                 return 0;
             k = SIGNIN->run();
             if (k == 3)
@@ -124,8 +133,16 @@ unsigned char parlor(void)
             if (k != 4)
                 return k;
             signed_in = 1;
+            if (!cfg_tutor) {
+                /* the first sign-in: the tutorial's dialog, and the answer kept, so it comes once */
+                cfg_tutor = 1;
+                k = SIGNIN->offer();
+                if (ovl_load(OVL_SETUP))
+                    SETUP->save();
+                if (k)
+                    tutorial();
+            }
         }
-        ovl_load(OVL_FRAME);            /* (the IIe's language card bank 1; ovl.h) */
         k = lobby();
         if (k == 1)
             return 1;                   /* (the console closes the connection) */
@@ -188,6 +205,8 @@ void main(void)
             settings();
         else if (k == 'D')
             mono ^= 1;
+        else if (k == 'T')
+            tutorial();
         while (go) {
             /* parlor() returns 1 when the player asks for the console. */
             if (!parlor())

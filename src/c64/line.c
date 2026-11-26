@@ -39,6 +39,7 @@ void cfg_load(void)
     cfg_echo = cfg_saved[6] & 1;
     mono = cfg_saved[7] & 1;
     cfg_title = cfg_saved[8] & 1;
+    cfg_tutor = cfg_saved[8] >> 1 & 1;
     cfg_pulse = cfg_saved[9] & 1;
     memcpy(cfg_init, cfg_saved + 10, DIAL_INIT_MAX);
     memcpy(cfg_number, cfg_saved + 10 + DIAL_INIT_MAX + 1, DIAL_NUM_MAX);

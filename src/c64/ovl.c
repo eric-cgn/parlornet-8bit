@@ -23,12 +23,12 @@ extern unsigned char _PCODE_RUN__[];    /* (the linker's: where PN.PARLOR goes) 
 static const char *const ovl_name[] = {
     "PN.SIGNIN", "PN.REVERSI", "PN.BACKGAMMON", "PN.GRIDWORDS", "PN.CHECKERS", "PN.MANCALA",
     "PN.FIVEINAROW", "PN.DOTSANDBOXES", "PN.NAVALCOMBAT", "PN.CANNONFIRE", "PN.RUMMYTILE", "PN.SETUP",
-    "PN.SPLASH", "PN.NEWGAME"};
+    "PN.SPLASH", "PN.NEWGAME", "", "", "PN.TUTORIAL"};
 
 /* What each is, for "Loading ..." */
 static const char *const ovl_what[] = {
     "the sign-in", "Reversi", "Backgammon", "Grid Words", "Checkers", "Mancala", "Five in a Row",
-    "Dots and Boxes", "Naval Combat", "Cannon Fire", "Rummy Tile", "the settings", "the title screen", "New game"};
+    "Dots and Boxes", "Naval Combat", "Cannon Fire", "Rummy Tile", "the settings", "the title screen", "New game", "", "", "the tutorial"};
 
 /* "Loading Backgammon..." on the screen's bottom row, which the progress bar then fills (disk.s): the text
    screen's spare 25th row, or the bitmap's status row. On the title screen that is the row of "Press a key",
@@ -115,7 +115,7 @@ unsigned char __fastcall__ ovl_load(unsigned char k)
         return 1;
     if (k >= sizeof ovl_name / sizeof ovl_name[0])
         return 0;
-    if ((k == OVL_SIGNIN || k == OVL_FRAME) && !parlor_in) {
+    if ((k == OVL_SIGNIN || k == OVL_FRAME || k == OVL_TUTORIAL) && !parlor_in) {
         loaded = 255;
         if (!load_unpack("PN.PARLOR", "the lobby", _PCODE_RUN__))
             return 0;

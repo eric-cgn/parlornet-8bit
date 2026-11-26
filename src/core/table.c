@@ -473,7 +473,6 @@ static void draw_all(void)
         G->draw();
     else if (!G) {
         ui_text(2, 60, "This game is not on " MACHINE_NAME " yet.");
-        ui_text(2, 72, "Play it on the web or by telnet.");
     } else
         ui_text(2, 60, "Waiting for players...");
     g_full = 0;
@@ -756,6 +755,8 @@ static unsigned char __fastcall__ after_cmd(unsigned char c)
         return 3;
     if (c & C_LEAVE)
         return 0;
+    if (c & C_TUTORIAL)
+        return 4;                       /* (the lobby runs it: it takes the game's memory) */
     if (c & C_HELP) {
         g_help(g_ovl);
         c |= C_REDRAW;
@@ -862,7 +863,7 @@ static unsigned char __fastcall__ keys(unsigned char k)
     return 255;
 }
 
-/* Play at a table. Returns 1 for the console, 0 for the lobby, 3 when signed out (/quit). */
+/* Play at a table. Returns 0 for the lobby, 3 when signed out (/quit), 4 for the tutorial (/tutorial). */
 unsigned char table_play(unsigned int id)
 {
     unsigned char k;

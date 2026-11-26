@@ -1,4 +1,4 @@
-Tic Tac Toe tutorial help
+Tutorial help
 Moving
 Move to a square with the arrows and press {RET} to place your X. The tutorial partner answers with an O.
 
@@ -11,7 +11,7 @@ A move can be typed too, as /c3. /say says a line in the chat. Commands that nee
 Every game
 {OA}R resigns, after asking first. {OA}T opens the chat. {ESC} goes back, and the game goes on without you.
 ---
-Tic Tac Toe tutorial help
+Tutorial help
 Three in a row
 X and O take turns on a board of three by three squares. The first to have three in a row, across, down or corner to corner, wins.
 

@@ -37,9 +37,12 @@ def read_volume(img):
             if storage == 1:
                 data = block(key)[:eof]
             else:
-                assert storage == 2
-                idx = block(key)
-                data = b"".join(block(idx[k] | (idx[256 + k] << 8)) for k in range((eof + 511) // 512))[:eof]
+                assert storage in (2, 3)
+                n = (eof + 511) // 512
+                ix = [block(key)] if storage == 2 else \
+                    [block(block(key)[j] | (block(key)[256 + j] << 8)) for j in range((n + 255) // 256)]
+                data = b"".join(block(ix[k // 256][k % 256] | (ix[k // 256][256 + k % 256] << 8))
+                                for k in range(n))[:eof]
             files[name] = (e[0x10], int.from_bytes(e[0x1F:0x21], "little"), data)
         first = False
         b = int.from_bytes(blk[2:4], "little")
@@ -54,6 +57,10 @@ class ProdosVolume(unittest.TestCase):
         self.assertEqual(len(img), 280 * 512)
         files = read_volume(img)
         self.assertEqual(files["A.SYSTEM"], (0xFF, 0x2000, small))
+        # a tree: over 128K, a master index block over the index blocks
+        tree = bytes((i * 13) & 255 for i in range(140000))
+        trees = read_volume(disk.prodos_volume("TESTVOL", [("T.DAT", 0x06, 0, tree)], blocks=400))
+        self.assertEqual(trees["T.DAT"], (0x06, 0, tree))
         self.assertEqual(files["B.DAT"], (0x06, 0, big))
 
     def test_free_map_marks_used_blocks(self):

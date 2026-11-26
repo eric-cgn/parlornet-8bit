@@ -162,6 +162,7 @@ static void start_screen(void)
     say(" ");
     say(utoa10(cfg_port));
     setting_line(11, "D", "Display: ", mono ? "monochrome" : "color");
+    setting_line(13, "T", "Tutorial: how every game works", "");
     txt_goto(1, 22);
     say(OA "Q: quit to the Finder");
 }
@@ -294,6 +295,7 @@ static void start_screen(void)
         say(line_desc());
     }
     setting_line(13, "D", "Display: ", mono ? "monochrome" : "color");
+    setting_line(15, "T", "Tutorial: how every game works", "");
     if (PRODOS) {
         txt_goto(1, 22);
         say(OA "Q: back to ProDOS");
@@ -318,8 +320,8 @@ static void start_screen(void)
 static const char cfg_name[] = "\012PARLOR.CFG";
 
 /* The settings, in this order, after a version byte (CFG_VER, one more whenever the layout changes); then
-   the addresses, the port and the parlor's name, then whether the title screen is off (bit 0) and whether
-   the joystick is on (bit 1, which older versions left clear); then, on the IIe, the modem's init string,
+   the addresses, the port and the parlor's name, then whether the title screen is off (bit 0), whether the
+   joystick is on (bit 1, which older versions left clear) and whether the tutorial has been offered (bit 2); then, on the IIe, the modem's init string,
    number and pulse dial. A file of another version or size is left alone: the settings stay as they start
    until they are saved again. */
 #define CFG_VER 3
@@ -344,7 +346,7 @@ static void pack(unsigned char *b)
     b[25] = cfg_port;
     b[26] = cfg_port >> 8;
     memcpy(b + 27, cfg_host, 32);
-    b[59] = !cfg_title | joy_on << 1;
+    b[59] = !cfg_title | joy_on << 1 | cfg_tutor << 2;
 #ifndef IIGS
     memcpy(b + 60, cfg_init, DIAL_INIT_MAX + 1);
     memcpy(b + 60 + DIAL_INIT_MAX + 1, cfg_number, DIAL_NUM_MAX + 1);
@@ -370,6 +372,7 @@ static void pd_load(void)
         cfg_host[31] = 0;
         cfg_title = !(b[59] & 1);
         joy_on = b[59] >> 1 & 1;
+        cfg_tutor = b[59] >> 2 & 1;
 #ifndef IIGS
         memcpy(cfg_init, b + 60, DIAL_INIT_MAX);
         memcpy(cfg_number, b + 60 + DIAL_INIT_MAX + 1, DIAL_NUM_MAX);
@@ -402,13 +405,18 @@ static void pd_save(void)
     pd_close();
 }
 
-static void after_settings(void)
+static void save(void)
 {
-    setup_settings();
-    if (PRODOS)
+    if (PRODOS)                            /* (the self-booting disk keeps no file) */
         pd_save();
 }
 
+static void after_settings(void)
+{
+    setup_settings();
+    save();
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct setup setup_header = {after_settings, start_screen, pd_load};
+const struct setup setup_header = {after_settings, start_screen, pd_load, save};
 #pragma rodata-name (pop)

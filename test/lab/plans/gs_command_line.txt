@@ -24,6 +24,9 @@ waittext password 600
 type Swordfish 1997\r
 waittext again 600
 type Swordfish 1997\r
+wait 6000
+type n
+wait 600
 wait 900
 type /who\r
 wait 300

@@ -27,7 +27,7 @@ A2=src/apple2
 CORE=src/core
 COMMON=src/common
 COMMON6502=src/common/6502
-OVERLAYS="signin reversi backgammon gridwords checkers mancala fiveinarow dotsandboxes navalcombat cannonfire rummytile setup splash newgame frame help"
+OVERLAYS="signin reversi backgammon gridwords checkers mancala fiveinarow dotsandboxes navalcombat cannonfire rummytile setup splash newgame frame help tutorial"
 FRAMEOVL=
 rm -rf "$OBJ" "$GS" "$OUT/c64" "$OUT/template"
 mkdir -p "$OBJ" "$GOBJ"
@@ -45,6 +45,7 @@ ovl_src() {
 	setup) echo "$1/setup.c $COMMON/setting_line.c" ;;
 	splash) echo "$1/splash.c" ;;
 	newgame) echo "$CORE/newgame.c" ;;
+	tutorial) echo "$CORE/tutorial.c" ;;
 	frame) [ -n "$FRAMEOVL" ] && echo "$CORE/frame.c" ;;
 	*) if [ -f "$CORE/games/$2.c" ]; then echo "$CORE/games/$2.c"
 	   elif [ -f "$1/games/$2.c" ]; then echo "$1/games/$2.c"; fi ;;
@@ -176,7 +177,7 @@ for f in stub boot128; do
 	ld65 -C "$C64/$f.cfg" -o "$COUT/$f.bin" "$COBJ/$f.o"
 done
 ca65 --cpu 6502 -o "$COBJ/crt0.o" "$C64/crt0.s"
-mainsize=$(printf '%04X' $((0x$C64_OVL - 0x1500)))
+mainsize=$(printf '%04X' $((0x$C64_OVL - 0x1400)))
 sed -e "s/@MAINSIZE@/\$$mainsize/" -e "s/@OVL@/\$$C64_OVL/" "$C64/parlor.cfg" > "$COBJ/c64.cfg"
 pdef="-D C64 -g"
 LDEXTRA="-Ln $COUT/parlor.lbl"

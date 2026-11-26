@@ -6,8 +6,8 @@
      $0002-$008F  zero page (cc65's and ours); the KERNAL's above
      $0400-$05FF  the serial line's receive and send rings
      $0600-$07FF  cc65's C stack
-     $0800-$14FF  the reply buffer (net.c), and the loader (PARLORNET) before it
-     $1500-       the program (PN.MAIN), then its zeroed data, then the lobby and the tables (PN.PARLOR,
+     $0800-$13FF  the reply buffer (net.c), and the loader (PARLORNET) before it
+     $1400-       the program (PN.MAIN), then its zeroed data, then the lobby and the tables (PN.PARLOR,
                  loaded before the first sign-in: ovl.c)
      OVL_ADDR-$600  a table's moves and chat (TABLE), or the lobby's lists (LOBBY)
      OVL_ADDR-$BFFF one overlay at a time: the sign-in, a game, the start screen or the title screen

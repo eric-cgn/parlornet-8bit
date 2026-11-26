@@ -42,6 +42,7 @@ static unsigned char first;             /* the list's first line on the screen (
 
 #define ID_TAB 0                        /* + index: open a table of yours, or join one */
 #define ID_ACC 40                       /* + index: an invitation, answered in its dialog */
+#define ID_TUTOR 199                    /* the tutorial, last in the list */
 #define B_NEW 200
 #define B_REFRESH 201
 #define B_DISPLAY 202
@@ -294,14 +295,29 @@ static void draw_lobby(void)
         ui_button(32, row * 8, "Join", ID_TAB + i);
         ++row;
     }
+    if (list_line("The tutorial")) {
+        ui_text(1, row * 8, "Tic Tac Toe, how every game works");
+        ui_target(MID_X2, row * 8 + 4, MID_X2, 4, ID_TUTOR);
+        ++row;
+    }
     if (first || next)
         ui_button(1, LIST_END * 8, next ? "More" : "Back to the start", B_MORE);
     frame_new = 1;
     lobby_frame();
-    ui_point(0);
+    ui_point(ntab + ninv ? 0 : ui_find(B_NEW));     /* (with nothing listed, on New game, not the tutorial) */
 }
 #pragma bss-name (pop)
 
+
+/* A table, and the tutorial when /tutorial was typed there. */
+static unsigned char __fastcall__ at_table(unsigned int id)
+{
+    unsigned char k = table_play(id);
+    if (k != 4)
+        return k;
+    tutorial();
+    return 0;
+}
 
 /* The lobby. Returns 1 for the console, 0 to sign out, 2 to close the connection, 3 when signed out
    already (/quit). */
@@ -333,6 +349,10 @@ refresh:
 help:
             if (k & C_HELP) {
                 g_help(0);
+                k = C_REDRAW;
+            }
+            if (k & C_TUTORIAL) {
+                tutorial();
                 k = C_REDRAW;
             }
             if (k & C_OUT)
@@ -379,9 +399,13 @@ help:
                 net_req();
                 goto refresh;
             }
+            if (k == ID_TUTOR) {
+                tutorial();
+                goto refresh;
+            }
             if (k == B_NEW) {
                 id = ovl_load(OVL_NEWGAME) ? NEWGAME->run() : 0;
-                if (id && (i = table_play(id)) != 0)
+                if (id && (i = at_table(id)) != 0)
                     return i;
                 goto refresh;
             }
@@ -412,7 +436,7 @@ help:
                     ui_status(r_final ? err_text(r_final) : "No answer.");
                     continue;
                 }
-                if ((i = table_play(invs[i].id)) != 0)
+                if ((i = at_table(invs[i].id)) != 0)
                     return i;
                 goto refresh;
             }
@@ -425,7 +449,7 @@ help:
                         continue;
                     }
                 }
-                if ((i = table_play(tabs[k].id)) != 0)
+                if ((i = at_table(tabs[k].id)) != 0)
                     return i;
                 goto refresh;
             }

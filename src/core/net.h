@@ -18,7 +18,9 @@ unsigned char net_reply(unsigned int secs);  /* read a reply without sending */
 unsigned char net_line(unsigned int ticks); /* one line into the reply; 1 if one came */
 void net_reset(void);                   /* empty the reply buffer */
 char *net_rbuf(void);                   /* the reply buffer, RBUF bytes, which the help pages borrow */
-#define RBUF 2944
+#ifndef RBUF
+#define RBUF 2944                       /* (a machine may make it smaller in machdefs.h) */
+#endif
 
 /* The request being built. */
 extern char q[84];

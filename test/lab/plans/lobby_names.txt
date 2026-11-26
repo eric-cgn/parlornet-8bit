@@ -9,6 +9,7 @@ wait 120
 caps
 title 1800
 waittext ParlorNet: connect 1200
+hold cfg_tutor 1 30
 type P
 waittext Name: 900
 type nora\r

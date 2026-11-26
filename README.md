@@ -46,6 +46,8 @@ Under the board the status line says whose turn it is and the clock, as "Your tu
 
 ? opens help, two pages for each game: how to move with its keys and commands on the first, and the facts you look up on the second. Space or Right turns the page, Left turns back, and Esc or Return closes it; the buttons under it do the same for a pointer. The lobby's help is one page. The pages are in `src/core/help`, and `tools/help.py` makes them for each machine's key names: one overlay of them all on the Apple II, read a help at a time into the reply buffer, and a file each on the C64 (PN.HELP0 to PN.HELP11).
 
+The tutorial is a game of Tic Tac Toe against the tutorial partner, in 18 steps that show how every game works: the pointer and Return, a shortcut, the command line, a typed move, the chat, help and a dialog. It runs only on your own screen and never reaches the parlor. The first sign-in offers it once, in a dialog, and the answer is kept with the settings (under ProDOS, on the IIgs and on the C64, in PARLOR.CFG; the self-booting disk keeps it only until the Apple is switched off). After that it starts from the start screen (T), from the end of the lobby's list and with /tutorial. It is an overlay of its own, so none of it stays in memory during a game.
+
 A double, a draw offer, an offer to resign and an invitation come as dialogs, with Accept and Decline, and resigning, passing, ending a Rummy Tile turn that won't count and signing out ask first in a dialog with Yes and No. Y and N answer a dialog, the arrows and Tab move between its buttons, and Return presses the one marked. Esc answers No to a question; an offer put away with Esc waits, and Return brings it back. With the joystick turned on in the settings (J), button 0 clicks and button 1 cancels as Esc does, but never leaves a table.
 
 In Backgammon each step glides its checker from where it was to where it goes, yours as you play them and the other player's one after another when their turn comes in, a hit checker to the bar first. A point with more than five checkers shows four and +n for the rest, and the bar more than three as two and +n. With checkers of yours on the bar, the pointer for the bar sits on them, below the cube.
@@ -180,8 +182,8 @@ The user port's driver (`src/c64/serial.s`) receives by CIA 2's NMI: the start b
 | Address | What |
 |---|---|
 | $0400-$07FF | the serial line's receive and send rings, the C stack |
-| $0800-$14FF | the reply buffer (the loader before it) |
-| $1500-$9AFF | the program (PN.MAIN), its variables, then the lobby, the tables and `frame.c` (PN.PARLOR) |
+| $0800-$13FF | the reply buffer (the loader before it) |
+| $1400-$9AFF | the program (PN.MAIN), its variables, then the lobby, the tables and `frame.c` (PN.PARLOR) |
 | $9B00-$BFFF | one overlay: the sign-in, a game, New game, the start screen and settings, or the title screen |
 | $C000-$C7FF | the character set, and the same inverted |
 | $C800-$CFFF | the text screen and the bitmap's colors (the loader, PN.BOOT, at start-up) |
@@ -208,6 +210,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `parlor.c` (an overlay): the line console, connecting, the dialer and signing in.
   - `lobby.c`: the lobby, and `newgame.c` (an overlay) its New game.
   - `frame.c`: the command line, the dialogs and the pages of text, for the lobby and the tables.
+  - `tutorial.c` (an overlay): the tutorial, a game of Tic Tac Toe that never reaches the parlor.
   - `help/`: the help pages, which `tools/help.py` makes for each machine.
   - `table.c`: the table screen every game shares, with its chat.
   - `net.c`: PARLORNET/1 requests and replies.

@@ -10,6 +10,7 @@
 /* The sign-in overlay's header. */
 struct signin {
     unsigned char (*run)(void);         /* 0 start screen, 1 console, 3 quit, 4 signed in */
+    unsigned char (*offer)(void);       /* the first sign-in: the tutorial's dialog; 1 to run it */
 #if MACHINE_SERIAL
     void (*hangup)(void);               /* a dialed line, after BYE */
     unsigned char (*console)(void);     /* the console: 1 ParlorNet mode, 0 start screen, 2 the settings */
@@ -23,6 +24,7 @@ struct setup {
     void (*settings)(void);
     void (*start)(void);
     void (*load)(void);                 /* under ProDOS: the settings from PARLOR.CFG */
+    void (*save)(void);                 /* the settings into PARLOR.CFG, where they are kept */
 };
 #define SETUP ((const struct setup *)OVL_ADDR)
 
@@ -48,5 +50,12 @@ struct newgame {
 
 /* The help pages (tools/help.py), read a help at a time by ovl_help (machine.h). */
 #define OVL_HELP 15
+
+/* The tutorial (tutorial.c): a lesson in Tic Tac Toe, which never reaches the parlor. */
+#define OVL_TUTORIAL 16
+struct tutorial {
+    void (*run)(void);
+};
+#define TUTORIAL ((const struct tutorial *)OVL_ADDR)
 
 #endif

@@ -4,6 +4,7 @@
 
 #define MACHINE_SERIAL 1                /* the user port or a SwiftLink: the console and the dialer */
 #define MACHINE_GRBSS                   /* frame.c's buffers in the text screen while the bitmap shows */
+#define RBUF 2688                       /* the reply buffer (net.h), from $0800, with the program at $1400 */
 
 /* The Commodore key, which stands for commands as Open-Apple does on the Apple II: OA, wherever a screen
    names it, is the font's Commodore logo (C=), on the text screen and the bitmap alike. */

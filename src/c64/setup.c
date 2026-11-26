@@ -165,24 +165,25 @@ static void start_screen(void)
     setting_line(9, "C", "Console: set up the line by hand", "");
     setting_line(11, "S", "Settings: ", line_desc());
     setting_line(13, "D", "Display: ", mono ? "monochrome" : "color");
+    setting_line(15, "T", "Tutorial: how every game works", "");
     txt_goto(1, 22);
     say(OA "Q: quit to BASIC");
     if (cfg_number[0])                  /* (P dials the number: the menu says enough) */
         return;
-    txt_goto(1, 16);
-    sayln("If the line already reaches the");
     txt_goto(1, 17);
-    sayln("parlor's native port (6501), press P.");
+    sayln("If the line already reaches the");
     txt_goto(1, 18);
-    sayln("To dial a modem first, press C, type");
+    sayln("parlor's native port (6501), press P.");
     txt_goto(1, 19);
-    sayln("ATDT and the parlor's name and port,");
+    sayln("To dial a modem first, press C, type");
     txt_goto(1, 20);
+    sayln("ATDT and the parlor's name and port,");
+    txt_goto(1, 21);
     say("then press " OA "P.");
 }
 
 /* PARLOR.CFG: 'P', 'C', a version (CFG_VER, one more whenever the layout or the meaning of a byte changes), the
-   modem (SER_USER or SER_SWIFT), its speed and flow control, the echo, the display, the title screen, pulse dialing, then the init string and the
+   modem (SER_USER or SER_SWIFT), its speed and flow control, the echo, the display, the title screen (bit 0) and whether the tutorial has been offered (bit 1), pulse dialing, then the init string and the
    number, each with
    its 0 and room to spare, whether a mouse is in port 1 (byte 70) and the SwiftLink's address (byte 71). A file of another version or size is
    left alone: the settings stay as they start until they are saved again. The start-up reads the file
@@ -199,7 +200,7 @@ static void pack(unsigned char *b)
     b[5] = cfg_flow;
     b[6] = cfg_echo;
     b[7] = mono;
-    b[8] = cfg_title;
+    b[8] = cfg_title | cfg_tutor << 1;
     b[9] = cfg_pulse;
     memcpy(b + 10, cfg_init, DIAL_INIT_MAX + 1);
     memcpy(b + 10 + DIAL_INIT_MAX + 1, cfg_number, DIAL_NUM_MAX + 1);
@@ -207,11 +208,10 @@ static void pack(unsigned char *b)
     b[71] = cfg_acia;
 }
 
-/* After the settings: PARLOR.CFG written again when they changed. */
-static void after_settings(void)
+/* PARLOR.CFG written again when the settings changed. */
+static void save(void)
 {
     static unsigned char b[CFG_LEN];
-    setup_settings();
     pack(b);
     if (memcmp(b, cfg_saved, CFG_LEN) == 0)
         return;
@@ -222,6 +222,12 @@ static void after_settings(void)
         memcpy(cfg_saved, b, CFG_LEN);
 }
 
+static void after_settings(void)
+{
+    setup_settings();
+    save();
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct setup setup_header = {after_settings, start_screen, cfg_load};
+const struct setup setup_header = {after_settings, start_screen, cfg_load, save};
 #pragma rodata-name (pop)

@@ -11,6 +11,7 @@
 #include "net.h"
 #include "app.h"
 #include "ovl.h"
+#include "frame.h"
 #if !MACHINE_SERIAL
 #define CONSOLE_KEYS ""                 /* no serial line (the IIgs): no console */
 #define NAME_KEYS "(" OA "Q: disconnect)"
@@ -725,10 +726,23 @@ static unsigned char console(void)
 }
 #endif
 
+/* The first sign-in on this computer: the tutorial, offered once in a dialog. 1 to run it now. */
+static unsigned char offer(void)
+{
+    gr_mode();
+    ui_cls();
+    ui_ink(F_BLACK, F_WHITE);
+    ui_textn(0, 0, "ParlorNet", 32);
+    ui_ink(F_WHITE, F_BLACK);
+    strcpy(dlg_words, "Would you like a short tutorial on how the games work? You can run it again any time "
+           "with /tutorial.");
+    return dialog(dlg_words, D_FIRST) == D_YES;
+}
+
 #pragma rodata-name (push, "OVHDR")
 #if !MACHINE_SERIAL
-const struct signin signin_header = {run};
+const struct signin signin_header = {run, offer};
 #else
-const struct signin signin_header = {run, hangup, console};
+const struct signin signin_header = {run, offer, hangup, console};
 #endif
 #pragma rodata-name (pop)
