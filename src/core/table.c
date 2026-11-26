@@ -326,7 +326,7 @@ void g_title(void)
         strcat(b, s ? " v " : " ");
         strncat(b, g_name(s), 40 - strlen(b));     /* names of 12 at 3 or 4 seats would overrun b */
     }
-    b[32] = 0;                          /* then the connected time (clk_show) */
+    b[32] = 0;                          /* then the time signed in (clk_show) */
     ui_textn(0, 0, b, 40);
     ui_ink(F_WHITE, F_BLACK);
 }

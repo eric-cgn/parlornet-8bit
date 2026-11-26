@@ -64,7 +64,7 @@ void settings(void)
     serial_open();
 }
 
-static unsigned char signed_in;
+unsigned char signed_in;
 
 /* Close the connection to the parlor: BYE, after which the parlor hangs up, so a modem or a shell's
    netcat ends too. A dialed line is then hung up by the dialer (in the sign-in overlay, loaded first).

@@ -1,0 +1,58 @@
+# The time signed in, in whole minutes, as plans/clock.txt in test/lab shows it on the Apple IIe: no clock on
+# the sign-in screen (ck_name), "0m" at the right end of the lobby's title row right after sign-in, "1m" by the
+# table's snapshots, and no clock after signing out (ck_out). The next sign-in starts again from 0m, and so does
+# one after the connection is closed and dialed again.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type P
+waittext Name: 4800
+wait 120
+dumptext ck_name
+type new\r
+waittext want 300
+type tim\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+snap ck_lobby
+wait 1800
+snap ck_lobby30
+# a game against the bot
+key ret
+wait 300
+key ret
+wait 300
+key ret
+wait 2400
+snap ck_table
+wait 1800
+snap ck_table30
+key esc
+wait 600
+# sign out: the sign-in screen has no clock, and the next sign-in starts from 0m
+click 203
+waittext Signed out 2400
+wait 300
+dumptext ck_out
+type tim\r
+waittext assword 600
+type Swordfish 1997\r
+wait 900
+snap ck_lobby2
+# close the connection, then dial again: the time starts again
+oa Q
+waittext ParlorNet: connect 1200
+wait 120
+type P
+waittext Name: 4800
+wait 120
+dumptext ck_name3
+type tim\r
+waittext assword 600
+type Swordfish 1997\r
+wait 900
+snap ck_lobby3
+exit

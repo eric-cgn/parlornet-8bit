@@ -153,7 +153,7 @@ void ui_show(void);
 
 /* Input on the graphics screen: a key (the arrows move the pointer and are not returned), U_CLICK when a
    target is clicked (ui_clicked is its id), or 0 when nothing happened. A key with the command key comes
-   with U_OA set (U_OA | key). ui_poll also keeps the pointer and the connected time (clk_show) up to date. */
+   with U_OA set (U_OA | key). ui_poll also keeps the pointer and the time signed in (clk_show) up to date. */
 #define U_CLICK 0xFF
 #define U_OA    0x80
 extern unsigned char ui_clicked;
@@ -201,9 +201,12 @@ void ui_wait_key(void);                 /* until a key */
    the C64 loads PN.<NAME> files through the KERNAL and unpacks them. */
 unsigned char __fastcall__ ovl_load(unsigned char k);
 
-/* Whether the line has been greeted (so the sign-in skips the opening and greeting), and what the sign-in
-   should say on its way in: 1 that the player signed out, 2 that the line was lost. */
+/* Whether the line has been greeted (so the sign-in skips the opening and greeting), whether the player is
+   signed in (from the end of the sign-in until signing out or the connection's end: the time signed in shows
+   only then), and what the sign-in should say on its way in: 1 that the player signed out, 2 that the line
+   was lost. */
 extern unsigned char connected;
+extern unsigned char signed_in;
 extern unsigned char signin_note;
 
 /* ---------------------------------------------------------------------------------------------------
@@ -218,9 +221,10 @@ extern unsigned char signin_note;
 extern unsigned int ticks;
 void tick_poll(void);
 
-/* The time connected to the parlor, shown as "0:12" or "1:05:33": the seconds the parlor gave (TIM, asked by
-   clk_sync about every 32 seconds), counted on between by the ticks. On the 6502 machines this is assembly
-   shared by both (src/common/6502/clock.inc and clockvars.inc). */
+/* The time signed in, from 0 when sign-in completes, shown in whole minutes: the seconds the parlor gave (TIM,
+   asked by clk_sync about every 32 seconds), counted on between by the ticks. TIM's secs more than 30 seconds
+   over the program's own count are not taken. On the 6502 machines this is assembly shared by both
+   (src/common/6502/clock.inc and clockvars.inc). */
 extern unsigned char clk_t[3];          /* seconds */
 extern unsigned char clk_sub;           /* ticks left in this second */
 extern unsigned char clk_shown;         /* clk_min when last shown; 255 to show it again */
