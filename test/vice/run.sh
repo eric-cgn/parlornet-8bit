@@ -46,8 +46,11 @@ case "${IFACE:-swift}" in
 	user) SER="-userportdevice 2 -rsuserdev 0 -rsuserbaud $BAUD +rsuserup9600" ;;
 	swift) SER="-acia1 -acia1base ${ACIA:-0xde00} -acia1mode 1 -myaciadev 0" ;;
 esac
-# control port 2: VICE's I/O simulation device, which the monitor's joyport set drives (run.py's joy)
-SER="$SER -controlport2device 37"
+# control port 2: VICE's I/O simulation device, which the monitor's joyport set drives (run.py's joy), only
+# for a plan that moves the joystick. The device also holds port A's lines 5 to 7 low, which the keyboard
+# scan reads as its columns 5 to 7 always chosen, so a plan that presses real keys (press, xtype) runs without
+# it, with VICE's joystick in port 2, which nothing moves.
+grep -q '^joy ' "$PLAN" && SER="$SER -controlport2device 37"
 EMU=x64sc
 [ -n "${C128:-}" ] && EMU=x128
 # VICE's autostart (LOAD"*",8,1 and RUN), or ATTACH=1: the disk in drive 8 only, for a plan that types the
@@ -56,6 +59,8 @@ START="-autostart /tmp/disk.d64"
 [ -n "${ATTACH:-}${C128:-}" ] && START="-8 /tmp/disk.d64"
 MODEL=
 [ -n "${NTSC:-}" ] && MODEL="-ntsc"
+# KEYMAP=1: VICE's positional keymap, for the keys a plan presses (press, xtype); 0, as VICE starts, is symbolic
+[ -n "${KEYMAP:-}" ] && MODEL="$MODEL -keymap $KEYMAP"
 DRIVE="-drive8truedrive +autostart-warp"
 [ -n "${FAST:-}" ] && DRIVE="-drive8truedrive -warp"
 docker run --rm --network "${NET:-c64lab}" --cap-drop ALL --security-opt no-new-privileges -e HOME=/tmp \
