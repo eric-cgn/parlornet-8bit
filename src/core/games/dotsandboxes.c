@@ -188,5 +188,5 @@ static unsigned char db_key(unsigned char k)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_dotsandboxes = {"dotsandboxes", "Dots and Boxes", db_begin, db_line, db_draw, db_click, db_key,
-                                    "A dot, then the dot next to it", 1, db_event, db_hover, 0, db_say};
+                                    1, db_event, db_hover, 0, db_say};
 #pragma rodata-name (pop)

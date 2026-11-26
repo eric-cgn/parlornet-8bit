@@ -93,6 +93,6 @@ static void rv_event(void)
 }
 
 #pragma rodata-name (push, "OVHDR")
-const struct game g_reversi = {"reversi", "Reversi", rv_begin, rv_line, rv_draw, rv_click, 0, 0, 0, rv_event,
-                               rv_hover};
+const struct game g_reversi = {"reversi", "Reversi", rv_begin, rv_line, rv_draw, rv_click, 0,
+                               0, rv_event, rv_hover};
 #pragma rodata-name (pop)

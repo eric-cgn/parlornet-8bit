@@ -212,6 +212,11 @@ void ui_wait_key(void);                 /* until a key */
    the KERNAL reads). The Apple II reads the self-booting disk's sectors itself or PARLOR.DAT under ProDOS;
    the C64 loads PN.<NAME> files through the KERNAL and unpacks them. */
 unsigned char __fastcall__ ovl_load(unsigned char k);
+/* Help k (0 the lobby, 1 to 10 the games in the catalog's order, 11 the tutorial; tools/help.py makes them)
+   into memory from page page, which the reply buffer gives (net_rbuf): its lines, each ended by a 0, and a
+   4 after the last. 1 when it is there. The Apple II reads it from the overlay OVL_HELP, the C64 from the
+   file PN.HELPk. */
+unsigned char __fastcall__ ovl_help(unsigned char k, unsigned char page);
 
 /* Whether the line has been greeted (so the sign-in skips the opening and greeting), whether the player is
    signed in (from the end of the sign-in until signing out or the connection's end: the time signed in shows

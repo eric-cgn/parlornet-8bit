@@ -44,6 +44,8 @@ The keys follow ParlorNet's design for every frontend (docs/design.md in the Par
 
 Under the board the status line says whose turn it is and the clock, as "Your turn. You have 4m left." or "Waiting for ann. ann has 2m left.", with the seconds in the last minute. The line above it says what Return does on the place under the pointer, as "Press Return to place a disc on d3.", and when another player moves it says the move in words as it comes, as "ann placed a disc on c3 and flipped 1." A refusal, or the answer to a command, stays there until the next key.
 
+? opens help, two pages for each game: how to move with its keys and commands on the first, and the facts you look up on the second. Space or Right turns the page, Left turns back, and Esc or Return closes it; the buttons under it do the same for a pointer. The lobby's help is one page. The pages are in `src/core/help`, and `tools/help.py` makes them for each machine's key names: one overlay of them all on the Apple II, read a help at a time into the reply buffer, and a file each on the C64 (PN.HELP0 to PN.HELP11).
+
 A double, a draw offer, an offer to resign and an invitation come as dialogs, with Accept and Decline, and resigning, passing, ending a Rummy Tile turn that won't count and signing out ask first in a dialog with Yes and No. Y and N answer a dialog, the arrows and Tab move between its buttons, and Return presses the one marked. Esc answers No to a question; an offer put away with Esc waits, and Return brings it back. With the joystick turned on in the settings (J), button 0 clicks and button 1 cancels as Esc does, but never leaves a table.
 
 In Backgammon each step glides its checker from where it was to where it goes, yours as you play them and the other player's one after another when their turn comes in, a hit checker to the bar first. A point with more than five checkers shows four and +n for the rest, and the bar more than three as two and +n. With checkers of yours on the bar, the pointer for the bar sits on them, below the cube.
@@ -206,6 +208,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `parlor.c` (an overlay): the line console, connecting, the dialer and signing in.
   - `lobby.c`: the lobby, and `newgame.c` (an overlay) its New game.
   - `frame.c`: the command line, the dialogs and the pages of text, for the lobby and the tables.
+  - `help/`: the help pages, which `tools/help.py` makes for each machine.
   - `table.c`: the table screen every game shares, with its chat.
   - `net.c`: PARLORNET/1 requests and replies.
   - `games.c`: the catalog.

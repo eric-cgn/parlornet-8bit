@@ -86,6 +86,28 @@ static unsigned char load_unpack(const char *name, const char *what, void *dst)
     return 0;
 }
 
+/* Help k (help.py): the file PN.HELPk, loaded as it is at page. */
+unsigned char __fastcall__ ovl_help(unsigned char k, unsigned char page)
+{
+    static char name[10];
+    unsigned char tries, e;
+    strcpy(name, "PN.HELP");
+    strcat(name, k > 9 ? "1" : "");
+    name[strlen(name) + 1] = 0;
+    name[strlen(name)] = '0' + k % 10;
+    for (tries = 0; tries < 4; ++tries) {
+        loading("the help");
+        k_bar = 1;
+        e = k_load(name, (void *)(page << 8));
+        if (e == 0)
+            return 1;
+        if (e == 0x84)
+            return 0;
+        ask_disk();
+    }
+    return 0;
+}
+
 unsigned char __fastcall__ ovl_load(unsigned char k)
 {
     unsigned char e, title;

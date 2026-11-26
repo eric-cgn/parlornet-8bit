@@ -257,5 +257,5 @@ static unsigned char ck_offer(unsigned char answer)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_checkers = {"checkers", "Checkers", ck_begin, ck_line, ck_draw, ck_click, ck_key,
-                                OA "D draw, " OA "E end, " OA "U undo", 0, ck_event, ck_hover, ck_offer, ck_say};
+                                0, ck_event, ck_hover, ck_offer, ck_say};
 #pragma rodata-name (pop)

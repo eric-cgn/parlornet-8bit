@@ -104,5 +104,5 @@ static unsigned char mc_key(unsigned char k)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_mancala = {"mancala", "Mancala", mc_begin, mc_line, mc_draw, mc_click, mc_key,
-                               K3 "1-6 point at a pit", 0, mc_event, mc_hover};
+                               0, mc_event, mc_hover};
 #pragma rodata-name (pop)

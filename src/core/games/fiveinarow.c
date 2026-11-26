@@ -111,5 +111,5 @@ static void fr_event(void)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_fiveinarow = {"fiveinarow", "Five in a Row", fr_begin, fr_line, fr_draw, fr_click, 0,
-                                  "Click an empty point to play it", 0, fr_event, fr_hover};
+                                  0, fr_event, fr_hover};
 #pragma rodata-name (pop)

@@ -1,0 +1,21 @@
+Five in a Row help
+Moving
+Move to an empty point and press {RET} to place a stone there.
+
+Keys for Five in a Row
+Five in a Row has no keys of its own.
+
+Commands
+Type a move after the slash, as /h8.
+
+Every game
+{OA}R resigns, after asking first. {OA}T opens the chat. {ESC} goes back to the lobby, and the game goes on without you.
+---
+Five in a Row help
+The rules
+Black and White take turns placing a stone on an empty point. The first to have five stones in a row, across, down or corner to corner, wins.
+
+The board
+The columns are lettered from the left and the rows numbered from the top. The last stone placed has a mark on it, and the winning line is marked at the end.
+
+/say, /note, /time and /resign work at every table, and /tutorial shows how the games work.

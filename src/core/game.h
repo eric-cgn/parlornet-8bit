@@ -11,7 +11,6 @@ struct game {
     void (*draw)(void);                 /* draw the table; everything when g_full */
     void (*click)(unsigned char id);    /* a target of the game's was clicked */
     unsigned char (*key)(unsigned char k);  /* a key; 1 if the game took it */
-    const char *help;                   /* the game's keys, for Keys (a second press), or 0 */
     unsigned char no_m;                 /* 1: the view is fetched without its M lines (too many) */
     void (*event)(void);                /* an EVT line, in w[] (w[3] its kind), before the view is
                                            fetched again; or 0 */
@@ -66,6 +65,7 @@ void g_message(const char *s);          /* until the next key; "" for the second
 extern char g_last[48];
 char *__fastcall__ g_who(unsigned char seat);
 void g_redraw(void);                    /* clear the screen and draw it all again */
+void __fastcall__ g_help(unsigned char k);  /* help k (machine.h, ovl_help) as pages over the screen */
 void g_title(void);
 const char *__fastcall__ g_name(unsigned char seat);   /* the seat's player, or "bot" */
 

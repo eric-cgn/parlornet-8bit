@@ -382,6 +382,5 @@ static unsigned char bg_offer(unsigned char answer)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_backgammon = {"backgammon", "Backgammon", bg_begin, bg_line, bg_draw, bg_click, bg_key,
-                                  OA "D double, " OA "E end, " OA "U undo, " OA "H home", 0,
-                                  bg_event, bg_hover, bg_offer, bg_say};
+                                  0, bg_event, bg_hover, bg_offer, bg_say};
 #pragma rodata-name (pop)

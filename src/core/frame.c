@@ -16,15 +16,19 @@ static char words_[120];                /* the words of a confirmation, from the
 /* The first line of s that fits in w columns, cut at a space, into line; returns the rest of s. */
 static const char *__fastcall__ cut(const char *s, unsigned char w)
 {
-    unsigned char n = strlen(s), c;
-    if (n <= w) {
-        strcpy(line, s);
-        return s + n;
-    }
-    for (c = w; c && s[c] != ' '; --c)
-        ;
-    if (!c)
-        c = w;
+    unsigned char i, v = 0, c = 0;      /* (a key's mark, below a space, takes no column) */
+    for (i = 0; s[i]; ++i)
+        if ((unsigned char)s[i] >= ' ') {
+            if (v == w)
+                break;
+            if (s[i] == ' ')
+                c = i;
+            ++v;
+        }
+    if (!s[i] || s[i] == ' ')
+        c = i;
+    else if (!c)
+        c = i;
     memcpy(line, s, c);
     line[c] = 0;
     s += c;
@@ -174,21 +178,13 @@ void __fastcall__ pages(const char *title, char **lines, unsigned char n)
             } while (*s);
         }
         /* the foot: what Space, Left and Esc do here */
-        if (p + 1 < np) {
-            strcpy(b, "Press Space for page ");
-            strcat(b, utoa10(p + 2));
-            strcat(b, ", or " KEY_ESC " to close.");
+        if (p + 1 < np)
             ui_button(0, BUTTON_Y, "Next page", P_NEXT);
-        } else if (p) {
-            strcpy(b, "Press Left for page ");
-            strcat(b, utoa10(p));
-            strcat(b, ", or " KEY_ESC " to close.");
-        } else
-            strcpy(b, "Press " KEY_ESC " to close.");
         if (p)
             ui_button(13, BUTTON_Y, "Page back", P_BACK);
         ui_button(26, BUTTON_Y, "Close", P_CLOSE);
-        ui_status(b);
+        ui_status(p + 1 < np ? "Space shows more, and " KEY_ESC " closes." :
+                  p ? "Left goes back, and " KEY_ESC " closes." : KEY_ESC " closes this page.");
         ui_point(0);
         do
             k = ui_poll();

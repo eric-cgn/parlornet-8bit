@@ -63,6 +63,7 @@ static unsigned long clk_secs;
 static unsigned int clk_at;
 static char gtype[16];
 static unsigned char hover_at = 255;
+static unsigned char g_ovl;             /* the game's overlay, which is its help's number too */
 static unsigned char fresh;             /* a view has come since the offers were looked at */
 static unsigned char offer_away;        /* an offer's dialog was put away unanswered (Esc) */
 
@@ -730,19 +731,20 @@ static void chat(void)
     draw_all();
 }
 
-/* Keys: the table's keys; pressed again, the game's own. */
-static unsigned char help_page;
-
-static void keys_help(void)
+/* Help k (machine.h, ovl_help) as pages over the screen: its first line is the title. The caller draws its
+   screen again after. */
+void __fastcall__ g_help(unsigned char k)
 {
-    if (help_page && G && G->help) {
-        g_message(G->help);
-        ui_status("");
-    } else {
-        g_message(K6 "Arrows," K6 "Return:play " OA "T chat " K3 "Esc:lobby");
-        ui_status(OA "R resign " OA "Q sign out " K1 "/ command");
+    char *p = (char *)(((unsigned int)net_rbuf() + 255) & 0xFF00);
+    unsigned char n;
+    if (!ovl_help(k, (unsigned int)p >> 8))
+        return;
+    for (n = 0; *p != 4 && n < MAXL; ++n) {
+        r_line[n] = p;
+        p += strlen(p) + 1;
     }
-    help_page ^= 1;
+    r_n = 0;                            /* (the reply is gone) */
+    pages(r_line[0], r_line + 1, n - 1);
 }
 
 
@@ -754,8 +756,10 @@ static unsigned char __fastcall__ after_cmd(unsigned char c)
         return 3;
     if (c & C_LEAVE)
         return 0;
-    if (c & C_HELP)
-        keys_help();
+    if (c & C_HELP) {
+        g_help(g_ovl);
+        c |= C_REDRAW;
+    }
     if (c & C_SENT)
         poll_events();
     if (c & C_REDRAW)
@@ -834,8 +838,10 @@ static unsigned char __fastcall__ keys(unsigned char k)
         return 0;
     if (k == '/')
         return after_cmd(cmd_line(g_table, frame_lit));
-    if (k == '?')
-        keys_help();
+    if (k == '?') {
+        g_help(g_ovl);
+        draw_all();
+    }
     else if (k == (U_OA | 'T') || k == K_TAB)
         chat();
     else if (k == (U_OA | 'L'))
@@ -880,7 +886,9 @@ unsigned char table_play(unsigned int id)
     ui_cls();
     {
         const struct gameinfo *gi = game_for(gtype);
+        g_ovl = 0;
         if (gi) {
+            g_ovl = gi->ovl;
             ui_status("Loading the game...");
             if (ovl_load(gi->ovl)) {
                 G = GAME;

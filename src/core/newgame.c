@@ -34,7 +34,7 @@ static unsigned char choose(const char *title, const char *const *items, unsigne
         ui_button(2 + (i >= 10 ? 20 : 0), 20 + (i % 10) * 14, pad, i);
     }
     ui_button(0, BUTTON_Y, "Back", B_BACK);
-    ui_status(K6 "Arrows, " K6 "Return: choose. " K3 "Esc: back.");
+    ui_status("Press " KEY_RET " to choose, or " KEY_ESC " to go back.");
     ui_point(0);
     for (;;) {
         k = ui_poll();

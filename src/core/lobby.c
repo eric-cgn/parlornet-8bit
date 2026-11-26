@@ -9,6 +9,7 @@
 #include "frame.h"
 #include "lobby.h"
 #include "ovl.h"
+#include "game.h"
 
 struct tab {
     unsigned int id;
@@ -190,11 +191,7 @@ static void lobby_frame(void)
     ui_button(11, BUTTON_Y, "Refresh", B_REFRESH);
     ui_button(21, BUTTON_Y, "Display", B_DISPLAY);
     ui_button(31, BUTTON_Y, "Sign out", B_OUT);
-#if !MACHINE_SERIAL
-    ui_status(K6 "Return choose, " OA "Q quit");
-#else
-    ui_status(K6 "Return choose, " OA "C console, " OA "Q quit");
-#endif
+    ui_status("Press " KEY_RET " to open it, or ? for help.");
     if (!frame_new)
         t_n = n;
     frame_new = 0;
@@ -327,8 +324,17 @@ refresh:
         k = ui_poll();
         if (net_lost)
             return 0;
+        if (k == '?') {
+            k = C_HELP;
+            goto help;
+        }
         if (k == '/') {
             k = cmd_line(0, lobby_frame);
+help:
+            if (k & C_HELP) {
+                g_help(0);
+                k = C_REDRAW;
+            }
             if (k & C_OUT)
                 return 3;
             said = k & C_SAID;

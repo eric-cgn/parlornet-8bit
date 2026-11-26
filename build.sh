@@ -27,7 +27,7 @@ A2=src/apple2
 CORE=src/core
 COMMON=src/common
 COMMON6502=src/common/6502
-OVERLAYS="signin reversi backgammon gridwords checkers mancala fiveinarow dotsandboxes navalcombat cannonfire rummytile setup splash newgame frame"
+OVERLAYS="signin reversi backgammon gridwords checkers mancala fiveinarow dotsandboxes navalcombat cannonfire rummytile setup splash newgame frame help"
 FRAMEOVL=
 rm -rf "$OBJ" "$GS" "$OUT/c64" "$OUT/template"
 mkdir -p "$OBJ" "$GOBJ"
@@ -137,6 +137,8 @@ program "$A2" "$OBJ" "$OUT/parlor.map" "$OUT/parlor" "$A2/parlor.cfg" "$A2FLAGS 
 	"$A2/eth.c $CORE/games.c $A2/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
 	"sys hgr disk mli w5100 joy" crt0.o "$LIB" '$D000' '$2900'
 echo "$OVERLAYS" | tr ' ' '\n' | awk '{ printf "%s%s:%s", (NR > 1 ? " " : ""), $1, ($1 == "signin" ? "parlor" : $1) } END { print "" }' > "$OUT/overlays.txt"
+# the help pages, one overlay of them all (tools/help.py)
+python3 tools/help.py apple2 "$OUT/parlor.help"
 
 FRAMEOVL=
 
@@ -149,6 +151,7 @@ program "$A2" "$GOBJ" "$GS/parlor.map" "$GS/parlor" "$A2/parlorgs.cfg" "$A2FLAGS
 	"$CORE/games.c $A2/gsos.c $A2/line.c $CORE/frame.c $CORE/lobby.c $CORE/main.c $A2/mt.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
 	"sys hgr joy" gs.o "$LIB" '$D000' '$2900'
 cp "$OUT/overlays.txt" "$GS/overlays.txt"
+cp "$OUT/parlor.help" "$GS/parlor.help"
 
 # The Commodore 64 (build/c64): PARLORNET (stub.s, which LOAD"*",8,1 starts by itself), the loader PN.BOOT,
 # the C128's boot sector, the character set, the program and its overlays, which
@@ -185,6 +188,7 @@ program "$C64" "$COBJ" "$COUT/parlor.map" "$COUT/parlor" "$COBJ/c64.cfg" \
 	"$CORE/games.c $C64/line.c $CORE/frame.c $CORE/lobby.c $CORE/main.c $CORE/net.c $C64/ovl.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $C64/ui.c" \
 	"sys serial gfx disk" crt0.o "$LIB" "\$$C64_OVL" "\$$(printf '%04X' $((0xC000 - 0x$C64_OVL)))"
 echo "$OVERLAYS" > "$COUT/overlays.txt"
+python3 tools/help.py c64 "$COUT/help"
 echo "$C64_OVL" > "$COUT/ovl_addr.txt"
 
 # The template machine (src/template, PORTING.md): every call of the machine interface stubbed, built and

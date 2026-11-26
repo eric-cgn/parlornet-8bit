@@ -492,5 +492,5 @@ static void gw_event(void)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_gridwords = {"gridwords", "Grid Words", gw_begin, gw_line, gw_draw, gw_click, gw_key,
-                                 OA "P pass, " OA "X exchange, " OA "V points", 0, gw_event, gw_hover};
+                                 0, gw_event, gw_hover};
 #pragma rodata-name (pop)

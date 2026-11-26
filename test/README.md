@@ -144,6 +144,8 @@ its letter, in color and in monochrome.
 
 `plans/sentences.txt` shows the sentence line: the status line says whose turn it is and the clock, and the message line says what Return does on the place under the pointer or the other player's move as it comes. It shows a Reversi table waiting for a player (`se_waiting`), Reversi against the bot on a square where no disc goes and on d3 (`se_reversi_a1`, `se_reversi_d3`), the bot's answer in words (`se_reversi_bot`), Five in a Row (`se_five`, `se_five_bot`), Mancala (`se_mancala`), Naval Combat while the fleet is placed (`se_naval`), Rummy Tile (`se_rummy`), Checkers (`se_checkers`) and Backgammon (`se_backgammon`). `vice/plans/sentences.txt` does the same on the C64.
 
+`plans/help.txt` shows ? and Esc in every game: the lobby's help (`hp_lobby`), then each game against the bot, where ? opens page 1 of its help (`hp_NAME_1`), Right turns to page 2 (`hp_NAME_2`), Esc closes it (`hp_NAME_closed`), and Esc again, with nothing to cancel, goes back to the lobby (`hp_lobby_again`). `vice/plans/help.txt` does the same on the C64, with Space.
+
 ## Through a Unix shell
 
 `lab/shell/` is a container with a login shell (bash 5.2, with TERM=vt100) on a pty behind a TCP port, as a

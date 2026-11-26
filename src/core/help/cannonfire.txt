@@ -1,0 +1,23 @@
+Cannon Fire help
+Moving
+Aim with the buttons and press {RET} on Fire. You may drive your tank once first.
+
+Keys for Cannon Fire
+< and > turn the barrel by 10.
++ and - change the power by 10.
+[ and ] drive your tank left or right.
+
+Commands
+Type a shot after the slash, as /fire 45 60, or a drive, as /drive left 5.
+
+Every game
+{OA}R resigns, after asking first. {OA}T opens the chat. {ESC} goes back to the lobby, and the game goes on without you.
+---
+Cannon Fire help
+The shot
+The angle is 0 towards the right, 90 straight up and 180 towards the left. The power is 0 to 100, and the wind, when it blows, carries the shell.
+
+The tanks
+Each tank has its letter and its health over it, and a shell's burst takes health from the tanks near it. The last tank standing wins.
+
+/say, /note, /time and /resign work at every table, and /tutorial shows how the games work.

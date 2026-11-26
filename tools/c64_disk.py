@@ -209,6 +209,8 @@ def main():
         p = os.path.join(d, "parlor." + n)
         if os.path.exists(p) and os.path.getsize(p):
             add("PN." + n.upper(), packed(open(p, "rb").read(), ovl, 0xC000))
+    for k in range(12):                 # the help pages (tools/help.py), loaded into the reply buffer
+        add("PN.HELP%d" % k, prg(0x0800, open(os.path.join(d, "help", "help%d" % k), "rb").read()))
     add("PARLOR.CFG", default_cfg(), 0x81)
     img = disk.finish()
     free = sum(spt(t) - len(disk.used[t]) for t in range(1, TRACKS + 1) if t != 18)

@@ -1,0 +1,15 @@
+Lobby help
+Your games, invitations and the tables waiting for a player.
+
+Keys
+The arrows move the pointer, and {RET} opens what it is on: a game of yours, an invitation's dialog or a table to join.
+{OA}N opens a new table.
+{OA}C goes to the line console.
+{OA}Q signs out, after asking first.
+/ opens the command line.
+
+Commands
+/who says who is online, and /top shows the best players.
+/open GAME opens a table.
+/tutorial shows how the games work.
+/help lists every command.

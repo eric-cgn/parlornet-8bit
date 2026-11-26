@@ -330,6 +330,13 @@ unsigned char __fastcall__ ovl_load(unsigned char k)
     return 0;
 }
 
+unsigned char __fastcall__ ovl_help(unsigned char k, unsigned char page)
+{
+    (void)k;
+    (void)page;
+    return 0;
+}
+
 /* ---------------------------------------------------------------------------------------------------
    The clock: ticks from the machine's 60 Hz interrupt, and the time signed in. src/common/6502/clock.inc
    does the time signed in in assembly on the 6502 machines; this is the same in C, with TIM left out. */

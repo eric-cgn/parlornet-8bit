@@ -222,5 +222,5 @@ static unsigned char nc_key(unsigned char k)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_navalcombat = {"navalcombat", "Naval Combat", nc_begin, nc_line, nc_draw, nc_click, nc_key,
-                                   "Place: one end, the other. Then fire", 1, nc_event, nc_hover, 0, nc_say};
+                                   1, nc_event, nc_hover, 0, nc_say};
 #pragma rodata-name (pop)

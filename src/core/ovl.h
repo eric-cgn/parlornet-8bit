@@ -46,4 +46,7 @@ struct newgame {
    the tables are in memory (the C64's PN.PARLOR). The core asks for it before the lobby. */
 #define OVL_FRAME 14
 
+/* The help pages (tools/help.py), read a help at a time by ovl_help (machine.h). */
+#define OVL_HELP 15
+
 #endif

@@ -334,5 +334,5 @@ static unsigned char rt_key(unsigned char k)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_rummytile = {"rummytile", "Rummy Tile", rt_begin, rt_line, rt_draw, rt_click, rt_key,
-                                 OA "E end " OA "M new set " OA "B split " OA "O sort", 1, rt_event, rt_hover};
+                                 1, rt_event, rt_hover};
 #pragma rodata-name (pop)

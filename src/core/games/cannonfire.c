@@ -171,6 +171,5 @@ static unsigned char cf_key(unsigned char k)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_cannonfire = {"cannonfire", "Cannon Fire", cf_begin, cf_line, cf_draw, cf_click, cf_key,
-                                  K3 "< > angle " K3 "- + power " K3 "[ ] drive", 1,
-                                  cf_said, cf_hover, 0, cf_say};
+                                  1, cf_said, cf_hover, 0, cf_say};
 #pragma rodata-name (pop)
