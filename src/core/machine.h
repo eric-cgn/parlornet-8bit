@@ -223,9 +223,10 @@ void tick_poll(void);
    shared by both (src/common/6502/clock.inc and clockvars.inc). */
 extern unsigned char clk_t[3];          /* seconds */
 extern unsigned char clk_sub;           /* ticks left in this second */
-extern unsigned char clk_shown;         /* clk_t[0] when last shown; 255 to show it again */
+extern unsigned char clk_shown;         /* clk_min when last shown; 255 to show it again */
 void __fastcall__ clk_set(const char *secs);   /* from decimal seconds */
-const char *clk_text(void);             /* right-aligned in 8 characters (clk_buf) */
+unsigned char clk_min(void);            /* the minutes within the hour, which change once a minute */
+const char *clk_text(void);             /* whole minutes ("5m", "1h 5m"), right-aligned in 8 characters (clk_buf) */
 extern char clk_buf[9];
 void clk_sync(void);                    /* TIM, when 32 seconds have turned over */
 extern unsigned char clk_tim_off, clk_tim_at;

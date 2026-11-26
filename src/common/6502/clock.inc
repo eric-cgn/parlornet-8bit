@@ -63,39 +63,52 @@ ck_dbl: asl     _clk_t
         rol     _clk_t+2
         rts
 
-; const char *clk_text(void): the connected time in clk_buf, "0:12" or "1:05:33" (up to 99 hours)
-; right-aligned in 8 characters; notes it as shown (clk_shown).
-_clk_text:
-        ldx     #2
-:       lda     _clk_t,x
-        sta     ck_w,x
-        dex
+; unsigned char clk_min(void): the connected time's minutes within the hour (0 to 59), which change once a
+; minute; w: the whole hours. X is 0 after.
+_clk_min:
+        ldy     #2
+:       lda     _clk_t,y
+        sta     ck_w,y
+        dey
         bpl     :-
+        jsr     div60           ; (the seconds)
+        jsr     div60           ; the minutes; w: the hours
+        ldx     #0
+        rts
+
+; const char *clk_text(void): the connected time in whole minutes in clk_buf, "0m", "59m" or "1h 5m" (up to
+; 99 hours), right-aligned in 8 characters; notes its minutes as shown (clk_shown).
+_clk_text:
+        jsr     _clk_min
         sta     _clk_shown
         ldx     #8
-        jsr     div60           ; the seconds
-        jsr     ct_two
-        jsr     div60           ; the minutes; w: the hours (under 100)
-        ldy     ck_w
-        beq     ct_last         ; no hours: the minutes in one digit or two
-        jsr     ct_two
+        pha
+        lda     #'m'
+        jsr     ct_chr
+        pla
+        jsr     ct_num
         lda     ck_w
-ct_last:
-        jsr     ct_dig
-        beq     ct_pad
-        jsr     ct_put
+        beq     ct_pad          ; under an hour: the minutes alone
+        lda     #' '
+        jsr     ct_chr
+        lda     #'h'
+        jsr     ct_chr
+        lda     ck_w
+        jsr     ct_num
 ct_pad: txa
         beq     ct_end
         lda     #' '
         jsr     ct_chr
-        jmp     ct_pad
+        bne     ct_pad          ; (Z: x is 0)
 ct_end: lda     #<_clk_buf
         ldx     #>_clk_buf
         rts
-ct_two: jsr     ct_dig          ; A (under 100) in two digits, then a colon, before x
-        jsr     ct_put
-        lda     #':'
-        bne     ct_chr
+ct_num: jsr     ct_dig          ; A (under 100) in one digit or two, before x
+        beq     ct_ret
+ct_put: ora     #'0'
+ct_chr: dex
+        sta     _clk_buf,x
+ct_ret: rts
 ct_dig: ldy     #0              ; the units of A (under 100) before x; A = the tens
 :       cmp     #10
         bcc     :+
@@ -104,10 +117,6 @@ ct_dig: ldy     #0              ; the units of A (under 100) before x; A = the t
         bne     :-
 :       jsr     ct_put
         tya
-        rts
-ct_put: ora     #'0'
-ct_chr: dex
-        sta     _clk_buf,x
         rts
 div60:  lda     #0              ; w = w / 60, A = the remainder; keeps X
         ldy     #24
@@ -167,12 +176,13 @@ cy_done:
         rts
 s_tim:  .byte   "TIM", 0
 
-; void clk_show(void): when connected and the second has changed, the connected time at the right end
-; of the Hi-Res title row, columns 32 to 39, in inverse (the lobby and the tables: ui_poll).
+; void clk_show(void): when connected and the minute has changed (or clk_shown is 255, after ui_cls), the
+; connected time at the right end of the Hi-Res title row, columns 32 to 39, in inverse (the lobby and the
+; tables: ui_poll). Once a minute, so the pointer, hidden while it is drawn, does not flicker.
 _clk_show:
         lda     _connected
         beq     cs_done
-        lda     _clk_t
+        jsr     _clk_min
         cmp     _clk_shown
         beq     cs_done
         jsr     _ui_hide

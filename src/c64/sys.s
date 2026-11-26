@@ -17,7 +17,7 @@
         .export         _txt_x, _txt_y, _txt_inv, _txt_top, _txt_bot, _txt_cursor, _txt_peek, _txt_mt
         .export         _txt_mode, _gr_mode, _txt_screen
         .export         _kbd_get, _kbd_mods, _kbd_flush
-        .export         _clk_t, _clk_sub, _clk_set, _clk_text, _clk_buf, _clk_shown, _clk_show, _clk_sync
+        .export         _clk_t, _clk_sub, _clk_set, _clk_text, _clk_buf, _clk_shown, _clk_show, _clk_sync, _clk_min
         .export         _clk_tim_off, _clk_tim_at
         .export         _spr_x, _spr_y, _spr_on, _spr_col, _spr_ptr, _spr_mc
         .export         _joy_at, _mouse_x, _mouse_y, _mouse_moved, _mouse_btn, _has_mouse, _mouse_on
