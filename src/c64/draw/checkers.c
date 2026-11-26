@@ -83,6 +83,7 @@ static void draw_panel(void)
     for (s = 0; s < 2; ++s) {
         y = s == me ? 120 : GAME_TOP + 8;
         piece_at(s ? 'o' : 'x', PX, y, dark());
+        ui_ink(F_WHITE, F_BLACK);       /* (the piece left its colors in the ink) */
         ui_textn(PX + 3, y, g_name(s), 16);
         ui_textn(PX + 3, y + 8, s ? "White" : "Black", 16);
         strcpy(t, utoa10(cnt[s * 2]));
