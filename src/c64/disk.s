@@ -5,7 +5,6 @@
         .importzp       ptr1, ptr2, ptr3, tmp1
         .import         popax, popa, _ser_pause, _ser_resume
         .export         _k_load, _k_readfile, _k_writefile, _k_cmd, _k_device, _k_end, _k_unpack, _k_bar
-        .export         _k_barup
         .export         pb_on, pb_update
         .import         _txt_screen
 
@@ -25,7 +24,6 @@ READST  = $FFB7
 _k_device:      .byte   8       ; the drive the program came from (sys_init: the KERNAL's $BA)
 _k_end:         .word   0       ; where the last load ended (the byte after it)
 _k_bar:         .byte   0       ; 1: the next k_load shows a progress bar (pb_update)
-_k_barup:       .byte   0       ; 1: the bitmap's bar a row up, on row 22 (under the title's caption: ovl.c)
 pb_on:  .byte   0
 pb_st:  .word   0               ; where the file loads from
 pb_step:.word   0               ; the bytes for each of the bar's 40 cells
@@ -256,8 +254,8 @@ UP_REF = ptr3
 UP_CNT = tmp1
         .include "unpack.inc"
 
-; The progress bar, from the IRQ (sys.s) while pb_on: the cells of the bitmap's status row (row 23, or row 22
-; with k_barup) colored across, or the text screen's row 24 turned inverse, as the KERNAL's load pointer ($AE) passes 40 steps from where
+; The progress bar, from the IRQ (sys.s) while pb_on: the cells of the bitmap's status row (row 23) colored
+; across, or the text screen's row 24 turned inverse, as the KERNAL's load pointer ($AE) passes 40 steps from where
 ; the file loads to $C000, where every packed file ends (c64_pack.py's place()). Nothing is read from the
 ; disk for it. Uses A and X.
 pb_update:
@@ -309,13 +307,8 @@ pb_have:
         lda     #13
         sta     $D800 + 24 * 40,x
         jmp     :++
-:       lda     _k_barup        ; the bitmap: the status row's cell, white on green
-        bne     :+
-        lda     #$15
+:       lda     #$15            ; the bitmap: the status row's cell, white on green
         sta     $CC00 + 23 * 40,x
-        jmp     :++
-:       lda     #$15
-        sta     $CC00 + 22 * 40,x
 :       inc     pb_n
         lda     pb_next
         clc

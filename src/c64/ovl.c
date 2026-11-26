@@ -31,8 +31,8 @@ static const char *const ovl_what[] = {
     "Dots and Boxes", "Naval Combat", "Cannon Fire", "Rummy Tile", "the settings", "the title screen"};
 
 /* "Loading Backgammon..." on the screen's bottom row, which the progress bar then fills (disk.s): the text
-   screen's spare 25th row, or the bitmap's status row; on the title screen, whose "Press a key" is on the
-   status row, the row above it (k_barup). */
+   screen's spare 25th row, or the bitmap's status row. On the title screen that is the row of "Press a key",
+   which comes back when the load is done (ovl_load), so the title's caption above it is left alone. */
 static void loading(const char *what)
 {
     static char b[40];
@@ -44,7 +44,7 @@ static void loading(const char *what)
         txt_goto(0, 24);
         txt_puts(b);
     } else
-        ui_textn(0, k_barup ? MSG_Y : STATUS_Y, b, 40);
+        ui_status(b);
 }
 
 /* Ask for the disk on whichever screen is showing. */
@@ -88,7 +88,7 @@ static unsigned char load_unpack(const char *name, const char *what, void *dst)
 
 unsigned char __fastcall__ ovl_load(unsigned char k)
 {
-    unsigned char e;
+    unsigned char e, title;
     if (k == loaded)
         return 1;
     if (k >= sizeof ovl_name / sizeof ovl_name[0])
@@ -99,12 +99,12 @@ unsigned char __fastcall__ ovl_load(unsigned char k)
             return 0;
         parlor_in = 1;
     }
-    k_barup = loaded == OVL_SPLASH && !txt_screen;  /* (the title screen up: its caption kept) */
+    title = loaded == OVL_SPLASH && !txt_screen;    /* (the title screen up, as splash.c draws it) */
     loaded = 255;
     e = load_unpack(ovl_name[k], ovl_what[k], (void *)OVL_ADDR);
-    if (k_barup) {
-        ui_textn(0, MSG_Y, "", 40);
-        k_barup = 0;
+    if (title) {
+        ui_status("");
+        ui_text(14, STATUS_Y, "Press a key");
     }
     if (!e)
         return 0;

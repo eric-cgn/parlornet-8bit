@@ -61,7 +61,7 @@ static void show(void)
     hg_kbg = 0xFF;
     ui_text(3, 168, "ParlorNet for the Commodore 64 " PN_VERSION);
     ui_inkc(C_WHITE, C_BLACK);
-    ui_text(14, 184, "Press a key");
+    ui_text(14, STATUS_Y, "Press a key");    /* (the status row: the settings load there next, ovl.c) */
     gr_mode();
 }
 

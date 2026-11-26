@@ -46,7 +46,6 @@ extern unsigned char pal;               /* 1 on a PAL machine (50 frames a secon
 /* The disk (disk.s) */
 extern unsigned char k_device;          /* the drive: 8 up */
 extern unsigned char k_bar;             /* 1: the next k_load shows a progress bar as it loads */
-extern unsigned char k_barup;           /* 1: the bitmap's bar on row 22, not the status row (23) */
 unsigned char __fastcall__ k_load(const char *name, void *addr);    /* 0 when loaded; 0 addr: its own */
 void __fastcall__ k_unpack(void *dst);  /* the packed file just loaded, unpacked (tools/c64_pack.py) */
 unsigned char __fastcall__ k_cmd(const char *cmd);
