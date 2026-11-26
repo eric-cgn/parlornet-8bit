@@ -275,14 +275,17 @@ static void chat(void)
 static void command(void)
 {
     static char b[60];
-    unsigned char i;
-    if (step == 7)
+    unsigned char i, clearing;
+    if (step == 7) {
         ++step;
+        lesson();                       /* (the lesson says what to type, while the line is open) */
+    }
     cmd[0] = '/';
     cmd[1] = 0;
     ui_unlit = 1;
     buttons();
-    ui_status(steps[step - 1]);
+    ui_status(KEY_RET " sends it, and " KEY_ESC " clears it.");
+    clearing = step == 9;               /* (the step asks for Esc, so a line sent is not it) */
     i = ui_input(0, MSG_Y, 40, cmd, CMD_MAX, 0);
     ui_unlit = 0;
     buttons();
@@ -331,7 +334,7 @@ static void command(void)
         answer("This is the tutorial already.");
     else
         answer("This is the tutorial, so that command does nothing here.");
-    if (step == 9)
+    if (clearing)
         instruct(1);
 }
 
