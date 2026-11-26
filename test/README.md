@@ -105,10 +105,10 @@ with the joystick on and gives no Return, and button 0 is Return. `plans/joystic
 and the bot with the stick and both buttons, places a disc with the stick and button 0, opens the chat with
 Open-Apple-T, and then, with the port empty, shows that the stick and the Open-Apple key alone do nothing.
 
-`plans/keys.txt` shows the Open-Apple key in the console and the sign-in (MouseText on the enhanced IIe), in
-the lobby and at the table (the font's glyph), Grid Words' letter points (Open-Apple-V), and its tiles in
-color and in monochrome. MAME's apple2e, the older IIe without MouseText, shows "OA-" on the text screens
-instead.
+`plans/keys.txt` shows the Open-Apple key in the console's title row and sentences and in the sign-in
+(MouseText on the enhanced IIe), in the lobby and at the table (the font's glyph), Grid Words' letter points
+(Open-Apple-V), and its tiles in color and in monochrome. MAME's apple2e, the older IIe without MouseText,
+shows "OA-" on the text screens instead.
 
 `plans/reversi_discs.txt` plays a move of Reversi against the bot and shows the board in color, in monochrome
 on a monochrome monitor, in monochrome on a color monitor and in color on a monochrome monitor. On a monitor a

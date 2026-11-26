@@ -6,7 +6,7 @@ dclick 568 66
 wait 300
 dclick 86 49
 title 1800
-waittext Open-Apple-Q 1800
+waittext quit to the Finder 1800
 key s
 waittext settings 300
 key 1
@@ -15,7 +15,7 @@ key ctrl+x
 type parlor\r
 wait 30
 key ret
-waittext Open-Apple-Q 600
+waittext quit to the Finder 600
 key p
 waittext Name: 3600
 snap gs_oa

@@ -203,8 +203,8 @@ static unsigned char ask_again(const char *why)
     sayln("Esc: the start screen");
 #else
     say(DIALING ? "Return: dial again" : "Return: try again");
-    sayln("   " OA_NAME "-C:");
-    sayln("the console   Esc: the start screen");
+    sayln("   " OA "C: the console");
+    sayln("Esc: the start screen");
 #endif
     for (;;) {
         k = kbd_get();

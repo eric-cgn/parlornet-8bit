@@ -163,7 +163,7 @@ static void start_screen(void)
     say(utoa10(cfg_port));
     setting_line(11, "D", "Display: ", mono ? "monochrome" : "color");
     txt_goto(1, 22);
-    say("Open-Apple-Q: quit");
+    say(OA "Q: quit to the Finder");
 }
 #else
 static void setup_settings(void)
@@ -296,7 +296,7 @@ static void start_screen(void)
     setting_line(13, "D", "Display: ", mono ? "monochrome" : "color");
     if (PRODOS) {
         txt_goto(1, 22);
-        say("Open-Apple-Q: back to ProDOS");
+        say(OA "Q: back to ProDOS");
     }
     if (cfg_conn || cfg_number[0])      /* (P connects or dials: the menu says enough) */
         return;
@@ -309,7 +309,7 @@ static void start_screen(void)
     txt_goto(1, 19);
     sayln("ATDT and the parlor's name and port,");
     txt_goto(1, 20);
-    say("then press Open-Apple-P.");
+    say("then press " OA "P.");
 }
 
 #endif

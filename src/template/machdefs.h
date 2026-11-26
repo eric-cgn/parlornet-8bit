@@ -7,7 +7,6 @@
 #define MACHINE_SERIAL 1
 /* Define MACHINE_LOWBSS to put the table's move tokens in a LOWBSS segment of the linker configuration. */
 
-#define OA_NAME "Command"               /* the command key, as the text names it */
 #define MACHINE_NAME "this computer"    /* "This game is not on this computer yet." */
 
 /* The font's characters for the command key and a second one, and the key-legend marks. */
