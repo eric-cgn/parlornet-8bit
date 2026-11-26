@@ -3,6 +3,7 @@
 # Return keeps it, and its line shows its start and '>' (long_settings); then P dials it in full (long_dial).
 waittitle 6000
 title 3600
+set cfg_tutor 1
 waittext ParlorNet: connect 600
 type S
 waittext ParlorNet settings 300

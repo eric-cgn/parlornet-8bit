@@ -206,6 +206,9 @@ rr_line:
         clc
         adc     #8
         tay
+        bcc     rr_next
+        inc     ptr1+1          ; (past 32 cells, the line's next page)
+rr_next:
         inc     tmp1
         dex
         bne     :-

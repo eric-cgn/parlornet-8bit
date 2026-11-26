@@ -556,13 +556,13 @@ static void cf_draw(void)
         memset(shown_ht, 255, sizeof shown_ht);
         memset(shown_tx, 0, sizeof shown_tx);
         g_on = tr_on = 0;
-        ui_button(0, BY, "<", ID_AL);
-        ui_button(3, BY, ">", ID_AR);
-        ui_button(7, BY, "-", ID_PD);
-        ui_button(10, BY, "+", ID_PU);
-        ui_button(14, BY, "Fire", ID_FIRE);
-        ui_button(21, BY, "Move<", ID_ML);
-        ui_button(29, BY, "Move>", ID_MR);
+        ui_button(0, BY, "Fire", ID_FIRE);
+        ui_button(7, BY, "Drive<", ID_ML);
+        ui_button(16, BY, "Drive>", ID_MR);
+        ui_button(25, BY, "<", ID_AL);
+        ui_button(28, BY, ">", ID_AR);
+        ui_button(32, BY, "-", ID_PD);
+        ui_button(35, BY, "+", ID_PU);
     }
     /* the flipped drawings off, while the ground is drawn */
     if (g_on)

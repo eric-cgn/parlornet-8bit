@@ -4,8 +4,9 @@
 ; stick past a dead zone in the middle gives the arrow key for that way, as the C64's joystick does, and
 ; holding it there repeats it as the IIe's keys repeat. The stick is read about 15 times a second, and a
 ; reading takes up to about 3 ms. The buttons are the same lines as the Open-Apple and Closed-Apple keys:
-; a button pressed and let go with no key between gives Return, and with a key it was the Apple key
-; held for it, so Open-Apple shortcuts work as before. A game port with no joystick in it never ends its
+; button 0 pressed and let go with no key between gives Return, button 1 the second button (K_BACK, which
+; cancels as Esc does but never leaves a table), and with a key the button was the Apple key held for it,
+; so Open-Apple shortcuts work as before. A game port with no joystick in it never ends its
 ; timers' pulses, so a reading that runs out means no joystick, and then the stick and the buttons do
 ; nothing. Some IIe owners have no joystick, and that is why the setting starts off.
 ;
@@ -26,16 +27,12 @@ K_RIGHT = 21
 K_UP    = 11
 K_DOWN  = 10
 
-.ifdef IIGS
-        .segment "DATA"
-.else
-        .segment "JOYCODE"
-.endif
+        .segment "DATA"         ; (in the program: the vectors' page has room for the code alone)
 _joy_on:.byte   0               ; the setting: 1 to read the joystick
 jlast:  .byte   0               ; ticks (low byte) at the last reading
 jdir:   .byte   0               ; the arrow key the stick gave at the last reading, or 0
 jrpt:   .byte   0               ; readings until it repeats
-jbtn:   .byte   0               ; 1 while a button is down
+jbtn:   .byte   0               ; 1 while button 0 is down, 2 while button 1 is
 jused:  .byte   0               ; 1 when a key came while a button was down
 jmiss:  .byte   1               ; 1 while no joystick answers (before the first reading too)
 jx:     .byte   0               ; the last reading's counts, $FF when it ran out
@@ -43,6 +40,8 @@ jy:     .byte   0
 
 .ifdef IIGS
         .segment "CODE"
+.else
+        .segment "JOYCODE"
 .endif
 
 ; A key from kbd_get (in A, kept): with a button down, the button is an Apple key held for it.
@@ -71,20 +70,25 @@ joy_idle:
         io_lda  $C061
         bmi     jdown
         io_lda  $C062
-        bmi     jdown
-        lda     jbtn
+        bmi     jdown2
+        ldy     jbtn
         beq     jstick
-        lda     #0              ; a button let go: Return, unless a key came while it was down
-        sta     jbtn
+        lda     #0              ; a button let go, unless a key came while it was down: button 0 is
+        sta     jbtn            ; Return, button 1 the second button (K_BACK), which cancels as Esc does
         ldx     jused
         sta     jused
         txa
         ora     jmiss
         bne     jnone
         lda     #13
-        rts
+        dey
+        beq     :+
+        lda     #28
+:       rts
+jdown2: lda     #2
+        bne     jd
 jdown:  lda     #1              ; (the stick waits while a button is down)
-        sta     jbtn
+jd:     sta     jbtn
         bne     jnone
 
 jstick: lda     _ticks

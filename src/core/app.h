@@ -6,6 +6,14 @@
 /* Settings (main.c; the line's own are the machine's) */
 extern unsigned char cfg_echo;          /* 1: the console shows what is typed */
 extern unsigned char cfg_title;         /* 1: the title screen at start-up (off only under ProDOS) */
+extern unsigned char cfg_tutor;         /* 1: the tutorial has been offered (the first sign-in) */
+/* Stay signed in (docs/protocol.md, Staying signed in): the setting, and the key the parlor gave this computer
+   for the player, kept in the settings file in place of a password. Signing out forgets it. */
+extern unsigned char cfg_stay;
+extern char cfg_user[13];
+extern char cfg_key[24];
+extern unsigned char cfg_changed;       /* 1: the settings changed since the file was written */
+void tutorial(void);                    /* the tutorial (an overlay, never on the parlor) */
 #if MACHINE_SERIAL
 /* The dialer (parlor.c): P sends the init string (ATZ as it starts; nothing when it is empty) and waits for
    OK, dials ATDT (or ATDP, Pulse dial) and the number, and sends the opening on CONNECT. An empty number: P sends the opening at
@@ -34,7 +42,7 @@ extern char me[13];                     /* the signed-in name */
 extern char server_name[SERVER_NAME_MAX + 1];   /* the greeting's name, always ended by a 0 */
 
 /* The lobby (lobby.c) and a table (table.c). */
-unsigned char lobby(void);              /* 0 sign out, 1 the console, 2 close the connection */
-unsigned char table_play(unsigned int id);  /* 0 the lobby, 1 the console, 2 close the connection */
+unsigned char lobby(void);              /* 0 sign out, 1 the console, 2 close the connection, 3 signed out */
+unsigned char table_play(unsigned int id);  /* 0 the lobby, 3 signed out, 4 the tutorial */
 
 #endif

@@ -1,0 +1,23 @@
+Checkers help
+Moving
+Press {RET} on a piece to pick it up and on a marked square to move it there, or {ESC} to put it back. After the last step, end your turn.
+
+Keys for Checkers
+{OA}D offers a draw.
+{OA}E ends your turn.
+{OA}U takes back a step.
+
+Commands
+Type a step, as /11-15 or /15x22.
+
+Every game
+{OA}R resigns, after asking first. {OA}T opens the chat. {ESC} goes back to the lobby, and the game goes on without you.
+---
+Checkers help
+The rules
+Men move one square forward along the dark squares and kings move either way. A jump over a piece next to you takes it, and a jump that can go on must. A man that reaches the far row becomes a king.
+
+The board
+The dark squares are numbered 1 to 32. The player with no piece left, or no move, loses.
+
+/say, /note, /time and /resign work at every table, and /tutorial shows how the games work.

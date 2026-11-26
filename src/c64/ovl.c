@@ -23,12 +23,12 @@ extern unsigned char _PCODE_RUN__[];    /* (the linker's: where PN.PARLOR goes) 
 static const char *const ovl_name[] = {
     "PN.SIGNIN", "PN.REVERSI", "PN.BACKGAMMON", "PN.GRIDWORDS", "PN.CHECKERS", "PN.MANCALA",
     "PN.FIVEINAROW", "PN.DOTSANDBOXES", "PN.NAVALCOMBAT", "PN.CANNONFIRE", "PN.RUMMYTILE", "PN.SETUP",
-    "PN.SPLASH"};
+    "PN.SPLASH", "PN.NEWGAME", "", "", "PN.TUTORIAL"};
 
 /* What each is, for "Loading ..." */
 static const char *const ovl_what[] = {
     "the sign-in", "Reversi", "Backgammon", "Grid Words", "Checkers", "Mancala", "Five in a Row",
-    "Dots and Boxes", "Naval Combat", "Cannon Fire", "Rummy Tile", "the settings", "the title screen"};
+    "Dots and Boxes", "Naval Combat", "Cannon Fire", "Rummy Tile", "the settings", "the title screen", "New game", "", "", "the tutorial"};
 
 /* "Loading Backgammon..." on the screen's bottom row, which the progress bar then fills (disk.s): the text
    screen's spare 25th row, or the bitmap's status row. On the title screen that is the row of "Press a key",
@@ -86,6 +86,28 @@ static unsigned char load_unpack(const char *name, const char *what, void *dst)
     return 0;
 }
 
+/* Help k (help.py): the file PN.HELPk, loaded as it is at page. */
+unsigned char __fastcall__ ovl_help(unsigned char k, unsigned char page)
+{
+    static char name[10];
+    unsigned char tries, e;
+    strcpy(name, "PN.HELP");
+    strcat(name, k > 9 ? "1" : "");
+    name[strlen(name) + 1] = 0;
+    name[strlen(name)] = '0' + k % 10;
+    for (tries = 0; tries < 4; ++tries) {
+        loading("the help");
+        k_bar = 1;
+        e = k_load(name, (void *)(page << 8));
+        if (e == 0)
+            return 1;
+        if (e == 0x84)
+            return 0;
+        ask_disk();
+    }
+    return 0;
+}
+
 unsigned char __fastcall__ ovl_load(unsigned char k)
 {
     unsigned char e, title;
@@ -93,12 +115,14 @@ unsigned char __fastcall__ ovl_load(unsigned char k)
         return 1;
     if (k >= sizeof ovl_name / sizeof ovl_name[0])
         return 0;
-    if (k == OVL_SIGNIN && !parlor_in) {
+    if ((k == OVL_SIGNIN || k == OVL_FRAME || k == OVL_TUTORIAL) && !parlor_in) {
         loaded = 255;
         if (!load_unpack("PN.PARLOR", "the lobby", _PCODE_RUN__))
             return 0;
         parlor_in = 1;
     }
+    if (k == OVL_FRAME)                 /* (part of PN.PARLOR, which is in now) */
+        return 1;
     title = loaded == OVL_SPLASH && !txt_screen;    /* (the title screen up, as splash.c draws it) */
     loaded = 255;
     e = load_unpack(ovl_name[k], ovl_what[k], (void *)OVL_ADDR);

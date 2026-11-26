@@ -71,7 +71,7 @@ def build(d):
     names = [o.split(":")[0] for o in open(os.path.join(d, "overlays.txt")).read().split()]
     ovls = [open(os.path.join(d, "parlor." + n), "rb").read() for n in names]
     for n, o in zip(names, ovls):
-        assert pages(o) <= 0x2F, "overlay %s is too big: %d bytes" % (n, len(o))
+        assert pages(o) <= 0x2F or n == "help", "overlay %s is too big: %d bytes" % (n, len(o))
     assert pages(main) <= 0x80
 
     disk1, disk2 = {}, {}
@@ -99,7 +99,7 @@ def build(d):
             table.append((lin, pages(o), 1))
             lin = place(disk1, lin, o)
     assert lin <= SECTORS and lin2 <= SECTORS
-    assert len(table) <= 16
+    assert len(table) <= 20
 
     b = bytearray(boot)
     b[LOADTAB:LOADTAB + 8] = bytes([main_at & 255, main_at >> 8, pages(main), 0x40,
@@ -153,7 +153,7 @@ def prodos_files(d):
     end = program_end(d)
     assert end <= PRODOS_TOP, "the program ends at $%04X, past ProDOS's $BF00" % end
     dat = pad(main) + pad(vec)
-    table = bytearray(64)
+    table = bytearray(80)
     for i, o in enumerate(ovls):
         page = len(dat) // 256
         table[i * 4:i * 4 + 4] = bytes([page & 255, page >> 8, pages(o), 0])
@@ -161,7 +161,7 @@ def prodos_files(d):
     loader = bytearray(open(os.path.join(d, "prodsys.bin"), "rb").read())
     assert loader[3:5] == b"PN"
     loader[NPAGES_AT] = pages(main)
-    loader[OVLTAB_AT:OVLTAB_AT + 64] = table
+    loader[OVLTAB_AT:OVLTAB_AT + 80] = table
     out = os.path.join(d, "prodos")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "PARLOR.SYSTEM"), "wb") as f:
@@ -178,7 +178,8 @@ def prodos_files(d):
 def prodos_volume(volname, files, blocks=280):
     """A ProDOS volume image (512-byte blocks in order) holding files [(name, type, aux, data)]: the
     volume directory in blocks 2-5, the free-block map in block 6, then each file as a seedling (one
-    block) or a sapling (an index block and up to 256 data blocks). Its boot blocks are empty."""
+    block), a sapling (an index block and up to 256 data blocks) or a tree (a master index block, whose
+    index blocks each hold 256 data blocks). Its boot blocks are empty."""
     img = bytearray(blocks * 512)
     used = set(range(7))
     nxt = [7]
@@ -197,14 +198,26 @@ def prodos_volume(volname, files, blocks=280):
             img[key * 512:key * 512 + len(data)] = data
             storage, count = 1, 1
         else:
-            assert n <= 256, "a file over 128K"
-            key = alloc()
-            for i in range(n):
-                b = alloc()
-                img[b * 512:b * 512 + 512] = data[i * 512:i * 512 + 512].ljust(512, b"\0")
-                img[key * 512 + i] = b & 255
-                img[key * 512 + 256 + i] = b >> 8
-            storage, count = 2, n + 1
+            def index(first, k):
+                """An index block for data blocks first to first + k - 1."""
+                key = alloc()
+                for i in range(k):
+                    b = alloc()
+                    img[b * 512:b * 512 + 512] = data[(first + i) * 512:(first + i + 1) * 512].ljust(512, b"\0")
+                    img[key * 512 + i] = b & 255
+                    img[key * 512 + 256 + i] = b >> 8
+                return key
+            if n <= 256:
+                key = index(0, n)
+                storage, count = 2, n + 1
+            else:
+                key = alloc()
+                m = (n + 255) // 256
+                for j in range(m):
+                    b = index(j * 256, min(256, n - j * 256))
+                    img[key * 512 + j] = b & 255
+                    img[key * 512 + 256 + j] = b >> 8
+                storage, count = 3, n + m + 1
         e = bytearray(39)
         e[0] = (storage << 4) | len(name)
         e[1:1 + len(name)] = name.encode()

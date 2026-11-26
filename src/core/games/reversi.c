@@ -34,15 +34,13 @@ static void rv_line(void)
 /* The machine's drawing: rv_draw. */
 #include "draw/reversi.c"
 
-static void rv_click(unsigned char id)
+static char sq[4];
+
+/* The square with this target id, as its name ("d3"), in sq. */
+static void sq_of(unsigned char id)
 {
-    static char sq[4];
-    unsigned char x = id & 15, y = id >> 4;
-    if (!g_myturn) {
-        g_message("Not your move.");
-        return;
-    }
-    sq[0] = 'a' + x;
+    unsigned char y = id >> 4;
+    sq[0] = 'a' + (id & 15);
     if (y < 9) {
         sq[1] = '1' + y;
         sq[2] = 0;
@@ -51,9 +49,58 @@ static void rv_click(unsigned char id)
         sq[2] = '0';
         sq[3] = 0;
     }
+}
+
+static void rv_click(unsigned char id)
+{
+    if (!g_myturn) {
+        g_message("It's not your turn.");
+        return;
+    }
+    sq_of(id);
     g_move(sq);
 }
 
+/* What Return does on the square under the pointer. */
+static void rv_hover(unsigned char id)
+{
+    static char b[42];
+    if (id == 255) {
+        g_message("Move to a square with a dot.");
+        return;
+    }
+    sq_of(id);
+    strcpy(b, m_has(sq) ? "Press " KEY_RET " to place a disc on " : "You can't place a disc on ");
+    strcat(b, sq);
+    strcat(b, ".");
+    g_message(b);
+}
+
+/* The other player's move in words: "ann placed a disc on d3 and flipped 2." */
+static void rv_event(void)
+{
+    if (num(w[4]) == (unsigned char)g_seat)
+        return;
+    if (is(w[3], "PASS"))
+        strcat(g_who(num(w[4])), " passed.");
+    else if (is(w[3], "PUT") && wn > 5) {
+        strcat(g_who(num(w[4])), " placed a disc on ");
+        strcat(g_last, w[5]);
+        strcat(g_last, " and flipped ");
+        strcat(g_last, utoa10(wn > 7 ? wn - 7 : 0));
+        strcat(g_last, ".");
+    }
+}
+
+/* The empty board, while the table waits (game.h). */
+static void rv_empty(void)
+{
+    size = 8;
+    memset(board, '.', sizeof board);
+    count[0] = count[1] = 0;
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct game g_reversi = {"reversi", "Reversi", rv_begin, rv_line, rv_draw, rv_click, 0};
+const struct game g_reversi = {"reversi", "Reversi", rv_begin, rv_line, rv_draw, rv_click, 0, 0, rv_event, rv_hover,
+                               0, 0, rv_empty};
 #pragma rodata-name (pop)

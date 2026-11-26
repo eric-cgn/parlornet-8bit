@@ -10,9 +10,9 @@ The program is a shared core and a machine layer. The core knows the parlor's pr
             src/core                                  src/<machine>
   +-------------------------------+          +-------------------------------+
   | protocol (net.c)              |          | start-up and quitting         |
-  | connecting, dialer, sign-in   |          | the line: serial, network     |
+  | console, dialer, sign-in      |          | the line: serial, network     |
   |   (parlor.c)                  |  calls   | keyboard, joystick, mouse     |
-  | console and main loop (main.c)| -------> | text screen                   |
+  | main loop (main.c)            | -------> | text screen                   |
   | lobby (lobby.c)               |machine.h | graphics screen kit (ui_*)    |
   | table, chat, clock (table.c)  |          | overlays from the disk        |
   | the ten games' rules          | includes | settings file, title screen   |
@@ -70,7 +70,7 @@ Only the resident program and one overlay are in memory at a time. The overlays 
 
 On the Apple IIe the program is at $4000-$BFFF and the overlays run in the language card's RAM at $D000. The self-booting disk has its own sector reader in the boot block, and under ProDOS the overlays come from PARLOR.DAT. The reply buffer and the serial ring are in low memory.
 
-On the C64, BASIC and the KERNAL are switched out. The program is at $1500, the overlays at $9900-$BFFF, the character set at $C000, the screens in the VIC's bank 3, and the bitmap under the KERNAL at $E000. The KERNAL is switched back in only to load from the disk. The overlays are packed files (`tools/c64_pack.py`), loaded at the top of their space and unpacked in place, and a bar on the bottom row fills as each loads. The start-up loads only what the title, the start screen, the settings and the console need (PN.MAIN). The lobby, the tables and the protocol are linked after the program's variables and cut off into a file of their own (PN.PARLOR), which is loaded once, before the first sign-in. A machine with a slow drive can do the same with `PLATE` in `build.sh`. The README has both machines' full memory maps.
+On the C64, BASIC and the KERNAL are switched out. The program is at $1400, the overlays at $9B00-$BFFF, the character set at $C000, the screens in the VIC's bank 3, and the bitmap under the KERNAL at $E000. The KERNAL is switched back in only to load from the disk. The overlays are packed files (`tools/c64_pack.py`), loaded at the top of their space and unpacked in place, and a bar on the bottom row fills as each loads. The start-up loads only what the title, the start screen and the settings need (PN.MAIN). The lobby, the tables and the protocol are linked after the program's variables and cut off into a file of their own (PN.PARLOR), which is loaded once, before the first sign-in. A machine with a slow drive can do the same with `PLATE` in `build.sh`. The README has both machines' full memory maps.
 
 ## Connecting
 
@@ -93,7 +93,7 @@ The serial driver is where most of a port's trouble will be. These are the lesso
 - **Keep pieces round and checkers readable.** Backgammon shows four checkers on a tall point and +n for the rest (two and +n on the bar).
 - **Keep the frame's lines visible.** The message line shows the bot's greeting when a table opens, what the players say, and who joined with which program ("bob joined with GameMaster 1.0.0 + ParlorNet 0.5 on a Macintosh Plus"). A board must not draw over it.
 - **Use the same target ids.** The lab's plans and the orchestrator click by id, so they work on every machine.
-- **Offer a monochrome look.** D on the start screen and OA-D at a table switch to it, for monochrome monitors and black-and-white TVs.
+- **Offer a monochrome look.** D on the start screen and the lobby's Display button switch to it, for monochrome monitors and black-and-white TVs.
 
 ## Text on the screen
 

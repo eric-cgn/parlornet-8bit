@@ -11,6 +11,11 @@
 #endif
 
 #define MACHINE_NAME "the Apple II"
+#ifdef IIGS
+#define MACHINE_LABEL "Apple IIgs"     /* the computer, for its sign-in key (KEY NEW) */
+#else
+#define MACHINE_LABEL "Apple IIe"
+#endif
 
 /* The Open-Apple and Closed-Apple keys in text: MouseText's apples on an enhanced IIe, a IIc or a IIgs
    (txt_mt), "OA-" and "CA-" on an older IIe (txt_putc); the Hi-Res font has them on every machine. */
@@ -30,6 +35,10 @@
 #define K_ESC   27
 #define K_TAB   9
 #define K_DEL   127
+#define K_BACK  28                      /* the second button of a joystick or a mouse */
+#define KEY_RET K6 "Return"
+#define KEY_ESC K3 "Esc"
+#define COL_PX 7
 
 /* Where overlays are loaded (ovl.h): the language card's RAM. */
 #define OVL_ADDR 0xD000

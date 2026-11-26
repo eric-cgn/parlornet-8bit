@@ -4,6 +4,7 @@
 # yet on the C64 its notice, and the lobby comes back after each. The waits allow for the 1541's loads.
 waittitle 6000
 title 3600
+set cfg_tutor 1
 waittext ParlorNet: connect 1200
 type P
 waittext Name: 4800

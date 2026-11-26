@@ -4,6 +4,7 @@
 # one after the connection is closed and dialed again.
 waittitle 6000
 title 3600
+set cfg_tutor 1
 waittext ParlorNet: connect 600
 type P
 waittext Name: 4800

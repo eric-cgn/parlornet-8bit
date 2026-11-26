@@ -1,8 +1,9 @@
 /* ParlorNet: Cannon Fire (docs/types/cannonfire-1.md), 2 to 8 tanks. The parlor runs all the physics; this
    shows the terrain (Z lines), the tanks (K), the wind (N) and the shots, and sends the player's aim. The aim
    is an angle (0 towards the right, 90 straight up, 180 towards the left) and a power (0 to 100): the
-   buttons change them by 5, the keys , and . (angle) and - and = (power) by 1. Fire shoots; Move drives the
-   tank left or right as far as one move goes (four a game). Over each tank are its letter and its health
+   buttons change them by 5, the keys < and > (angle) and - and + (power) by 10. Fire shoots, and is the first
+   button, where the pointer starts; Drive< and Drive> (or [ and ]) drive the tank left or right as far as one
+   move goes (four a game). Over each tank are its letter and its health
    (what is left of its 100 hit points, "87%"); the line under the arena says which letter is the player's.
 
    The machine draws it (draw/cannonfire.c, included below: cf_draw, cf_event, which shows a shot's events
@@ -102,7 +103,7 @@ static void cf_click(unsigned char id)
 {
     static char t[16];
     if (!g_myturn) {
-        g_message("Not your turn.");
+        g_message("It's not your turn.");
         return;
     }
     switch (id) {
@@ -129,20 +130,54 @@ static void cf_click(unsigned char id)
     }
 }
 
+/* What Return does on the button under the pointer. */
+static void cf_hover(unsigned char id)
+{
+    g_message(id == ID_FIRE ? "Press " KEY_RET " to fire, or [ ] to drive first." :
+              "Press " KEY_RET " to aim, or < > + - by 10.");
+}
+
+/* A shot in words, as it comes ("ann fired at angle 45 with power 60."), then on the screen (cf_event). */
+static void cf_said(void)
+{
+    if (is(w[3], "FIRE") && wn > 6 && num(w[4]) != (unsigned char)g_seat) {
+        strcat(g_who(num(w[4])), " fired at angle ");
+        strcat(g_last, w[5]);
+        strcat(g_last, " with power ");
+        strcat(g_last, w[6]);
+        strcat(g_last, ".");
+    }
+    cf_event();
+}
+
+static const char *cf_say(void)
+{
+    return g_myturn ? "Your shot." : 0;
+}
+
+/* < and > turn the barrel by 10, + and - change the power by 10, and [ and ] drive the tank. */
 static unsigned char cf_key(unsigned char k)
 {
     switch (k) {
-    case ',': set_aim(1, 0); return 1;
-    case '.': set_aim(-1, 0); return 1;
-    case '-': set_aim(0, -1); return 1;
-    case '=': case '+': set_aim(0, 1); return 1;
-    case 'f': case 'F': cf_click(ID_FIRE); return 1;
+    case '<': set_aim(10, 0); return 1;
+    case '>': set_aim(-10, 0); return 1;
+    case '-': set_aim(0, -10); return 1;
+    case '+': set_aim(0, 10); return 1;
+    case '[': cf_click(ID_ML); return 1;
+    case ']': cf_click(ID_MR); return 1;
     }
     return 0;
 }
 
+/* The empty board, while the table waits (game.h). */
+static void cf_empty(void)
+{
+    aw = 72;
+    memset(ht, 10, aw);                 /* (level ground) */
+    wind = 0;
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct game g_cannonfire = {"cannonfire", "Cannon Fire", cf_begin, cf_line, cf_draw, cf_click, cf_key,
-                                  K3 ", . angle " K3 "- = power " K1 "F fire 87%=health", 1,
-                                  cf_event};
+const struct game g_cannonfire = {"cannonfire", "Cannon Fire", cf_begin, cf_line, cf_draw, cf_click, cf_key, 1,
+                                  cf_said, cf_hover, 0, cf_say, cf_empty};
 #pragma rodata-name (pop)

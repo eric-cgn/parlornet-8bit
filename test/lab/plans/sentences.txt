@@ -1,0 +1,113 @@
+# The sentence line: the status line says whose turn it is and the clock, and the message line what Return
+# does on the place under the pointer, the other player's move in words as it comes, or a refusal. At a
+# Reversi table waiting for a player (se_waiting); Reversi against the bot on a square where no disc goes
+# (se_reversi_a1) and on d3 (se_reversi_d3); the bot's answer in words (se_reversi_bot); Five in a Row
+# (se_five, se_five_bot); Mancala (se_mancala); Naval Combat while the fleet is placed (se_naval); Rummy
+# Tile (se_rummy); Checkers (se_checkers) and Backgammon (se_backgammon).
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+hold cfg_tutor 1 30
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type sela\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+click 200
+wait 200
+click 8
+wait 100
+click 1
+wait 900
+snap se_waiting
+key esc
+wait 400
+click 200
+wait 200
+click 8
+wait 100
+click 0
+wait 900
+snap se_reversi_a1
+arrows RRRDD
+wait 30
+snap se_reversi_d3
+key ret
+wait 600
+snap se_reversi_bot
+key esc
+wait 400
+click 200
+wait 200
+click 4
+wait 100
+click 0
+wait 100
+click 0
+wait 900
+snap se_five
+key ret
+wait 600
+snap se_five_bot
+key esc
+wait 400
+click 200
+wait 200
+click 6
+wait 100
+click 0
+wait 100
+click 0
+wait 900
+type 3
+wait 30
+snap se_mancala
+key esc
+wait 400
+click 200
+wait 200
+click 7
+wait 100
+click 0
+wait 100
+click 0
+wait 900
+snap se_naval
+key esc
+wait 400
+click 200
+wait 200
+click 9
+wait 100
+click 0
+wait 100
+click 0
+wait 900
+arrows DDDDD
+wait 30
+snap se_rummy
+key esc
+wait 400
+click 200
+wait 200
+click 2
+wait 100
+click 0
+wait 900
+snap se_checkers
+key esc
+wait 400
+click 200
+wait 200
+click 0
+wait 100
+click 0
+wait 900
+snap se_backgammon
+exit

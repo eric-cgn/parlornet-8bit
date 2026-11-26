@@ -46,9 +46,9 @@ LOADTAB:
         .res    16, 0           ; $080D-$081C
 start:  .word   0               ; $081D
         .res    2, 0            ; $081F-$0820 (spare; under ProDOS PARLOR.SYSTEM keeps its values there)
-; $0821: the overlays (the games, and the sign-in), set by the disk maker: 16 entries of linear sector
+; $0821: the overlays (the games, and the sign-in), set by the disk maker: 20 entries of linear sector
 ; (2 bytes), count and disk number. Each loads at $D000.
-OVLTAB: .res    64, 0           ; $0821-$0860
+OVLTAB: .res    80, 0           ; $0821-$0870
 
 ; Messages for the boot screen (text page 1, inverse/normal screen codes made by the code).
 title:  .byte   "PARLORNET", 0

@@ -42,6 +42,10 @@ A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammo
   use them (`uthernet.txt`).
 - `lab/pngscale.py` scales MAME's snapshots (560 by 192) to 560 by 384.
 
+`plans/waiting.txt` opens a table of each of the ten games with Wait for anyone, one after another, and shows its waiting table (`wt_NAME.png`): the game's empty board, with "Waiting for a second player." and "Type /invite bot to play the bot." under it. `plans/gs_waiting.txt` does the same on the IIgs, and `vice/plans/waiting.txt` on the C64.
+
+The step `settle` waits until the program waits for a key with everything drawn, which is when for half a second it has read the keyboard all along and the screen has not changed. The plans that save a screenshot of each step settle before each snap, so that a screen still being drawn (after a load from the 1541, say) is not taken.
+
 `plans/table_entry.txt` starts each of the ten games against the bot from the lobby, one after another on
 one connection, and shows its first view (`te_NAME.png`); the lobby comes back after each. A crash would
 show as the title screen and clicks with no target in `run.log`. `plans/table_entry_long.txt` does the same
@@ -135,6 +139,18 @@ snapshots every 6 frames from Fire on (`cfi_*`) show the bot's shell flying in a
 its crater dissolving, before the view: the program sees that the view is newer than the events it has
 read, reads those first and fetches the view again. `cfi_after` and `cfi_mono` show each tank's health over
 its letter, in color and in monochrome.
+
+`plans/command_line.txt` shows the command line. In the lobby `/who` answers on the message line, and the buttons are unlit while the line is open (`cl_typing`). At a Reversi table that waits for a player, `/invite bot` seats the bot (`cl_invited`, `cl_seated`) and the typed move `/d3` plays a disc (`cl_typed_move`). `/resign` opens the resign dialog, which starts on No (`cl_resign_dialog`), and Esc answers No (`cl_resign_no`). An unknown command says so (`cl_unknown`), and `/leave` goes back to the lobby. `plans/gs_command_line.txt` does the same on the IIgs, and `vice/plans/command_line.txt` on the C64.
+
+`plans/offers_backgammon.txt` shows offers and confirmations in dialogs. `lab/offers.py` plays ann beside it (`python3 test/lab/offers.py 16501 backgammon olly "Swordfish 1997"`): she opens a Backgammon table and invites olly, and once he sits down she doubles at the start of her turn, playing olly's first turn for him on a connection of his own if it comes first. The invitation is a row of the lobby, and Return on it opens its dialog, starting on Accept (`of_invitation`). The double's dialog starts on Accept (`of_double`). Esc puts it away, and the status line says "ann doubles to 2." with "Press Return to answer." (`of_away`). Return brings it back (`of_again`), and Y accepts (`of_taken`). The Resign button opens the resign dialog (`of_resign`), and N answers No. `vice/plans/offers_backgammon.txt` does the same on the C64, and `plans/gs_offers_checkers.txt` shows a draw offer on the IIgs (`offers.py 6501 checkers gwen "Swordfish 1997"`), whose dialog starts on Decline.
+
+`plans/letters.txt` shows one meaning per letter, with Open-Apple, against the bot: the lobby's Open-Apple-N opens New game (`lt_newgame`); Mancala's 3 moves the pointer to pit 3 (`lt_mancala_3`); Open-Apple-H says it does nothing in Reversi (`lt_nothing`); Cannon Fire's < and + aim by 10, with the pointer on Fire (`lt_cannon`); Esc lets go of a picked dot in Dots and Boxes (`lt_dots_picked`, `lt_dots_dropped`) and goes back to the lobby when nothing is picked; Grid Words' Open-Apple-X starts an exchange (`lt_exchange`); Rummy Tile's Open-Apple-O sorts the rack and Open-Apple-C says whether the turn would count (`lt_sorted`, `lt_check`); Naval Combat's Open-Apple-G places the fleet at random (`lt_random`); and Backgammon's panel shows Roll and Double over Chat, Help, Resign and Lobby (`lt_backgammon`). `vice/plans/letters.txt` does the same on the C64.
+
+`plans/sentences.txt` shows the sentence line: the status line says whose turn it is and the clock, and the message line says what Return does on the place under the pointer or the other player's move as it comes. It shows a Reversi table waiting for a player (`se_waiting`), Reversi against the bot on a square where no disc goes and on d3 (`se_reversi_a1`, `se_reversi_d3`), the bot's answer in words (`se_reversi_bot`), Five in a Row (`se_five`, `se_five_bot`), Mancala (`se_mancala`), Naval Combat while the fleet is placed (`se_naval`), Rummy Tile (`se_rummy`), Checkers (`se_checkers`) and Backgammon (`se_backgammon`). `vice/plans/sentences.txt` does the same on the C64.
+
+`plans/help.txt` shows ? and Esc in every game: the lobby's help (`hp_lobby`), then each game against the bot, where ? opens page 1 of its help (`hp_NAME_1`), Right turns to page 2 (`hp_NAME_2`), Esc closes it (`hp_NAME_closed`), and Esc again, with nothing to cancel, goes back to the lobby (`hp_lobby_again`). `vice/plans/help.txt` does the same on the C64, with Space.
+
+The first sign-in offers the tutorial in a dialog, so the plans that sign up a player and are about something else skip it: the IIe's hold `cfg_tutor` at 1 once the start screen shows (`hold cfg_tutor 1 30`, which `run.sh` finds in the map; one hold at a time, so it comes after run.sh's hold of `cfg_number`), the C64's set it (`set cfg_tutor 1`), and the IIgs's answer No (`type n`). `plans/tutorial.txt` plays the tutorial end to end. The first sign-in offers it in a dialog starting on Yes (`tu_offer`), and Y starts it. Each of the 18 steps is done as its instruction says (`tu_01` to `tu_17`): Return, the arrows to b2, Return, c1, Open-Apple-U, c1 again, /, time, a line cleared with Esc, the typed move /c3, Open-Apple-T, hello, Esc, /say good game, ? and Esc, Open-Apple-R and Esc, and c2, which wins; then Esc goes back to the lobby (`tu_lobby`). Signing out and in again does not offer it a second time (`tu_again`), and /tutorial in the lobby starts it (`tu_command`). `plans/gs_tutorial.txt` plays it on the IIgs, and `vice/plans/tutorial.txt` on the C64.
 
 ## Through a Unix shell
 
@@ -298,6 +314,7 @@ test/vice/run.sh build/c64/parlornet.d64 test/vice/plans/reversi.txt test/out/c6
   with `joy` steps.
 
 The plans in `vice/plans`:
+- `stay_signed_in.txt` (with a parlor that has sign-in keys, and `lab/keys.py` beside it: `keys.py 16501 kim "Swordfish 1997"`): Stay signed in turned on in the settings (`ks_setting`); kim signs up with the password, which gets this computer's key (`ks_lobby`); the connection is closed from the console and P signs in again with the key, asking nothing (`ks_keyed`). keys.py then forgets kim's keys from a connection of its own, which ends the session (`ks_ended`); the next sign-in tries the key, the parlor refuses it with ERR NOKEY, and the password is asked for (`ks_nokey`), which signs in and gets a new key (`ks_password`). Signing out forgets the key, so the name is asked for again (`ks_signed_out`).
 - `title.txt`, `start.txt`: the title screen after the load at a 1541's speed, the start screen and the settings.
 - `load81.txt`, `load8.txt` (with `ATTACH=1`): `LOAD"*",8,1`, which starts the program with no RUN; and
   `LOAD"*",8` with RUN.

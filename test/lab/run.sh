@@ -30,7 +30,7 @@ mkdir -p "$OUTDIR" "$XCHG" "$SCRIPTS"
 OUTDIR=$(cd "$OUTDIR" && pwd)
 DISKDIR=$(cd "$(dirname "$DISK")" && pwd)
 rm -f "$XCHG/need" "$XCHG/steps.txt" "$XCHG/use_w5100"
-for s in t_n t_cur t_id mono cfg_number; do
+for s in t_n t_cur t_id mono cfg_number cfg_tutor; do
 	printf '%s %s\n' "$s" "$(grep -o "_$s  *[0-9A-F]*" "$DISKDIR/parlor.map" | head -1 | awk '{print $2}')"
 done > "$XCHG/addr.txt"
 cp "$TEST/mame/run.lua" "$TEST/mame/w5100.lua" "$TEST/mame/joy.lua" "$SCRIPTS/"

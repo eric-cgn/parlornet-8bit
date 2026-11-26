@@ -1,0 +1,107 @@
+# The tutorial end to end. The first sign-in offers it in a dialog starting on Yes (tu_offer), and Y starts
+# it. Each of its 18 steps is done as its instruction says, with a snapshot after (tu_01 to tu_18): Return,
+# the arrows to b2, Return, c1, Open-Apple-U, c1 again, /, time, a line cleared with Esc, the typed move
+# /c3, Open-Apple-T, hello, Esc, /say good game, ? and Esc, Open-Apple-R and Esc, c2, and Esc back to the
+# lobby (tu_lobby). Signing out and in again does not offer it a second time (tu_again), and /tutorial in
+# the lobby starts it (tu_command).
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type tina\r
+waittext assword 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+settle
+snap tu_offer
+type y
+settle
+snap tu_01
+key ret
+wait 60
+arrows RD
+settle
+snap tu_02
+key ret
+settle
+snap tu_03
+arrows UR
+key ret
+settle
+snap tu_04
+oa U
+settle
+snap tu_05
+key ret
+settle
+snap tu_06
+type /
+settle
+snap tu_07
+type time\r
+settle
+snap tu_08
+type /
+wait 30
+type xyz
+wait 30
+key esc
+settle
+snap tu_09
+type /
+wait 30
+type c3\r
+settle
+snap tu_10
+oa T
+settle
+snap tu_11
+type hello\r
+settle
+snap tu_12
+key esc
+settle
+snap tu_13
+type /
+wait 30
+type say good game\r
+wait 60
+settle
+snap tu_14
+type ?
+settle
+snap tu_15
+key esc
+wait 60
+oa R
+settle
+snap tu_16
+key esc
+wait 60
+click 5
+settle
+snap tu_17
+key esc
+settle
+snap tu_lobby
+oa Q
+wait 200
+type y
+waittext Name: 600
+wait 120
+type tina\r
+waittext assword 600
+type Swordfish 1997\r
+settle
+snap tu_again
+type /
+wait 30
+type tutorial\r
+settle
+snap tu_command
+exit

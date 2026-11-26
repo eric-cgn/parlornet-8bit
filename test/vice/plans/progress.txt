@@ -6,6 +6,7 @@ wait 1500
 snap pb_startup
 waittitle 6000
 title 3600
+set cfg_tutor 1
 waittext ParlorNet: connect 600
 snap pb_start_screen
 type S

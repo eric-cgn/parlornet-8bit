@@ -1,0 +1,136 @@
+# One meaning per letter on the C64, with the Commodore key, as plans/letters.txt in lab/ shows it on the
+# Apple IIe: New game (lt_newgame), Mancala's digits (lt_mancala_3), a letter that does nothing
+# (lt_nothing), Cannon Fire's signs (lt_cannon), RUN/STOP letting go of a dot (lt_dots_*), Grid Words'
+# exchange (lt_exchange), Rummy Tile's sort and check (lt_sorted, lt_check), Naval Combat's random fleet
+# (lt_random) and Backgammon's panel and buttons (lt_backgammon).
+waittitle 6000
+title 3600
+set cfg_tutor 1
+waittext ParlorNet: connect 600
+type P
+waittext Name: 4800
+type new\r
+waittext want 300
+type lena\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+bitmap 1200
+wait 300
+oa N
+wait 1200
+snap lt_newgame
+key esc
+wait 300
+click 200
+wait 1200
+click 6
+wait 100
+click 0
+wait 100
+click 0
+wait 2400
+type 3
+wait 30
+snap lt_mancala_3
+key ret
+wait 300
+key esc
+wait 400
+click 200
+wait 1200
+click 8
+wait 100
+click 0
+wait 2400
+oa H
+wait 30
+snap lt_nothing
+key esc
+wait 400
+click 200
+wait 1200
+click 1
+wait 100
+click 0
+wait 100
+click 0
+wait 2400
+type <+
+wait 60
+snap lt_cannon
+key esc
+wait 400
+click 200
+wait 1200
+click 3
+wait 100
+click 0
+wait 100
+click 0
+wait 100
+click 0
+wait 2400
+click 0
+wait 60
+snap lt_dots_picked
+key esc
+wait 60
+snap lt_dots_dropped
+key esc
+wait 400
+click 200
+wait 1200
+click 5
+wait 100
+click 0
+wait 100
+click 0
+wait 100
+click 0
+wait 2400
+oa X
+wait 60
+snap lt_exchange
+key esc
+wait 200
+key esc
+wait 400
+click 200
+wait 1200
+click 9
+wait 100
+click 0
+wait 100
+click 0
+wait 2400
+oa O
+wait 60
+snap lt_sorted
+oa C
+wait 300
+snap lt_check
+key esc
+wait 400
+click 200
+wait 1200
+click 7
+wait 100
+click 0
+wait 100
+click 0
+wait 2400
+oa G
+wait 600
+snap lt_random
+key esc
+wait 400
+click 200
+wait 1200
+click 0
+wait 100
+click 0
+wait 2400
+snap lt_backgammon
+exit

@@ -1,0 +1,129 @@
+# Each of the ten games' waiting table on the C64, as test/lab/plans/waiting.txt shows them on the Apple IIe:
+# each wt_NAME.png shows the game's empty board, with "Waiting for a second player." and "Type /invite bot to
+# play the bot." under it. The settle steps allow for the 1541's loads.
+waittitle 6000
+title 3600
+set cfg_tutor 1
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 4800
+type new\r
+waittext want 300
+type wes\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+settle 3600
+click 200
+settle 3600
+click 0
+settle 3600
+click 1
+settle 3600
+snap wt_backgammon
+key esc
+settle 3600
+click 200
+settle 3600
+click 1
+settle 3600
+click 0
+settle 3600
+click 1
+settle 3600
+snap wt_cannonfire
+key esc
+settle 3600
+click 200
+settle 3600
+click 2
+settle 3600
+click 1
+settle 3600
+snap wt_checkers
+key esc
+settle 3600
+click 200
+settle 3600
+click 3
+settle 3600
+click 0
+settle 3600
+click 0
+settle 3600
+click 1
+settle 3600
+snap wt_dotsandboxes
+key esc
+settle 3600
+click 200
+settle 3600
+click 4
+settle 3600
+click 0
+settle 3600
+click 1
+settle 3600
+snap wt_fiveinarow
+key esc
+settle 3600
+click 200
+settle 3600
+click 5
+settle 3600
+click 0
+settle 3600
+click 0
+settle 3600
+click 1
+settle 3600
+snap wt_gridwords
+key esc
+settle 3600
+click 200
+settle 3600
+click 6
+settle 3600
+click 0
+settle 3600
+click 1
+settle 3600
+snap wt_mancala
+key esc
+settle 3600
+click 200
+settle 3600
+click 7
+settle 3600
+click 0
+settle 3600
+click 1
+settle 3600
+snap wt_navalcombat
+key esc
+settle 3600
+click 200
+settle 3600
+click 8
+settle 3600
+click 1
+settle 3600
+snap wt_reversi
+key esc
+settle 3600
+click 200
+settle 3600
+click 9
+settle 3600
+click 0
+settle 3600
+click 1
+settle 3600
+snap wt_rummytile
+key esc
+settle 3600
+snap wt_lobby
+exit
+

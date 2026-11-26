@@ -113,7 +113,7 @@ static void nc_click(unsigned char id)
     }
     if (placing()) {
         if (g_seat < 0 || ready[me()] || !nextlen) {
-            g_message(nextlen ? "" : "All placed: Ready, or Undo.");
+            g_message("");
             return;
         }
         if (sel < 0 || sel == id) {
@@ -127,13 +127,13 @@ static void nc_click(unsigned char id)
                     redraw();
                 return;
             }
-            g_message(sel < 0 ? "" : "Now the other end.");
+            g_message("");
             redraw();
             return;
         }
         if (!other_end(x, y)) {
             sel = id;
-            g_message("Now the other end.");
+            g_message("");
             redraw();
             return;
         }
@@ -145,7 +145,7 @@ static void nc_click(unsigned char id)
         return;
     }
     if (!g_myturn) {
-        g_message("Not your turn.");
+        g_message("It's not your turn.");
         return;
     }
     if (grid[1 - me()][y][x] != '.') {
@@ -156,7 +156,71 @@ static void nc_click(unsigned char id)
     g_move(t);
 }
 
+/* What Return does under the pointer: while placing, one end of the next ship, then the other; then the
+   square to fire at. */
+static void nc_hover(unsigned char id)
+{
+    static char b[42];
+    const char *s = 0;
+    unsigned char x = id % 10, y = id / 10;
+    if (placing()) {
+        s = id == ID_RANDOM ? "Press " KEY_RET " for a random fleet." : id == ID_UNDO ? "Press " KEY_RET " to undo a ship." :
+            id == ID_CLEAR ? "Press " KEY_RET " to take back every ship." :
+            id == ID_READY || !nextlen ? "Press " KEY_RET " on Ready when you are." :
+            sel >= 0 ? "Press " KEY_RET " on the ship's other end." : 0;
+        if (!s) {
+            strcpy(b, "Press " KEY_RET " to start the ");
+            strcat(b, utoa10(nextlen));
+            strcat(b, "-square ship.");
+        }
+    } else if (id < 100) {
+        strcpy(b, grid[1 - me()][y][x] != '.' ? "You fired at " : "Press " KEY_RET " to fire at ");
+        sq_name(b + strlen(b), x, y);
+        strcat(b, b[0] == 'Y' ? " already." : ".");
+    } else
+        s = "Move to the square to fire at.";
+    g_message(s ? s : (const char *)b);
+}
+
+/* The other player's shot in words: "ann fired at e10 and missed." */
+static void nc_event(void)
+{
+    if (is(w[3], "SHOT") && wn > 6 && num(w[4]) != (unsigned char)g_seat) {
+        strcat(g_who(num(w[4])), " fired at ");
+        strcat(g_last, w[5]);
+        strcat(g_last, w[6][0] == 'm' ? " and missed." : w[6][0] == 'h' ? " and hit your ship." : " and sank your ");
+        if (w[6][0] == 's' && wn > 7) {
+            strcat(g_last, w[7]);
+            strcat(g_last, "-square ship.");
+        }
+    }
+}
+
+static const char *nc_say(void)
+{
+    return placing() ? (ready[me()] || g_seat < 0 ? 0 : "Place your fleet.") : g_myturn ? "Your shot." : 0;
+}
+
+/* Esc lets go of a picked end, OA-G places the rest of the fleet at random, OA-U takes back the last ship
+   and OA-Z every ship. */
+static unsigned char nc_key(unsigned char k)
+{
+    if (k == K_ESC) {
+        if (sel < 0)
+            return 0;
+        sel = -1;
+        g_message("");
+        redraw();
+        return 1;
+    }
+    k = k == (U_OA | 'G') ? ID_RANDOM : k == (U_OA | 'U') ? ID_UNDO : k == (U_OA | 'Z') ? ID_CLEAR : 0;
+    if (!k)
+        return 0;
+    nc_click(k);
+    return 1;
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct game g_navalcombat = {"navalcombat", "Naval Combat", nc_begin, nc_line, nc_draw, nc_click, 0,
-                                   "Place: one end, the other. Then fire", 1};
+const struct game g_navalcombat = {"navalcombat", "Naval Combat", nc_begin, nc_line, nc_draw, nc_click, nc_key,
+                                   1, nc_event, nc_hover, 0, nc_say};
 #pragma rodata-name (pop)

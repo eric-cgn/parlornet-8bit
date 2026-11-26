@@ -1,0 +1,58 @@
+# Stay signed in, against a parlor with sign-in keys, with lab/keys.py beside it (keys.py 16501 kim "Swordfish
+# 1997"). The setting is turned on (ks_setting) and kept in PARLOR.CFG. kim signs up with a password, which
+# gets this computer's key, and the tutorial's dialog is answered No (ks_lobby). The connection is closed from
+# the console, and P signs in again with the key, asking nothing (ks_keyed). keys.py then forgets kim's keys,
+# which ends the session: the next sign-in tries the key, the parlor refuses it (ERR NOKEY), and the
+# password is asked for as usual (ks_nokey); signing in with it gets a new key (ks_password). Signing out
+# forgets the key, so the name is asked for again (ks_signed_out). A session ended by keys.py reads to the
+# program as a lost connection (ks_ended), and Return dials again.
+waittitle 6000
+title 3600
+waittext ParlorNet: connect 600
+type S
+waittext settings 1200
+type K
+wait 60
+snap ks_setting
+key ret
+waittext ParlorNet: connect 1200
+type P
+waittext Name: 4800
+type new\r
+waittext want 300
+type kim\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+bitmap 1200
+wait 300
+type n
+wait 1200
+snap ks_lobby
+oa C
+waittext Console 2400
+wait 120
+oa Q
+waittext ParlorNet: connect 3600
+type P
+bitmap 4800
+wait 600
+snap ks_keyed
+waittext was lost 3600
+snap ks_ended
+key ret
+waittext assword 4800
+wait 120
+snap ks_nokey
+type Swordfish 1997\r
+bitmap 2400
+wait 600
+snap ks_password
+click 203
+wait 300
+type y
+waittext Name: 2400
+wait 60
+snap ks_signed_out
+exit
