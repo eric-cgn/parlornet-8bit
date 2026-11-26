@@ -10,8 +10,6 @@
 #define MACHINE_SERIAL 1                /* the Super Serial Card (or the Uthernet II) */
 #endif
 
-/* The key that stands for commands (OA in the key legends) as the text names it. */
-#define OA_NAME "Open-Apple"
 #define MACHINE_NAME "the Apple II"
 
 /* The Open-Apple and Closed-Apple keys in text: MouseText's apples on an enhanced IIe, a IIc or a IIgs

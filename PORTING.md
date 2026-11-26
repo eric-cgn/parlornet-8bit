@@ -97,7 +97,7 @@ The serial driver is where most of a port's trouble will be. These are the lesso
 
 ## Text on the screen
 
-What the program says on the screen stays in the voice of its period. It talks about modems, lines, disks and parlors as a program of its time would, and it says nothing about modern setups, emulators, WiFi bridges or the internet. Things a modern setup needs (a Zimodem's quoted number, `ATS62=0`, netcat through a Unix shell) go in the README and the player's guide, not on the screen. Messages are plain sentences, and key legends follow the machine's own names for its keys.
+What the program says on the screen stays in the voice of its period. It talks about modems, lines, disks and parlors as a program of its time would, and it says nothing about modern setups, emulators, WiFi bridges or the internet. Things a modern setup needs (a Zimodem's quoted number, `ATS62=0`, netcat through a Unix shell) go in the README and the player's guide, not on the screen. Messages are plain sentences, and key legends follow the machine's own names for its keys. Wherever a screen names the command key, in a legend or in a sentence, it shows the key's symbol (`OA` in `machdefs.h`, a character of the machine's font) and the letter after it, never the key's name spelled out.
 
 ## Settings files
 

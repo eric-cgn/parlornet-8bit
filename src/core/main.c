@@ -4,7 +4,7 @@
 
    The console is a plain terminal on the serial line: what is typed goes out, what comes in is
    shown. It is for setting up the line (dialing a modem, say) before ParlorNet mode, which starts with
-   OA-P (Open-Apple on the Apple II, the Commodore key on the C64: OA_NAME). When a line has been typed
+   OA-P (Open-Apple on the Apple II, the Commodore key on the C64). When a line has been typed
    and not yet sent, OA-P sends its Return first, so that a command that connects to the parlor (nc in a
    Unix shell) is followed at once by ParlorNet mode's opening line: the parlor waits 20 seconds for it.
    OA-C comes back to the console from ParlorNet mode, closing the connection to the parlor first, and
@@ -121,9 +121,9 @@ again:
     say("Line: ");
     sayln(line_desc());
     sayln("Connect to the parlor's native port");
-    sayln("(6501, not telnet), then press");
-    sayln(OA_NAME "-P. Dial with ATDT host:6501.");
-    sayln(OA_NAME "-Q: the start screen.");
+    sayln("(6501, not telnet), then press " OA "P.");
+    sayln("To dial a modem, type ATDT host:6501.");
+    sayln("Press " OA "Q for the start screen.");
     txt_putc(13);
     shown = 0;
     lastcr = 0;

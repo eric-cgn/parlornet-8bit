@@ -4,11 +4,10 @@
 
 #define MACHINE_SERIAL 1                /* the user port or a SwiftLink: the console and the dialer */
 
-/* The Commodore key, which stands for commands as Open-Apple does on the Apple II: OA in the key legends
-   is the font's Commodore logo (C=), on the text screen and the bitmap alike. */
+/* The Commodore key, which stands for commands as Open-Apple does on the Apple II: OA, wherever a screen
+   names it, is the font's Commodore logo (C=), on the text screen and the bitmap alike. */
 #define OA "\x7F"
 #define CA "\x80"
-#define OA_NAME "Commodore"
 #define MACHINE_NAME "the C64"
 /* Key legends on the bitmap: the next 1, 3 or 6 characters are a key, drawn in the keys' color. */
 #define K1 "\x01"

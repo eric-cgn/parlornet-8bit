@@ -22,8 +22,8 @@
                       program space is full; its low memory has no serial ring).
    Names and key legends
      MACHINE_NAME     "the Apple II", "the C64": in "This game is not on ... yet."
-     OA_NAME          the command key as the text names it: "Open-Apple", "Commodore".
-     OA, CA           the font's characters for the command key ("\x7F") and a second one ("\x80").
+     OA, CA           the font's characters for the command key ("\x7F") and a second one ("\x80"). Every
+                      screen that names the command key shows OA, the key's symbol, and the letter after it.
      K1, K3, K6       in a key legend on the graphics screen, the next 1, 3 or 6 characters are a key, drawn
                       in the keys' color or in bold.
    Key codes (kbd_get)

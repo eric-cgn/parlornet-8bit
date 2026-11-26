@@ -166,7 +166,7 @@ static void start_screen(void)
     setting_line(11, "S", "Settings: ", line_desc());
     setting_line(13, "D", "Display: ", mono ? "monochrome" : "color");
     txt_goto(1, 22);
-    say(OA "-Q: quit to BASIC");
+    say(OA "Q: quit to BASIC");
     if (cfg_number[0])                  /* (P dials the number: the menu says enough) */
         return;
     txt_goto(1, 16);
@@ -178,7 +178,7 @@ static void start_screen(void)
     txt_goto(1, 19);
     sayln("ATDT and the parlor's name and port,");
     txt_goto(1, 20);
-    say("then press " OA_NAME "-P.");
+    say("then press " OA "P.");
 }
 
 /* PARLOR.CFG: 'P', 'C', a version (CFG_VER, one more whenever the layout or the meaning of a byte changes), the
