@@ -285,7 +285,7 @@ static void gw_draw(void)
             c = want(x, y);
             if (c != shown[y][x])
                 draw_square(x, y, c);
-            t_hw[y * N + x] = 7;
+            t_hw[y * N + x] = 3;
         }
     draw_panel();
 }

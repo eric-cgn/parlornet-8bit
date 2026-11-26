@@ -36,4 +36,8 @@
 #define STATUS_Y 176
 #define BUTTON_Y 184
 
+/* The middle of a screen line (320 pixels) as a target's x (pixel x / 2), for a target as wide as the
+   screen (the lobby's rows). */
+#define MID_X2 80
+
 #endif

@@ -75,7 +75,7 @@ static void mc_draw(void)
         hgr_color();
         for (k = 1; k <= 6; ++k) {
             place(me * 7 + k - 1);
-            ui_target(at_x * 4 + 16, at_y + 12, 15, 11, k);
+            ui_target(at_x * 4 + 8, at_y + 12, 8, 12, k);
         }
     }
     was = shown_last;

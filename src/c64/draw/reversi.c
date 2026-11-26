@@ -83,7 +83,7 @@ static void rv_draw(void)
                 hgr_char('1' + y);
             }
             for (x = 0; x < size; ++x)
-                ui_target((x0 + x * 2) * 4 + 8, y0 + y * 16 + 8, 7, 7, y * 16 + x);
+                ui_target((x0 + x * 2) * 4 + 4, y0 + y * 16 + 8, 4, 8, y * 16 + x);
         }
     }
     sq[2] = 0;
