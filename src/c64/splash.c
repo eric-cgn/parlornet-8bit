@@ -1,7 +1,7 @@
 /* ParlorNet on the Commodore 64: the title screen shown at start-up, an overlay (ovl.h). PARLOR over NET in
    the title's block letters (art/splash.txt), a block to a cell: each block a raised tile, each row of
-   blocks a color of its own, warm for PARLOR and cool for NET, on black. In monochrome the rows are grays.
-   main.c keeps it up until a key is pressed. */
+   blocks a color of its own, warm for PARLOR and cool for NET, on black, with the display set to color or
+   monochrome. main.c keeps it up until a key is pressed. */
 #include "machine.h"
 #include "c64.h"
 #include "ovl.h"
@@ -39,7 +39,7 @@ static void word(const unsigned char *const *w, unsigned char row, const unsigne
                     hg_y = (row + r) * 8;
                     hg_w = 1;
                     hg_h = 8;
-                    hg_fg = ui_col(colors[r]);
+                    hg_fg = colors[r];
                     hg_bg = C_BLACK;
                     hgr_color();
                     hgr_blit();
