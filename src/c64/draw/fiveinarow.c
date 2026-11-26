@@ -94,7 +94,7 @@ static void fr_draw(void)
         for (y = 0; y < size; ++y) {
             ui_textn(X0 - 3, Y0 + y * 8, utoa10(y + 1), 2);
             for (x = 0; x < size; ++x)
-                ui_target((X0 + x) * 4 + 4, Y0 + y * 8 + 4, 3, 3, y * size + x);
+                ui_target((X0 + x) * 4 + 2, Y0 + y * 8 + 4, 2, 4, y * size + x);
         }
     }
     for (y = 0; y < size; ++y)

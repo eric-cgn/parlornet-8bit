@@ -196,12 +196,12 @@ static unsigned char poll_mouse(void)
         ptr_place(mx, my);
         spr_on |= 3;
         t_cur = 255;
+        /* A target covers from its center less half its width up to its center plus half, that last
+           not included, so that squares side by side meet without overlapping. */
         for (i = 0; i < t_n; ++i) {
             int dx = (int)(mx >> 1) - t_x[i];
             int dy = (int)my - t_y[i];
-            if (dx < 0) dx = -dx;
-            if (dy < 0) dy = -dy;
-            if (t_hw[i] && dx <= t_hw[i] && dy <= t_hh[i]) {
+            if (t_hw[i] && dx >= -(int)t_hw[i] && dx < t_hw[i] && dy >= -(int)t_hh[i] && dy < t_hh[i]) {
                 t_cur = i;
                 break;
             }

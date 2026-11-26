@@ -61,6 +61,21 @@ static void draw_sq(unsigned char s, char c)
     }
 }
 
+/* A panel button: its words at column x, line y, and target id on their middle, as ui_button puts a
+   button's target, since the words change with the turn. With no words the target is out of use. */
+static void button(unsigned char x, unsigned char y, const char *s, unsigned char id)
+{
+    unsigned char i = ui_find(id), hw = 0;
+    if (*s) {
+        ui_button_draw(x, y, s);
+        hw = (unsigned char)(strlen(s) + 2) << 1;
+    }
+    if (i < t_n) {
+        t_x[i] = (unsigned char)(x << 2) + hw;
+        t_hw[i] = hw;
+    }
+}
+
 static void draw_panel(void)
 {
     unsigned char s, me = flip ? 0 : 1, y;
@@ -85,10 +100,8 @@ static void draw_panel(void)
         shown_b = offer_b;
         ui_textn(PX, 72, "", 14);
         ui_textn(PX, 88, "", 14);
-        if (offer_a[0])
-            ui_button_draw(PX, 72, offer_a);
-        if (offer_b[0])
-            ui_button_draw(PX, 88, offer_b);
+        button(PX, 72, offer_a, ID_A);
+        button(PX, 88, offer_b, ID_B);
     }
 }
 
@@ -110,10 +123,10 @@ static void ck_draw(void)
                     piece_at('.', X0 + c * 2, Y0 + r * 16, mono ? C_LGREY : C_YELLOW);
         for (s = 1; s <= 32; ++s) {
             place_sq(s);
-            ui_target(sq_x * 4 + 8, sq_y + 8, 7, 7, s);
+            ui_target(sq_x * 4 + 4, sq_y + 8, 4, 8, s);
         }
-        ui_target(PX * 4 + 12, 76, 12, 4, ID_A);
-        ui_target(PX * 4 + 24, 92, 24, 4, ID_B);
+        ui_target(PX * 4, 76, 0, 4, ID_A);     /* (put on their words by button) */
+        ui_target(PX * 4, 92, 0, 4, ID_B);
     }
     board_state();
     if (!sel)

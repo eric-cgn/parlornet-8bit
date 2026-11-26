@@ -215,7 +215,7 @@ static void draw_lobby(void)
         strcat(b, tabs[i].who);
         entry(nice_name(tabs[i].type), b, tabs[i].open ? "waiting" : game_for(tabs[i].type) ? "playing"
                                                                                       : "(web)");
-        ui_target(10 + 14 * 7 / 2, row * 8 + 4, 98, 4, ID_TAB + i);
+        ui_target(MID_X2, row * 8 + 4, MID_X2, 4, ID_TAB + i);
         ++row;
         ++n;
     }

@@ -181,9 +181,9 @@ static void gw_draw(void)
         memset(shown_rack, 0xFF, sizeof shown_rack);
         for (y = 0; y < N; ++y)
             for (x = 0; x < N; ++x)
-                ui_target((X0 + x) * 4 + 4, Y0 + 8 * y + 4, 3, 3, y * N + x);
+                ui_target((X0 + x) * 4 + 2, Y0 + 8 * y + 4, 2, 4, y * N + x);
         for (i = 0; i < 7; ++i)
-            ui_target((RACK_X + 2 * i) * 4 + 4, RACK_Y + 4, 3, 4, ID_RACK + i);
+            ui_target((RACK_X + 2 * i) * 4 + 2, RACK_Y + 4, 4, 4, ID_RACK + i);
         ui_button(PX, 120, "Play", ID_PLAY);
         ui_button(PX + 7, 120, "Clear", ID_CLEAR);
         ui_button(PX, 136, "Swap", ID_SWAP);
@@ -195,7 +195,7 @@ static void gw_draw(void)
             c = want(x, y);
             if (c != shown[y][x])
                 draw_square(x, y, c);
-            t_hw[y * N + x] = 3;
+            t_hw[y * N + x] = 2;
         }
     draw_panel();
 }

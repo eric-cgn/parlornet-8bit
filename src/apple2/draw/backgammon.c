@@ -239,6 +239,21 @@ static void play_step(unsigned char k)
     }
 }
 
+/* A panel button: its words at column x, line y, and target id on their middle, as ui_button puts a
+   button's target, since the words change with the turn. With no words the target is out of use. */
+static void button(unsigned char x, unsigned char y, const char *s, unsigned char id)
+{
+    unsigned char i = ui_find(id), hw = 0;
+    if (*s) {
+        ui_button_draw(x, y, s);
+        hw = (unsigned char)((strlen(s) + 2) * 7) >> 2;
+    }
+    if (i < t_n) {
+        t_x[i] = (unsigned char)((x * 7) >> 1) + hw;
+        t_hw[i] = hw;
+    }
+}
+
 /* The panel: names, dice, cube and the two buttons. */
 static void draw_panel(void)
 {
@@ -277,11 +292,8 @@ static void draw_panel(void)
         strcpy(shown_panel, key);
         ui_rect(30, 66, 10, 8, F_BLACK);
         ui_rect(30, 86, 10, 8, F_BLACK);
-        /* (their targets, ID_A and ID_B, are made once, at the full draw) */
-        if (offer_a[0])
-            ui_button_draw(30, 66, offer_a);
-        if (offer_b[0])
-            ui_button_draw(30, 86, offer_b);
+        button(30, 66, offer_a, ID_A);
+        button(30, 86, offer_b, ID_B);
     }
 }
 
@@ -303,8 +315,8 @@ static void bg_draw(void)
         /* the bar: on my checkers there, below the cube in the middle */
         ui_target((mx(13, 2) * 7 + 7) / 2, 104, 3, 12, ID_BAR);
         ui_target((mx(27, 2) + 1) * 7 / 2, 90, 7, 60, ID_OFF);
-        ui_target(30 * 7 / 2 + 21, 70, 21, 4, ID_A);
-        ui_target(30 * 7 / 2 + 21, 90, 21, 4, ID_B);
+        ui_target(30 * 7 / 2, 70, 0, 5, ID_A);     /* (put on their words by button) */
+        ui_target(30 * 7 / 2, 90, 0, 5, ID_B);
     }
     if (g_full)
         nq = 0;
