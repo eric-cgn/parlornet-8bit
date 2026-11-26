@@ -78,12 +78,12 @@ static void panel_offer(void)
     offer_a = offer_b = "";
     if (g_myturn && !(drawer >= 0 && drawer != g_seat)) {
         if (strcmp(phase, "done") == 0) {
-            offer_a = "Done";
+            offer_a = "End turn";
             offer_b = "Undo";
         } else if (npath)
             offer_b = "Undo";
         else
-            offer_b = "Offer draw";
+            offer_b = "Draw";
     }
 }
 
@@ -122,11 +122,11 @@ static void ck_click(unsigned char id)
         if (!word[0])
             return;
         sel = 0;
-        if (is(word, "Done"))
+        if (word[0] == 'E')
             g_end();
         else if (is(word, "Undo"))
             g_undo();
-        else if (word[0] == 'O' && g_move("draw"))
+        else if (word[0] == 'D' && g_move("draw"))
             g_message("Draw offered.");
         return;
     }
@@ -162,21 +162,26 @@ static void ck_click(unsigned char id)
     if (g_reply_more)
         g_message("Jump again with the same piece.");
     else if (g_reply_done)
-        g_message("Done to end the turn, or Undo.");
+        g_message("Your turn's steps are played.");
 }
 
+/* The keys: Esc puts a picked piece back (not in the middle of a jump), OA-D offers a draw, OA-E ends the
+   turn and OA-U takes back a step. */
 static unsigned char ck_key(unsigned char k)
 {
-    k |= 0x20;
-    if (k == 'u') {
-        ck_click(ID_B);
+    if (k == K_ESC) {
+        if (!sel || npath)
+            return 0;
+        sel = 0;
+        g_message("");
+        redraw();
         return 1;
     }
-    if (k == 'd') {
-        ck_click(ID_A);
-        return 1;
-    }
-    return 0;
+    if (k != (U_OA | 'D') && k != (U_OA | 'E') && k != (U_OA | 'U'))
+        return 0;
+    sel = 0;
+    g_cmd(k == (U_OA | 'D') ? "/draw" : k == (U_OA | 'E') ? "/end" : "/undo");
+    return 1;
 }
 
 /* A draw offered by the other player, waiting for the player's answer: its dialog's words, or the answer. */
@@ -195,5 +200,5 @@ static unsigned char ck_offer(unsigned char answer)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_checkers = {"checkers", "Checkers", ck_begin, ck_line, ck_draw, ck_click, ck_key,
-                                "Piece, then square; " K1 "D done, " K1 "U undo", 0, 0, 0, ck_offer};
+                                OA "D draw, " OA "E end, " OA "U undo", 0, 0, 0, ck_offer};
 #pragma rodata-name (pop)

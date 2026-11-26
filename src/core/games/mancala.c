@@ -53,10 +53,11 @@ static void mc_click(unsigned char id)
     g_move(t);
 }
 
+/* 1 to 6 move the pointer to that pit, and Return sows it. */
 static unsigned char mc_key(unsigned char k)
 {
-    if (k >= '1' && k <= '6') {
-        mc_click(k - '0');
+    if (k >= '1' && k <= '6' && (k = ui_find(k - '0')) != 255) {
+        ui_point(k);
         return 1;
     }
     return 0;
@@ -64,5 +65,5 @@ static unsigned char mc_key(unsigned char k)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_mancala = {"mancala", "Mancala", mc_begin, mc_line, mc_draw, mc_click, mc_key,
-                               K3 "1-6 or click: play that pit"};
+                               K3 "1-6 point at a pit"};
 #pragma rodata-name (pop)

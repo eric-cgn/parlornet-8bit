@@ -1,8 +1,9 @@
 /* ParlorNet: Cannon Fire (docs/types/cannonfire-1.md), 2 to 8 tanks. The parlor runs all the physics; this
    shows the terrain (Z lines), the tanks (K), the wind (N) and the shots, and sends the player's aim. The aim
    is an angle (0 towards the right, 90 straight up, 180 towards the left) and a power (0 to 100): the
-   buttons change them by 5, the keys , and . (angle) and - and = (power) by 1. Fire shoots; Move drives the
-   tank left or right as far as one move goes (four a game). Over each tank are its letter and its health
+   buttons change them by 5, the keys < and > (angle) and - and + (power) by 10. Fire shoots, and is the first
+   button, where the pointer starts; Drive< and Drive> (or [ and ]) drive the tank left or right as far as one
+   move goes (four a game). Over each tank are its letter and its health
    (what is left of its 100 hit points, "87%"); the line under the arena says which letter is the player's.
 
    The machine draws it (draw/cannonfire.c, included below: cf_draw, cf_event, which shows a shot's events
@@ -129,20 +130,22 @@ static void cf_click(unsigned char id)
     }
 }
 
+/* < and > turn the barrel by 10, + and - change the power by 10, and [ and ] drive the tank. */
 static unsigned char cf_key(unsigned char k)
 {
     switch (k) {
-    case ',': set_aim(1, 0); return 1;
-    case '.': set_aim(-1, 0); return 1;
-    case '-': set_aim(0, -1); return 1;
-    case '=': case '+': set_aim(0, 1); return 1;
-    case 'f': case 'F': cf_click(ID_FIRE); return 1;
+    case '<': set_aim(10, 0); return 1;
+    case '>': set_aim(-10, 0); return 1;
+    case '-': set_aim(0, -10); return 1;
+    case '+': set_aim(0, 10); return 1;
+    case '[': cf_click(ID_ML); return 1;
+    case ']': cf_click(ID_MR); return 1;
     }
     return 0;
 }
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_cannonfire = {"cannonfire", "Cannon Fire", cf_begin, cf_line, cf_draw, cf_click, cf_key,
-                                  K3 ", . angle " K3 "- = power " K1 "F fire 87%=health", 1,
+                                  K3 "< > angle " K3 "- + power " K3 "[ ] drive", 1,
                                   cf_event};
 #pragma rodata-name (pop)

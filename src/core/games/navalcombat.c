@@ -156,7 +156,26 @@ static void nc_click(unsigned char id)
     g_move(t);
 }
 
+/* Esc lets go of a picked end, OA-G places the rest of the fleet at random, OA-U takes back the last ship
+   and OA-Z every ship. */
+static unsigned char nc_key(unsigned char k)
+{
+    if (k == K_ESC) {
+        if (sel < 0)
+            return 0;
+        sel = -1;
+        g_message("");
+        redraw();
+        return 1;
+    }
+    k = k == (U_OA | 'G') ? ID_RANDOM : k == (U_OA | 'U') ? ID_UNDO : k == (U_OA | 'Z') ? ID_CLEAR : 0;
+    if (!k)
+        return 0;
+    nc_click(k);
+    return 1;
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct game g_navalcombat = {"navalcombat", "Naval Combat", nc_begin, nc_line, nc_draw, nc_click, 0,
+const struct game g_navalcombat = {"navalcombat", "Naval Combat", nc_begin, nc_line, nc_draw, nc_click, nc_key,
                                    "Place: one end, the other. Then fire", 1};
 #pragma rodata-name (pop)

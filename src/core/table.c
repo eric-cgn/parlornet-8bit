@@ -347,13 +347,14 @@ void g_title(void)
     ui_ink(F_WHITE, F_BLACK);
 }
 
+/* Chat, Help, Resign and Lobby, in that order, Resign only while the player plays. */
 static void frame_buttons(void)
 {
-    ui_button(0, BUTTON_Y, "Lobby", B_LOBBY);
+    ui_button(0, BUTTON_Y, "Chat", B_CHAT);
+    ui_button(7, BUTTON_Y, "Help", B_HELP);
     if (g_seat >= 0 && g_started && !g_over)
-        ui_button(8, BUTTON_Y, "Resign", B_RESIGN);
-    ui_button(17, BUTTON_Y, "Chat", B_CHAT);
-    ui_button(24, BUTTON_Y, "Keys", B_HELP);
+        ui_button(14, BUTTON_Y, "Resign", B_RESIGN);
+    ui_button(23, BUTTON_Y, "Lobby", B_LOBBY);
 }
 
 /* The buttons drawn again, unlit while the command line is open, without making their targets again. */
@@ -636,23 +637,11 @@ static void keys_help(void)
         ui_status("");
     } else {
         g_message(K6 "Arrows," K6 "Return:play " OA "T chat " K3 "Esc:lobby");
-#if !MACHINE_SERIAL
-        ui_status(OA "R resign " OA "D display");
-#else
-        ui_status(OA "R resign " OA "D display " OA "C console");
-#endif
+        ui_status(OA "R resign " OA "Q sign out " K1 "/ command");
     }
     help_page ^= 1;
 }
 
-static void set_display(void)
-{
-    mono ^= 1;
-    q_set("PRF SET a2disp");
-    q_add(mono ? "mono" : "colour");
-    net_req();
-    draw_all();
-}
 
 /* After a command (frame.h): what it did comes as events, and its answer goes on the message line. Returns
    what table_play returns for a command that leaves the table, or 255 to stay. */
@@ -706,7 +695,7 @@ void __fastcall__ g_cmd(const char *line)
 /* Play at a table. Returns 1 for the console, 0 for the lobby, 3 when signed out (/quit). */
 unsigned char table_play(unsigned int id)
 {
-    unsigned char k;
+    unsigned char k, back;
     unsigned int last;
     g_table = id;
     g_seat = -1;
@@ -755,7 +744,10 @@ unsigned char table_play(unsigned int id)
             if (G && G->hover)
                 G->hover(t_cur < t_n ? t_id[t_cur] : 255);
         }
-        if (k && chat_run)
+        if (!k)
+            goto idle;
+        last = ticks;
+        if (chat_run)
             g_message("");
         if (k == U_CLICK) {
             k = ui_clicked;
@@ -764,49 +756,58 @@ unsigned char table_play(unsigned int id)
             if (k == B_RESIGN)
                 k = U_OA | 'R';
             else if (k == B_CHAT)
-                chat();
+                k = U_OA | 'T';
             else if (k == B_HELP)
-                keys_help();
-            else if (G && k < 240)
-                G->click(k);
-            if (k != (U_OA | 'R')) {
-                last = ticks;
+                k = '?';
+            else {
+                if (G && k < 240)
+                    G->click(k);
                 continue;
             }
         }
-        if (k) {
-            if (k == K_RET && offer_away) {
-                offer_away = 0;
-                ui_retkey = 0;
-                offer_look();
-                continue;
-            }
-            if (k == K_ESC)
-                return 0;
-            if (k == '/') {
-                k = after_cmd(cmd_line(g_table, frame_lit));
-                if (k != 255)
-                    return k;
-                last = ticks;
-                continue;
-            }
-            if (k == (U_OA | 'C'))
-                return 1;
-            if (k == (U_OA | 'Q') || k == (U_OA | 'R')) {
-                k = after_cmd(cmd_send(k == (U_OA | 'Q') ? 0 : g_table, k == (U_OA | 'Q') ? "/quit" : "/resign"));
-                if (k != 255)
-                    return k;
-            } else if (k == (U_OA | 'T'))
-                chat();
-            else if (k == (U_OA | 'D'))
-                set_display();
-            else if (k == (U_OA | 'L'))
-                refresh();
-            else if (G && G->key)
-                G->key(k);
-            last = ticks;
+        if (k == K_RET && offer_away) {
+            offer_away = 0;
+            ui_retkey = 0;
+            offer_look();
             continue;
         }
+        /* The game's keys first, then the table's: Esc (or a pointer's second button) cancels the game's
+           pick when there is one, and Esc alone goes back to the lobby when there is none. */
+        back = k == K_BACK;
+        if (back)
+            k = K_ESC;
+        if (G && G->key && G->key(k))
+            continue;
+        if (back)
+            continue;
+        if (k == K_ESC)
+            return 0;
+        if (k == '/') {
+            k = after_cmd(cmd_line(g_table, frame_lit));
+            if (k != 255)
+                return k;
+        } else if (k == '?')
+            keys_help();
+        else if (k == (U_OA | 'T') || k == K_TAB)
+            chat();
+        else if (k == (U_OA | 'L'))
+            refresh();
+        else if (k == (U_OA | 'Q') || k == (U_OA | 'R')) {
+            k = after_cmd(cmd_send(k == (U_OA | 'Q') ? 0 : g_table, k == (U_OA | 'Q') ? "/quit" : "/resign"));
+            if (k != 255)
+                return k;
+        } else if (k > U_OA && k < U_OA + 'Z' + 1) {
+            /* a letter that means nothing in this game */
+            static char b[40];
+            strcpy(b, OA "H does nothing in ");
+            b[1] = k & 0x7F;
+            strcat(b, G ? G->name : (const char *)"this game");
+            strcat(b, ".");
+            g_message(b);
+            ui_status("Press ? to see the keys.");
+        }
+        continue;
+idle:
         if (chat_run && ticks - chat_at > 180)
             chat_step();
         /* While waiting for others, ask what happened every 3 seconds; on our own move, every 15. After

@@ -122,7 +122,7 @@ static void rt_draw(void)
                 ui_target((1 + 3 * i) * 4 + mid, TY + r * 16 + 4, 6, 4, r * SETMAX + i);
         for (i = 0; i < MAXR; ++i)
             ui_target((1 + (i % 13) * 3) * 4 + mid, RY + (i / 13) * 8 + 4, 6, 4, ID_RACK + i);
-        ui_button(0, BTY, "Done", ID_DONE);
+        ui_button(0, BTY, "End", ID_DONE);
         ui_button(6, BTY, "Undo", ID_UNDO);
         ui_button(12, BTY, "Reset", ID_RESET);
         ui_button(19, BTY, "New", ID_NEW);

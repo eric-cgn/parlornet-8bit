@@ -303,8 +303,8 @@ scan:
         jsr     mouse
         lda     _has_mouse
         beq     :+
-        lda     iz2             ; with the mouse in port 1, its buttons are not a joystick
-        and     #$10
+        lda     iz2             ; with the mouse in port 1, its buttons are not a joystick: the left one
+        and     #$11            ; is fire ($10), the right one up ($01)
         sta     _mouse_btn
         lda     #0
         sta     iz2

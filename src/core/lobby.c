@@ -346,9 +346,9 @@ refresh:
         }
         if (k == K_ESC)
             continue;
-        if (k == (U_OA | 'D')) {
+        if (k == (U_OA | 'N')) {        /* (no game uses N) */
             k = U_CLICK;
-            ui_clicked = B_DISPLAY;
+            ui_clicked = B_NEW;
         }
         if (k == U_CLICK) {
             k = ui_clicked;

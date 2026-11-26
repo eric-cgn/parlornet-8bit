@@ -95,8 +95,8 @@ static unsigned char from_has_moves(unsigned char p)
     return 0;
 }
 
-/* The buttons, by the phase of the turn: Roll (and Double, when the cube may be turned), Done (once every
-   die is played) and Undo. A double and an offer to resign are answered in their dialogs (bg_offer). */
+/* The buttons, by the phase of the turn: Roll (and Double, when the cube may be turned), End turn (once
+   every die is played) and Undo. A double and an offer to resign are answered in their dialogs (bg_offer). */
 static void panel_offer(void)
 {
     offer_a = offer_b = "";
@@ -107,7 +107,7 @@ static void panel_offer(void)
         if (ca[view])
             offer_b = "Double";
     } else if (strcmp(phase, "move") == 0) {
-        offer_a = nd && m_n ? "" : "Done";     /* (a die no step can use leaves the turn complete) */
+        offer_a = nd && m_n ? "" : "End turn";  /* (a die no step can use leaves the turn complete) */
         offer_b = "Undo";
     }
 }
@@ -166,7 +166,7 @@ static void bg_click(unsigned char id)
             g_move("roll");
         else if (is(word, "Double"))
             g_move("double");
-        else if (is(word, "Done"))
+        else if (word[0] == 'E')
             g_end();
         else if (is(word, "Undo"))
             g_undo();
@@ -216,30 +216,42 @@ static void bg_click(unsigned char id)
     sel = 0;
     g_move(tok);
     if (g_reply_done)
-        g_message("All dice played: Done, or Undo.");
+        g_message("Your dice are played.");
 }
 
+/* The keys: Esc puts a picked checker back, OA-D doubles, OA-E ends the turn, OA-U takes back a step and OA-H
+   moves the home board to the other side (kept on the parlor as bghome). */
 static unsigned char bg_key(unsigned char k)
 {
-    k |= 0x20;
-    if (k == 'h') {
+    if (k == K_ESC) {
+        if (!sel)
+            return 0;
+        ui_hide();
+        mark(0);
+        ui_show();
+        sel = 0;
+        g_message("");
+        return 1;
+    }
+    if (k == (U_OA | 'H')) {
         left ^= 1;
         q_set("PRF SET bghome");
         q_add(left ? "left" : "right");
         net_req();
         g_redraw();
-        g_message(left ? "Home board on the left (" K1 "H: right)." : "Home board on the right (" K1 "H: left).");
+        g_message(left ? "Your home board is on the left now." : "Your home board is on the right now.");
         return 1;
     }
-    if (k == 'u') {
-        bg_click(ID_B);
-        return 1;
+    if (k != (U_OA | 'D') && k != (U_OA | 'E') && k != (U_OA | 'U'))
+        return 0;
+    if (sel) {
+        ui_hide();
+        mark(0);
+        ui_show();
+        sel = 0;
     }
-    if (k == 'd' || k == 'r') {
-        bg_click(ID_A);
-        return 1;
-    }
-    return 0;
+    g_cmd(k == (U_OA | 'D') ? "/double" : k == (U_OA | 'E') ? "/end" : "/undo");
+    return 1;
 }
 
 /* "ann", then the rest of a sentence, into dlg_words. */
@@ -284,6 +296,6 @@ static unsigned char bg_offer(unsigned char answer)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_backgammon = {"backgammon", "Backgammon", bg_begin, bg_line, bg_draw, bg_click, bg_key,
-                                  K1 "R roll, " K1 "D done, " K1 "U undo, " K1 "H home side", 0,
+                                  OA "D double, " OA "E end, " OA "U undo, " OA "H home", 0,
                                   bg_event, 0, bg_offer};
 #pragma rodata-name (pop)

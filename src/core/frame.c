@@ -251,17 +251,22 @@ static unsigned char cmd_reply(void)
         r_line[i] += r_line[i][3] ? 4 : 3;      /* "INF text" -> "text"; "INF" alone, an empty line */
     if (!r_n)
         return C_SENT;
-    if (r_n == 1 && strlen(r_line[0]) < sizeof cmd_said) {
-        strcpy(cmd_said, r_line[0]);
-        return C_SENT | C_SAID;
+    /* lines that fit the message line and the status line together, joined; more as pages */
+    cmd_said[0] = 0;
+    for (i = 0; i < r_n && strlen(cmd_said) + strlen(r_line[i]) < sizeof cmd_said - 1; ++i) {
+        if (i)
+            strcat(cmd_said, " ");
+        strcat(cmd_said, r_line[i]);
     }
+    if (i == r_n)
+        return C_SENT | C_SAID;
     pages(cmd, r_line, r_n);
     return C_SENT | C_REDRAW;
 }
 
 unsigned char __fastcall__ cmd_send(unsigned int table, const char *s)
 {
-    static const char *const own[] = {"help", "leave", "practice"};
+    static const char *const own[] = {"help", "leave", "tutorial"};
     static unsigned char i, n;
     if (s != cmd)
         strcpy(cmd, s);

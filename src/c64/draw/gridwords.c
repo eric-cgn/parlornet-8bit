@@ -185,9 +185,9 @@ static void gw_draw(void)
         for (i = 0; i < 7; ++i)
             ui_target((RACK_X + 2 * i) * 4 + 2, RACK_Y + 4, 4, 4, ID_RACK + i);
         ui_button(PX, 120, "Play", ID_PLAY);
-        ui_button(PX + 7, 120, "Clear", ID_CLEAR);
-        ui_button(PX, 136, "Swap", ID_SWAP);
-        ui_button(PX + 7, 136, "Pass", ID_PASS);
+        ui_button(PX + 7, 120, "Pass", ID_PASS);
+        ui_button(PX, 136, "Exchange", ID_SWAP);
+        ui_button(PX + 11, 136, "Cancel", ID_CLEAR);
         legend();
     }
     for (y = 0; y < N; ++y)

@@ -274,9 +274,9 @@ static void gw_draw(void)
         for (i = 0; i < 7; ++i)
             ui_target((RACK_PX + RACK_W * i + RACK_W / 2) / 2, RACK_Y + 5, 2, 5, ID_RACK + i);
         ui_button(30, 103, "Play", ID_PLAY);
-        ui_button(30, 114, "Clear", ID_CLEAR);
-        ui_button(30, 125, "Swap", ID_SWAP);
-        ui_button(30, 136, "Pass", ID_PASS);
+        ui_button(30, 114, "Pass", ID_PASS);
+        ui_button(30, 125, "Exchange", ID_SWAP);
+        ui_button(30, 136, "Cancel", ID_CLEAR);
         if (!mono)
             legend();
     }

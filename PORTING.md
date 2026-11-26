@@ -93,7 +93,7 @@ The serial driver is where most of a port's trouble will be. These are the lesso
 - **Keep pieces round and checkers readable.** Backgammon shows four checkers on a tall point and +n for the rest (two and +n on the bar).
 - **Keep the frame's lines visible.** The message line shows the bot's greeting when a table opens, what the players say, and who joined with which program ("bob joined with GameMaster 1.0.0 + ParlorNet 0.5 on a Macintosh Plus"). A board must not draw over it.
 - **Use the same target ids.** The lab's plans and the orchestrator click by id, so they work on every machine.
-- **Offer a monochrome look.** D on the start screen and OA-D at a table switch to it, for monochrome monitors and black-and-white TVs.
+- **Offer a monochrome look.** D on the start screen and the lobby's Display button switch to it, for monochrome monitors and black-and-white TVs.
 
 ## Text on the screen
 

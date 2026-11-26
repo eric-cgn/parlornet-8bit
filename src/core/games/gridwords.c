@@ -4,10 +4,10 @@
    Click the empty square a word starts on (a second click turns it from across to down), then type the
    letters of your rack, or click its tiles: each goes on the next empty square along the line, past the
    tiles already there, which join the word, as do the tiles just before and after. A letter you do not
-   hold uses a blank, if you have one. Delete takes the last tile back, Clear all of them; Return or Play
-   sends the word (PLAY x y H|V word, the whole word from its first square). As the tiles are laid, the
-   parlor's CHK says what the play would score. Swap marks tiles to exchange and sends them with a second
-   Swap; Pass passes. The points of the tile under the pointer, on the board or the rack, are on the message
+   hold uses a blank, if you have one. Delete takes the last tile back, Cancel (or Esc) all of them; Return or
+   Play sends the word (PLAY x y H|V word, the whole word from its first square). As the tiles are laid, the
+   parlor's CHK says what the play would score. Exchange (or OA-X) marks tiles to put back and sends them with
+   a second Exchange; Pass (or OA-P) passes, after its dialog. The points of the tile under the pointer, on the board or the rack, are on the message
    line, and OA-V shows every letter's points, as the table's TIL lines give them.
 
    The machine draws it (draw/gridwords.c, included below: gw_draw, redraw and values_chart), each square as
@@ -359,7 +359,7 @@ static void gw_click(unsigned char id)
             clear_play();
             swap_mode = 1;
             swap_marks = 0;
-            g_message("Click the tiles to swap, then Swap.");
+            g_message("Pick tiles to put back, then Exchange.");
             redraw();
             break;
         }
@@ -387,10 +387,23 @@ static void gw_click(unsigned char id)
     }
 }
 
+/* The keys: OA-V shows the letters' points, Esc puts the tiles laid back on the rack (or ends an
+   exchange), OA-P passes (its dialog first) and OA-X starts an exchange. On your turn letters lay tiles,
+   Delete takes the last one back and Return plays the word. */
 static unsigned char gw_key(unsigned char k)
 {
     if (k == (U_OA | 'V')) {
         values_chart();
+        return 1;
+    }
+    if (k == K_ESC) {
+        if (!swap_mode && !np && sx < 0)
+            return 0;
+        gw_click(ID_CLEAR);
+        return 1;
+    }
+    if (k == (U_OA | 'P') || k == (U_OA | 'X')) {
+        gw_click(k == (U_OA | 'P') ? ID_PASS : ID_SWAP);
         return 1;
     }
     if (!g_myturn)
@@ -446,5 +459,5 @@ static void gw_hover(unsigned char id)
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_gridwords = {"gridwords", "Grid Words", gw_begin, gw_line, gw_draw, gw_click, gw_key,
-                                 "Point at a tile: its points. " OA "V: all", 0, 0, gw_hover};
+                                 OA "P pass, " OA "X exchange, " OA "V points", 0, 0, gw_hover};
 #pragma rodata-name (pop)

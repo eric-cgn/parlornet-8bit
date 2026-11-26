@@ -35,7 +35,7 @@ void __fastcall__ pages(const char *title, char **lines, unsigned char n);
 /* The command line: "/" typed on the message line, where every key types until Return sends the line or Esc
    clears it. lit draws what shows keys (the buttons and the status line), unlit while the line is open
    (ui_unlit). table is where it was typed, or 0 in the lobby. cmd_send runs a line as if it had been typed:
-   CMD [table] /line, or the program's own screen for /help, /leave and /practice. A reply of one line of up
+   CMD [table] /line, or the program's own screen for /help, /leave and /tutorial. A reply of one line of up
    to 80 characters goes into cmd_said for the message line and the status line; a longer one is shown as
    pages. A confirmation (DLG) opens its
    dialog, and Yes sends the confirmed form. The flags returned say what happened. */
@@ -45,7 +45,7 @@ void __fastcall__ pages(const char *title, char **lines, unsigned char n);
 #define C_SENT 4                        /* a command went to the parlor: what it did comes as events */
 #define C_HELP 8                        /* /help */
 #define C_LEAVE 16                      /* /leave */
-#define C_PRACTICE 32                   /* /practice */
+#define C_TUTORIAL 32                   /* /tutorial */
 #define C_OUT 64                        /* signed out (/quit, confirmed) */
 #define C_CLEARED 128                   /* Esc cleared the line */
 extern char cmd_said[81];

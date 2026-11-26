@@ -209,6 +209,8 @@ static unsigned char poll_mouse(void)
     }
     if (mouse_btn && !mouse_was) {
         mouse_was = 1;
+        if (mouse_btn & 1)              /* the right button: the second button, which cancels */
+            return K_BACK;
         if (t_cur < t_n) {
             ui_clicked = t_id[t_cur];
             return U_CLICK;
