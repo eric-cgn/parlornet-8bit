@@ -7,14 +7,15 @@
 ; Seven color pixels are 28 dots, exactly four bytes, so the program lays its boards out in groups of 28
 ; dots, which are drawn a whole byte at a time (d_place, d_column). A text column is 14 dots, two bytes.
 ;
-; The kit lives in the language card's RAM, bank 1 ($D000-$DFFF), which nothing else uses: the auxiliary
-; card's under ProDOS and the main card's on the self-booting disk. The loaders put it there (boot.s,
-; prodsys.s). Its entries are the jumps at its start, which hgr.s calls through kcall, switching bank 1
-; in and bank 2, where the overlays are, back out. While bank 1 is in, an overlay's $D000-$DFFF cannot
-; be seen, so what the kit reads from the caller is in the resident program or the parameter area below
-; ($0200-$03CE, which nothing else uses), apart from the Hi-Res pictures of d_blit, which it reads
-; through kfetch (hgr.s). The kit polls the clock (tick_poll) often enough that no tick is missed, at
-; most a few thousand cycles apart, and no more often.
+; The kit runs in the auxiliary memory at $0800, with the auxiliary memory switched in for reading and
+; writing (RAMRD, RAMWRT). The loaders put it at $2800 and the program copies it there at start-up
+; (dhr_install, hgr.s), with the games' Double Hi-Res masks after it (AUXART). Its entry is at its start,
+; which hgr.s's kcall calls with the entry's number in X, after copying the parameters below ($0200 on)
+; into the auxiliary memory. What else it reads from the program is in the zero page (hg_*, zka, zmono),
+; which RAMRD does not move, or copied to the same address in the auxiliary memory at start-up (the font,
+; the line tables, and the code that switches memory, MIRROR). The language card is not moved either, so
+; it reads an overlay's Hi-Res pictures as they are. The kit polls the clock (ktick) often enough that no
+; tick is missed, at most a few thousand cycles apart, and no more often.
 ;
 ; The auxiliary page is reached through 80STORE and HIRES, which kcall turns on: with both on, PAGE2
 ; ($C055) puts the auxiliary memory at $2000-$3FFF (and $0400-$07FF) and $C054 the main memory, without
@@ -27,11 +28,12 @@
 
         .setcpu "6502"
         .importzp       ptr1, ptr2, tmp1, tmp2, tmp3, tmp4
-        .import         _hgr_ylo, _hgr_yhi, _font, _tick_poll, _mono, kfetch
-        .import         _hg_x, _hg_y, _hg_w, _hg_h, _hg_p, _hg_src, _hg_px, _hg_fg, _hg_bg, _hg_xor
-        .import         _hg_bold, _hg_key
+        .import         _hgr_ylo, _hgr_yhi, _font, ktick
+        .importzp       _hg_x, _hg_y, _hg_w, _hg_h, _hg_p, _hg_src, _hg_px, _hg_fg, _hg_bg, _hg_xor
+        .importzp       _hg_bold, _hg_key, zka, zmono
         .export         _dl_x, _dl_y, _dl_w, _dl_h, _dl_n, _dl_m, _dl_ms, _dl_ce, _dl_co, _dl_sx, _dl_buf
-        .export         _dl_cn, _dl_col
+        .export         _dl_cn, _dl_col, _dl_sh, _dl_v
+        .exportzp       PARMN
 
 AUXON   = $C055                 ; PAGE2 with 80STORE: the auxiliary page
 MAINON  = $C054
@@ -53,30 +55,32 @@ _dl_co: .res    4               ; and on odd lines
 _dl_sx: .res    2               ; d_glide: the sprite's first dot
 _dl_cn: .res    1               ; d_column: how many places
 _dl_col:.res    8               ; and their kinds
+_dl_sh: .res    1               ; d_num: where a single digit goes
+_dl_v:  .res    1               ; d_num, d_pips: the number
+PARMN   = * - _dl_x                 ; (the parameters' bytes, which kcall gives the kit)
 _dl_buf:.res    384             ; the masks, d_types's kinds, and for d_pxline a line of 140 colors
 
         .segment "ZEROPAGE"
 mp:     .res    2               ; a mask's line
 po:     .res    4               ; a line's 4 bytes for a group
 pt:     .res    1
+kp:     .res    2               ; the kinds of place (d_types)
 
 ; ---------------------------------------------------------------------------------------------------
         .segment "DHRKIT"
 
-; The entries, three bytes apart (hgr.s, dhr.h).
-        jmp     d_clear         ; 0
-        jmp     d_rect          ; 3
-        jmp     d_blit          ; 6
-        jmp     d_char          ; 9
-        jmp     d_vline         ; 12
-        jmp     d_hline         ; 15
-        jmp     d_ptr           ; 18
-        jmp     d_place         ; 21
-        jmp     d_glide         ; 24
-        jmp     d_unglide       ; 27
-        jmp     d_pxline        ; 30
-        jmp     d_types         ; 33
-        jmp     d_column        ; 36
+; The entry, which kcall (hgr.s) calls with the entry's number in X and its A in zka.
+        lda     kth,x
+        pha
+        lda     ktl,x
+        pha
+        lda     zka
+        rts
+; (0 to 6 hgr.s's, from 7 on dhr.h's)
+ktl:    .lobytes d_clear-1, d_rect-1, d_blit-1, d_char-1, d_vline-1, d_hline-1, d_ptr-1, d_place-1
+        .lobytes d_glide-1, d_unglide-1, d_pxline-1, d_types-1, d_column-1, d_num-1, d_pips-1
+kth:    .hibytes d_clear-1, d_rect-1, d_blit-1, d_char-1, d_vline-1, d_hline-1, d_ptr-1, d_place-1
+        .hibytes d_glide-1, d_unglide-1, d_pxline-1, d_types-1, d_column-1, d_num-1, d_pips-1
 
 ; Each color's byte for a byte k of the line, by k mod 4: colpat + color * 4 + k mod 4.
 colpat: .repeat 64, i
@@ -143,7 +147,7 @@ clr8:   lda     #0
         txa
         and     #$0F
         bne     :+
-        jsr     _tick_poll
+        jsr     ktick
 :       lda     #0
         jmp     @lp
 @done:  rts
@@ -201,7 +205,7 @@ rc_line:
         lda     rp+3,x
         sta     tmp4
         jsr     rc_fill
-        jsr     _tick_poll
+        jsr     ktick
         ldx     tmp2
         inx
         dec     tmp3
@@ -265,7 +269,7 @@ lfg:    .byte   $FF
 lbg:    .byte   $FF
 
 d_char: pha
-        jsr     _tick_poll
+        jsr     ktick
         pla
         cmp     #$7F
         bne     :+
@@ -420,10 +424,10 @@ d_blit: lda     _hg_src
         lda     _hg_src+1
         sta     ptr2+1
         ldy     #0
-        jsr     kfetch
+        lda     (ptr2),y
         sta     bw
         iny
-        jsr     kfetch
+        lda     (ptr2),y
         sta     bh
         lda     ptr2
         clc
@@ -447,7 +451,7 @@ bl_col: tya
         bcs     bl_skip
         sta     tmp1
         sty     tmp2
-        jsr     kfetch
+        lda     (ptr2),y
         and     #$7F
         sta     tmp3
         and     #15
@@ -474,13 +478,13 @@ bl_skip:
         sta     ptr2
         bcc     :+
         inc     ptr2+1
-:       jsr     _tick_poll
+:       jsr     ktick
         ldx     bln
         inx
         dec     bh
         jmp     bl_line
 bl_done:
-        jmp     _tick_poll
+        jmp     ktick
 bl_put: ldy     _hg_xor
         beq     :+
         ldy     tmp1
@@ -566,7 +570,7 @@ d_vline:
 
 ; Dots hd0 to hd1 of line X.
 hspan:  stx     hln
-        lda     _mono
+        lda     zmono
         bne     :+
         lda     hd0
         and     #$FC
@@ -827,14 +831,14 @@ sd_lay: stx     tmp3
         cpx     sn
         bcc     sd_lay
         jsr     wr5
-        jsr     _tick_poll      ; (a line takes up to 1,000 cycles: no tick is missed)
+        jsr     ktick      ; (a line takes up to 1,000 cycles: no tick is missed)
         inc     sr
         lda     sr
         cmp     sh
         bcs     sd_done
         jmp     sd_line
 sd_done:
-        jmp     _tick_poll
+        jmp     ktick
 
 ; Put back what slot X's sprite covered.
 spr_back:
@@ -989,7 +993,7 @@ d_ptr:  ldx     #0
         lda     _hg_px+1
         rol     a
         sta     sx+1
-        lda     _mono
+        lda     zmono
         bne     :+
         lda     sx
         and     #$FC
@@ -1086,12 +1090,13 @@ d_unglide:
 ; d_place takes its layers from dl_n, dl_m, dl_ms, dl_ce and dl_co, and draws dl_w groups from dl_x and
 ; dl_h lines from dl_y. When no mask moves, a line is worked out once for even lines and once for odd ones.
 ;
-; d_types takes up to 10 kinds of place of 12 lines from dl_buf (13 bytes each: the layers, + $80 when it
-; must not be kept and + $40 when a color changes with the line's parity, then for each layer its mask as a place in dl_buf in 4 bytes, $FF for every dot, its
-; stride and its colors, even + 16 * odd), and forgets what d_column kept. d_column draws dl_cn places
-; down from line dl_y in group dl_x, of the kinds listed in dl_col. The first 8 kinds are kept once worked
-; out, for lines of the same parity (or any, when their colors do not change with it), so that a board's
-; many places of the same kind are only stored.
+; d_types takes a table of up to 10 kinds of place of 12 lines, in the auxiliary memory with the kit, at
+; dl_m[0] (17 bytes each: the layers, + $80 when it must not be kept and + $40 when a color
+; changes with the line's parity, then for each layer its mask, 0 for every dot, its stride and its colors,
+; even + 16 * odd), and forgets what d_column kept. d_column draws dl_cn places down from line dl_y in group
+; dl_x, of the kinds listed in dl_col. The first 8 kinds are kept once worked out, for lines of the same
+; parity (or any, when their colors do not change with it), so that a board's many places of the same kind
+; are only stored.
 NTY     = 10
 ln_:    .res    1               ; the layers
 lml:    .res    4               ; each one's mask line (high byte 0: every dot)
@@ -1108,7 +1113,6 @@ poff:   .res    1
 pcnt:   .res    1
 pln:    .res    1
 ppar:   .res    1
-ktypes: .res    13 * NTY
 ctag:   .res    6               ; what each slot keeps: $FF nothing, else its kind * 4 and the lines it is
                                 ; good for, 0 even, 1 odd, 2 any
 ; The 6 slots, 48 bytes each: kinds 0 to 5, and 6 and 7 in the slots of 4 and 5. They are in the
@@ -1208,7 +1212,7 @@ prun:   lda     lmov
         lda     pln
         and     #7
         bne     :+
-        jsr     _tick_poll
+        jsr     ktick
 :       inc     pln
         dec     pcnt
         bne     @run
@@ -1233,7 +1237,7 @@ prun:   lda     lmov
         lda     pln
         and     #7
         bne     :+
-        jsr     _tick_poll
+        jsr     ktick
 :       inc     pln
         dec     pcnt
         bne     @line
@@ -1435,60 +1439,42 @@ stw:    ldy     poff
         rts
 
 d_types:
-        ldx     #13 * NTY - 1
-:       lda     _dl_buf,x
-        sta     ktypes,x
-        dex
-        bne     :-
-        lda     _dl_buf
-        sta     ktypes
+        lda     _dl_m
+        sta     kp
+        lda     _dl_m+1
+        sta     kp+1
         lda     #$FF
         ldx     #5
 :       sta     ctag,x
         dex
         bpl     :-
         rts
-koff:   .repeat NTY, k          ; each kind's place in ktypes
-        .byte   13 * k
+koff:   .repeat NTY, k          ; each kind's place in the table
+        .byte   17 * k
         .endrepeat
 
-; The layers of kind X (ktypes).
+; The layers of kind X (the table at kp).
 tylay:  ldy     koff,x
-        lda     ktypes,y
+        lda     (kp),y
         and     #$0F
         sta     ln_
         ldx     #0
 @lp:    cpx     ln_
         bcs     @done
         iny
-        lda     ktypes,y        ; the mask: dl_buf + 4 * it, or every dot
-        cmp     #$FF
-        bne     :+
-        lda     #0
-        sta     lmh,x
-        beq     @st
-:       sta     tmp2
-        lda     #0
-        asl     tmp2
-        rol     a
-        asl     tmp2
-        rol     a
-        sta     tmp3
-        lda     tmp2
-        clc
-        adc     #<_dl_buf
+        lda     (kp),y          ; the mask
         sta     lml,x
-        lda     tmp3
-        adc     #>_dl_buf
+        iny
+        lda     (kp),y
         sta     lmh,x
-@st:    iny
-        lda     ktypes,y
+        iny
+        lda     (kp),y
         sta     lms,x
         iny
-        lda     ktypes,y
+        lda     (kp),y
         and     #15
         sta     lce,x
-        lda     ktypes,y
+        lda     (kp),y
         lsr     a
         lsr     a
         lsr     a
@@ -1516,7 +1502,7 @@ dc_ent:   ldx     cidx
         sta     ctyp
         tax
         ldy     koff,x          ; the kept lines it needs: kind * 4 and the parity, or 2 for any
-        lda     ktypes,y
+        lda     (kp),y
         sta     cfl             ; (its flags)
         lda     pln
         and     #1
@@ -1610,7 +1596,7 @@ ks2:    lda     $0400+2,x
         inx
         cpx     #48
         bcc     dc_p1
-dc_next:  jsr     _tick_poll
+dc_next:  jsr     ktick
         inc     cidx
         jmp     dc_ent
 dc_free:  jsr     tylay           ; a kind not kept: its lines as d_place does them, with any more of it
@@ -1718,8 +1704,145 @@ d_pxline:
         iny
         cpy     #40
         bne     :-
-        jsr     _tick_poll
+        jsr     ktick
         inc     pln
         dec     pcnt
         bne     @line
 @done:  rts
+
+; ---------------------------------------------------------------------------------------------------
+; Numbers and dice in whole color pixels, so that they have no colored fringe, as a mask of 12 lines in
+; knum (dhr.h's dhr_knum), for d_place or d_column to draw.
+;
+; d_num: the number dl_v (up to 99, or 100 for +) on lines 3 to 7, in digits 3 pixels by 5 lines: two at
+; pixels 0 and 4, or one (or +) from pixel 4 - dl_sh. d_pips: a die's dl_v pips, each a pixel by two lines,
+; on lines 2 and 3, 5 and 6, and 8 and 9, at pixels 1, 2 and 3 of a face 5 pixels wide.
+        .export         _dhr_knum
+_dhr_knum:
+knum:   .res    48
+; Digits 0 to 9 and +, a row each in bits 2 (left) to 0.
+digit:  .byte   7,5,5,5,7, 2,6,2,2,7, 7,1,7,4,7, 7,1,3,1,7, 5,5,7,1,1
+        .byte   7,4,7,1,7, 7,4,7,5,7, 7,1,2,2,2, 7,5,7,5,7, 7,5,7,1,7, 0,2,7,2,0
+; Each die's rows of pips (pixel 1 $20, 2 $10, 3 $08).
+piprow: .byte   0,$10,0, $08,0,$20, $08,$10,$20, $28,0,$28, $28,$10,$28, $28,$28,$28
+; Each pixel's dots in a line's 4 bytes.
+pxm:    .byte   $0F,0,0,0, $70,$01,0,0, 0,$1E,0,0, 0,$60,$03,0, 0,0,$3C,0, 0,0,$40,$07, 0,0,0,$78
+nv:     .res    1
+nr:     .res    1
+nb:     .res    1
+
+d_num:  lda     _dl_v
+        sta     nv
+        jsr     nclear
+@row:   lda     nv
+        cmp     #100
+        bne     :+
+        lda     #10
+        jsr     drow            ; +
+        jmp     @sh
+:       cmp     #10
+        bcc     @one
+        ldx     #0              ; two digits: tens and ones
+:       cmp     #10
+        bcc     :+
+        sbc     #10
+        inx
+        bne     :-
+:       sta     tmp4
+        txa
+        jsr     drow
+        asl     a
+        asl     a
+        asl     a
+        asl     a
+        sta     nb
+        lda     tmp4
+        jsr     drow
+        ora     nb
+        jmp     @put
+@one:   jsr     drow
+@sh:    ldx     _dl_sh
+        beq     @put
+:       asl     a
+        dex
+        bne     :-
+@put:   ldx     nr
+        ldy     nrow,x          ; (lines 3 to 7)
+        jsr     pxl
+        inc     nr
+        lda     nr
+        cmp     #5
+        bcc     @row
+        rts
+nrow:   .byte   12, 16, 20, 24, 28
+
+; Row nr of digit A.
+drow:   sta     tmp3
+        asl     a
+        asl     a
+        adc     tmp3            ; * 5
+        adc     nr
+        tax
+        lda     digit,x
+        rts
+
+d_pips: lda     _dl_v
+        sec
+        sbc     #1
+        sta     tmp3
+        asl     a
+        adc     tmp3            ; * 3
+        sta     nv
+        jsr     nclear
+:       ldx     nv
+        lda     piprow,x
+        pha
+        ldx     nr
+        ldy     prow,x
+        jsr     pxl
+        pla
+        ldx     nr
+        ldy     prow+1,x
+        jsr     pxl
+        inc     nv
+        inc     nr
+        inc     nr
+        lda     nr
+        cmp     #6
+        bcc     :-
+        rts
+prow:   .byte   8, 12, 20, 24, 32, 36
+
+; knum cleared, nr 0.
+nclear: lda     #0
+        sta     nr
+        ldx     #47
+:       sta     knum,x
+        dex
+        bpl     :-
+        rts
+
+; The row of pixels A (bit 6 the first) into knum's line at Y (its first byte).
+pxl:    sta     nb
+        ldx     #0              ; the pixel * 4
+@px:    asl     nb
+        bpl     @next
+        lda     knum,y
+        ora     pxm,x
+        sta     knum,y
+        lda     knum+1,y
+        ora     pxm+1,x
+        sta     knum+1,y
+        lda     knum+2,y
+        ora     pxm+2,x
+        sta     knum+2,y
+        lda     knum+3,y
+        ora     pxm+3,x
+        sta     knum+3,y
+@next:  inx
+        inx
+        inx
+        inx
+        cpx     #28
+        bcc     @px
+        rts

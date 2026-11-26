@@ -85,14 +85,15 @@ class Built(unittest.TestCase):
         self.assertTrue(end and end[0] <= 0xBF00, end)
 
     def test_dhr_kit(self):
-        """The Double Hi-Res kit fits the language card's bank 1, and both loaders know its pages."""
+        """The Double Hi-Res kit fits its place ($2800-$3FFF, then the auxiliary $0800-$1FFF), and both loaders
+        know its pages."""
         layout = [ln.split() for ln in open(os.path.join(BUILD, "layout.txt"))]
         kit = [f for f in layout if f[:3] == ["disk", "1", "dhr"]]
         self.assertEqual(len(kit), 1)
         pages = int(kit[0][4])
-        self.assertTrue(1 <= pages <= 16, pages)
+        self.assertTrue(1 <= pages <= 24, pages)
         boot = open(os.path.join(BUILD, "parlornet.dsk"), "rb").read()[:256]
-        self.assertEqual(boot[0x0D + 10:0x0D + 12], bytes([pages, 0xD0]))
+        self.assertEqual(boot[0x0D + 10:0x0D + 12], bytes([pages, 0x28]))
         loader = open(os.path.join(BUILD, "prodos", "PARLOR.SYSTEM"), "rb").read()
         self.assertEqual(loader[disk.KPAGES_AT], pages)
 

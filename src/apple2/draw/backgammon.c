@@ -33,27 +33,22 @@ extern const unsigned char dhr_m_n2[], dhr_m_n3[], dhr_m_n4[], dhr_m_n5[], dhr_m
 static const unsigned char *const m_num[] = {dhr_m_n2, dhr_m_n3, dhr_m_n4, dhr_m_n5, dhr_m_n6, dhr_m_n7,
                                              dhr_m_n8, dhr_m_n9, dhr_m_nplus};
 
-/* The masks in dl_buf, 48 bytes (12 lines) each, by their place there in 4 bytes (d_types) */
-#define O_DISC 0
-#define O_RIM 12
-#define O_NUM 24                        /* a count, or a die's pips */
-#define O_TIPD 36                       /* a tip pointing down; up is the same from its last line up */
-#define O_TIPDL 48                      /* in monochrome the tip outlined (O_TIPD filled) */
-#define O_FACE 60
-#define O_SIDE 72                       /* (one line, for every line) */
-#define B_(o) (dl_buf + 4 * (o))
-#define B_DISC B_(O_DISC)
-#define B_RIM B_(O_RIM)
-#define B_NUM B_(O_NUM)
-#define B_TIPD B_(O_TIPD)
-#define B_TIPDL B_(O_TIPDL)
-#define B_FACE B_(O_FACE)
-#define B_SIDE B_(O_SIDE)
-#define FULL 0xFF                       /* (d_types: every dot) */
+/* The masks, 12 lines each, in the auxiliary memory with the kit (art/apple2/backgammon.dhr), which only the
+   kit reads: the disc and its rim, a tip pointing down (up is the same from its last line up, UP), in
+   monochrome filled (TIPD) and outlined (TIPDL), a die's face, a lane's sides (one line, for every line),
+   and a number or a die's pips, which the kit makes (dhr_knum) */
+extern const unsigned char dhr_knum[];
+#define B_DISC (mono ? dhr_m_disc : dhr_c_disc)
+#define B_RIM dhr_m_rim
+#define B_NUM dhr_knum
+#define B_TIPD (mono ? dhr_m_tipdf : dhr_c_tipd)
+#define B_TIPDL dhr_m_tipdl
+#define B_FACE dhr_face
+#define B_SIDE dhr_m_side
 #define UP 0xFC                         /* (a stride of -4) */
 
-/* The kinds of place of a point (d_types), for d_column: a checker of seat 1 (white) or 0 (black) on a red
-   or green lane, KC + 2 * lane + (seat ^ 1); the tips, down and up; and the empty lanes. */
+/* The kinds of place of a point (draw/backgammon_kinds.s), for d_column: a checker of seat 1 (white) or 0
+   (black) on a red or green lane, KC + 2 * lane + (seat ^ 1); the tips, down and up; and the empty lanes. */
 #define KC 0
 #define KTD 4
 #define KTU 6
@@ -93,7 +88,6 @@ static char shown_panel[24];
 static unsigned char ax, ay;            /* a place: color pixel, line */
 static unsigned char nl;                /* layers set so far */
 static unsigned char ready;             /* the kinds and masks are for mono + 1 */
-static unsigned char *kp, *kf;          /* a kind being made, and its first byte */
 
 /* n bytes from p set to v (memset would add itself to the resident program). */
 static void fill(unsigned char *p, unsigned int n, unsigned char v)
@@ -168,68 +162,15 @@ static void ground(unsigned char k, unsigned char checker)
         layer(checker ? 0 : B_SIDE, 0, checker ? SOLID(D_BLACK) : SOLID(D_WHITE));
 }
 
-/* A layer of a kind of place (d_types): mask o (FULL for every dot), stride ms, ink k. */
-static void kl(unsigned char o, unsigned char ms, unsigned char k)
-{
-    if ((k & 15) != k >> 4)
-        *kf |= 0x40;                    /* (its colors change with the line's parity) */
-    *kp++ = o;
-    *kp++ = ms;
-    *kp++ = k;
-}
-
-static unsigned char lane_ink(unsigned char lane)
-{
-    return lane ? (mono ? M_CHECK : SOLID(D_GREEN)) : SOLID(D_RED);
-}
-
-/* The kinds of place and the masks for the display in use, into the kit and dl_buf. */
+/* The kinds of place for the display in use, into the kit (d_types; draw/backgammon_kinds.s). */
+extern const unsigned char dhr_bg_kinds[], dhr_bg_mkinds[];
 static void prepare(void)
 {
-    unsigned char k, lane;
     if (ready == mono + 1)
         return;
     ready = mono + 1;
-    for (k = 0; k < 10; ++k) {
-        kf = kp = dl_buf + 13 * k;
-        lane = k & 1;
-        if (k < KTD) {
-            lane = k >> 1;
-            *kp++ = mono ? 3 : 2;
-            if (mono)
-                kl(FULL, 0, lane ? M_CHECK : SOLID(D_BLACK));
-            else
-                kl(FULL, 0, lane_ink(lane));
-            if (mono)
-                kl(O_RIM, 4, checker_ink(k & 1));
-            kl(O_DISC, 4, checker_ink((k & 1) ^ 1));
-        } else if (k < KE) {
-            *kp++ = 2;
-            kl(FULL, 0, wood());
-            if (mono && !lane)
-                kl(k < KTU ? O_TIPDL : O_TIPDL + 11, k < KTU ? 4 : UP, SOLID(D_WHITE));
-            else
-                kl(k < KTU ? O_TIPD : O_TIPD + 11, k < KTU ? 4 : UP, lane_ink(lane));
-        } else {
-            *kp++ = 1;
-            if (mono && !lane)
-                kl(O_SIDE, 0, SOLID(D_WHITE));
-            else
-                kl(FULL, 0, lane_ink(lane));
-        }
-    }
+    dl_m[0] = mono ? dhr_bg_mkinds : dhr_bg_kinds;
     dhr_call(DK_TYPES);
-    if (!mono) {
-        memcpy(B_DISC, dhr_c_disc, 48);
-        memcpy(B_TIPD, dhr_c_tipd, 48);
-    } else {
-        memcpy(B_DISC, dhr_m_disc, 48);
-        memcpy(B_RIM, dhr_m_rim, 48);
-        memcpy(B_TIPD, dhr_m_tipdf, 48);
-        memcpy(B_TIPDL, dhr_m_tipdl, 48);
-        memcpy(B_SIDE, dhr_m_side, 4);
-    }
-    memcpy(B_FACE, dhr_face, 48);
 }
 
 static void label(unsigned char p, unsigned char hi)
@@ -272,49 +213,15 @@ static void label_rows(void)
     ui_textn(0, BOT + 1, rows[0], 28);
 }
 
-/* Digits 3 color pixels by 5 lines, a row each in bits 2 (left) to 0, and + */
-static const unsigned char digit[11][5] = {
-    {7, 5, 5, 5, 7}, {2, 6, 2, 2, 7}, {7, 1, 7, 4, 7}, {7, 1, 3, 1, 7}, {5, 5, 7, 1, 1},
-    {7, 4, 7, 1, 7}, {7, 4, 7, 5, 7}, {7, 1, 2, 2, 2}, {7, 5, 7, 5, 7}, {7, 5, 7, 1, 7}, {0, 2, 7, 2, 0}};
 #define PLUS 100
 
-/* A row of color pixels (bit 6 the first) as the 4 bytes of a mask's line at o, each pixel 4 dots. */
-static void pxline(unsigned char b, unsigned char *o)
+/* In color: v (up to 99, or PLUS) in dhr_knum in whole color pixels, so that it has no colored fringe: two
+   digits at pixels 0 and 4, or one (or +) from pixel 4 - sh (the kit's d_num). */
+static void number(unsigned char v, unsigned char sh)
 {
-    unsigned char d;
-    for (d = 0; d < 28; ++d)
-        if (b & (0x40 >> (d >> 2)))
-            o[d / 7] |= 1 << (d % 7);
-}
-
-/* In color: v (up to 99, or PLUS) into B_NUM's lines 3 to 7 in whole color pixels, so that it has no colored
-   fringe: two digits at pixels 0 and 4, or one (or +) from pixel 4 - sh. */
-static void pxnum(unsigned char v, unsigned char sh)
-{
-    unsigned char r;
-    fill(B_NUM, 48, 0);
-    for (r = 0; r < 5; ++r)
-        pxline(v == PLUS ? digit[10][r] << sh : v >= 10 ? digit[v / 10][r] << 4 | digit[v % 10][r] :
-               digit[v][r] << sh, B_NUM + 12 + 4 * r);
-}
-
-/* A die's pips, each a color pixel by two lines (about square on a monitor), on lines 2 and 3, 5 and 6, and
-   8 and 9 of its face (dhr_face, 5 pixels by 10 lines), at pixel 1 (L), 2 (C) or 3 (R): the middle pip is
-   in the face's very middle. */
-#define PL 0x20
-#define PC 0x10
-#define PR 0x08
-static const unsigned char pip_rows[6][3] = {{0, PC, 0}, {PR, 0, PL}, {PR, PC, PL}, {PL | PR, 0, PL | PR},
-                                             {PL | PR, PC, PL | PR}, {PL | PR, PL | PR, PL | PR}};
-
-static void pips(unsigned char v)
-{
-    unsigned char r;
-    fill(B_NUM, 48, 0);
-    for (r = 0; r < 3; ++r) {
-        pxline(pip_rows[v - 1][r], B_NUM + 8 + 12 * r);
-        pxline(pip_rows[v - 1][r], B_NUM + 12 + 12 * r);
-    }
+    dl_v = v;
+    dl_sh = sh;
+    dhr_call(DK_NUM);
 }
 
 /* A place at group g, line y, of kind k, with a checker of seat s (white for seat 1) or none (s 2); n,
@@ -329,12 +236,10 @@ static void place(unsigned char g, unsigned char y, unsigned char s, unsigned ch
             layer(B_RIM, 4, checker_ink(s ^ 1));
         layer(B_DISC, 4, checker_ink(s));
         if (n) {
-            if (mono) {
-                fill(B_NUM, 48, 0);
-                memcpy(B_NUM + 8, m_num[n > 9 ? 8 : n - 2], 28);
-                layer(B_NUM, 4, checker_ink(s ^ 1));
-            } else {
-                pxnum(n > 9 ? PLUS : n, 3);     /* (pixels 1 to 3 of the disc's 0 to 5) */
+            if (mono)
+                layer(m_num[n > 9 ? 8 : n - 2], 4, checker_ink(s ^ 1));
+            else {
+                number(n > 9 ? PLUS : n, 3);    /* (pixels 1 to 3 of the disc's 0 to 5) */
                 layer(B_NUM, 4, k == K_RED ? SOLID(D_RED) : k == K_GREEN ? SOLID(D_GREEN) : SOLID(D_BROWN));
             }
         }
@@ -356,7 +261,7 @@ static void place_number(unsigned char g, unsigned char y, unsigned char v, unsi
         ui_ink(F_WHITE, F_BLACK);
         return;
     }
-    pxnum(v, 2);
+    number(v, 2);
     layer(0, 0, SOLID(bg));
     layer(B_NUM, 4, SOLID(fg));
     go(g, y, 1, PH);
@@ -554,7 +459,8 @@ static void draw_panel(void)
     for (k = 0; k < n; ++k)
         if (left_[k]) {
             g = gmx(n == 4 ? 8 + k : 8 + 2 * k, 1);
-            pips(left_[k]);
+            dl_v = left_[k];
+            dhr_call(DK_PIPS);
             layer(0, 0, wood());
             layer(B_FACE, 4, SOLID(D_WHITE));
             layer(B_NUM, 4, SOLID(D_BLACK));

@@ -1,9 +1,8 @@
 ; ParlorNet for the Apple IIe and IIgs: the graphics screen's primitives.
 ;
-; On the IIe the screen is Double Hi-Res, and everything that draws on it is in the kit (dhr.s), in the
-; language card's bank 1. The routines here are its entries: each switches bank 1 in, calls the kit and
-; switches bank 2, the overlays' bank, back in (kcall). The parameters are the same globals (hg_*) as the
-; IIgs's Hi-Res routines take, and the kit reads them from here.
+; On the IIe the screen is Double Hi-Res, and everything that draws on it is in the kit (dhr.s), which runs
+; in the auxiliary memory at $0800. The routines here are its entries (kcall). The parameters are the same
+; as the IIgs's Hi-Res routines take (hg_*), in the zero page on the IIe, where the kit sees them.
 ;
 ; On the IIgs the screen is Hi-Res page 1 in bank $E0, drawn by the routines below. Positions are byte
 ; columns (0-39, 7 pixels each) and lines (0-191), except for lines and the pointer, which take a pixel
@@ -19,28 +18,34 @@
 .endif
         .import         _font
 
-        .export         _hg_x, _hg_y, _hg_w, _hg_h, _hg_p, _hg_src, _hg_px, _hg_fg, _hg_bg, _hg_xor, _hg_bold
-        .export         _hg_key
         .export         _hgr_clear, _hgr_rect, _hgr_blit, _hgr_char, _hgr_text, _hgr_vline, _hgr_hline
         .export         _hgr_ptr
         .export         _hgr_ylo, _hgr_yhi
-.ifndef IIGS
-        .export         _dhr_call, kfetch
-.endif
-
+.ifdef IIGS
+        .export         _hg_x, _hg_y, _hg_w, _hg_h, _hg_p, _hg_src, _hg_px, _hg_fg, _hg_bg, _hg_xor, _hg_bold
+        .export         _hg_key
         .segment "DATA"
-_hg_x:  .byte   0
-_hg_y:  .byte   0
-_hg_w:  .byte   0
-_hg_h:  .byte   0
-_hg_p:  .byte   0,0,0,0         ; fill: even line even column, even line odd column, odd line ...
-_hg_fg: .byte   $7F,$7F         ; text: foreground for even and odd columns
-_hg_bg: .byte   0,0             ; text: background
-_hg_xor:.byte   0               ; 1: lines and blits are exclusive-or
-_hg_bold:.byte  0               ; 1: text in bold
-_hg_key:.byte   0               ; characters still to draw in bold as a key legend (hgr_char)
-_hg_src:.word   0
-_hg_px: .word   0
+.else
+        .exportzp       _hg_x, _hg_y, _hg_w, _hg_h, _hg_p, _hg_src, _hg_px, _hg_fg, _hg_bg, _hg_xor, _hg_bold
+        .exportzp       _hg_key, zka, zmono
+        .export         _dhr_call, ktick, _dhr_install
+        .segment "ZEROPAGE"
+zka:    .res    1               ; kcall: the entry's A, for the kit
+zmono:  .res    1               ; and mono (machine.h)
+.endif
+_hg_x:  .res    1
+_hg_y:  .res    1
+_hg_w:  .res    1
+_hg_h:  .res    1
+_hg_p:  .res    4               ; fill: on the IIgs, even line even column, even line odd column, odd line ...;
+                                ; on the IIe the first is the fill's number (ui.c)
+_hg_fg: .res    2               ; text: foreground for even and odd columns (on the IIe, its number)
+_hg_bg: .res    2               ; text: background
+_hg_xor:.res    1               ; 1: lines and blits are exclusive-or
+_hg_bold:.res   1               ; 1: text in bold
+_hg_key:.res    1               ; characters still to draw in bold as a key legend (hgr_char)
+_hg_src:.res    2
+_hg_px: .res    2
 
         .segment "RODATA"
 ylo:    .repeat 192, ln
@@ -79,51 +84,160 @@ _hgr_text:
         .segment "CODE"
 
 .ifndef IIGS
-; The kit's entries (dhr.s): X is the entry's offset there. A is passed on (hgr_char's character), and A and
-; X come back (none returns a value yet). 80STORE and HIRES go on for the kit's PAGE2, which puts the
-; auxiliary memory at $2000-$3FFF only with both on; on the text screen HIRES changes nothing that shows.
+        .import         _mono, _tick_poll, _dl_x, _dl_buf
+        .importzp       PARMN
+        .import         __DHRKIT_LOAD__, __DHRKIT_RUN__, __DHRKIT_SIZE__, __AUXART_SIZE__
+        .import         __MIRROR_RUN__, __MIRROR_SIZE__
+        .importzp       ptr3, ptr4
+
+KIT     = $0800                 ; the kit's entry, in the auxiliary memory
+KPLACE  = 7                     ; the kit's entries from here take the parameters at $0200 (dhr.h)
+KPXLINE = 10                    ; and this one dl_buf too
+
+; The entries: X the kit's entry number, A passed on to it (hgr_char's character).
 _hgr_clear:
         ldx     #0
         .byte   $2C             ; (BIT abs: skips the next ldx)
 _hgr_rect:
-        ldx     #3
+        ldx     #1
         .byte   $2C
 _hgr_blit:
-        ldx     #6
+        ldx     #2
         .byte   $2C
 _hgr_char:
-        ldx     #9
+        ldx     #3
         .byte   $2C
 _hgr_vline:
-        ldx     #12
+        ldx     #4
         .byte   $2C
 _hgr_hline:
-        ldx     #15
+        ldx     #5
         .byte   $2C
 _hgr_ptr:
-        ldx     #18
-kcall:  stx     kj+1
-        sta     $C001           ; 80STORE
-        bit     $C057           ; HIRES
-        bit     $C08B           ; the language card's RAM, bank 1, to read and write
-        bit     $C08B
-kj:     jsr     $D000
-        bit     $C083           ; bank 2 again
-        bit     $C083
-        rts
+        ldx     #6
+        jmp     kcall
 
-; void __fastcall__ dhr_call(unsigned char entry): the kit's entry at that offset (dhr.h).
+; void __fastcall__ dhr_call(unsigned char entry): the kit's entry of that number (dhr.h).
 _dhr_call:
         tax
         jmp     kcall
 
-; For the kit: the byte at (ptr2),y as bank 2 has it, with bank 1 back in after. Keeps X and Y.
-kfetch: bit     $C083
-        bit     $C083
-        lda     (ptr2),y
-        bit     $C08B
-        bit     $C08B
+; The code that runs while the auxiliary memory is switched in for reading is here, and the start-up copies
+; it to the same addresses there (dhr_install), so that it goes on running whichever memory is read.
+        .segment "MIRROR"
+
+; Call the kit's entry X with A. 80STORE and HIRES go on for its PAGE2, which puts the auxiliary memory at
+; $2000-$3FFF only with both on (on the text screen HIRES changes nothing that shows). The kit runs with the
+; auxiliary memory switched in for reading and writing (RAMRD, RAMWRT), so it sees the parameters at $0200
+; there: they are copied over first, with dl_buf for the entries that read it.
+kcall:  sta     zka
+        sta     $C001           ; 80STORE
+        bit     $C057           ; HIRES
+        lda     _mono
+        sta     zmono
+        cpx     #KPLACE
+        bcc     @go
+        sta     $C005           ; RAMWRT: writes go to the auxiliary memory
+        ldy     #PARMN - 1
+:       lda     _dl_x,y
+        sta     _dl_x,y
+        dey
+        bpl     :-
+        cpx     #KPXLINE
+        bne     @copied
+        ldy     #192
+:       lda     _dl_buf-1,y
+        sta     _dl_buf-1,y
+        lda     _dl_buf+191,y
+        sta     _dl_buf+191,y
+        dey
+        bne     :-
+@copied:sta     $C004
+@go:    sta     $C003           ; RAMRD: reads from the auxiliary memory (this code is there too)
+        sta     $C005
+        jsr     KIT
+        sta     $C002
+        sta     $C004
         rts
+
+; For the kit: the clock (tick_poll), with the main memory switched in for it.
+ktick:  sta     $C002
+        sta     $C004
+        jsr     _tick_poll
+        sta     $C005
+        sta     $C003
+        rts
+
+        .segment "ONCE"
+
+; void dhr_install(void), at start-up: the kit and the games' pictures from where the loaders put them
+; ($2800, DHRSTAGE) into the
+; auxiliary memory at $0800 (AUXK), and there too at their own addresses the font, the line tables and the
+; code above, which the kit and kcall use with the auxiliary memory read. The parameters in the zero page
+; start at 0.
+_dhr_install:
+        lda     #0
+        ldx     #_hg_px + 1 - _hg_x
+:       sta     _hg_x,x
+        dex
+        bpl     :-
+        sta     $C005
+        lda     #<__DHRKIT_LOAD__
+        ldx     #>__DHRKIT_LOAD__
+        ldy     #<__DHRKIT_RUN__
+        sty     ptr4
+        ldy     #>__DHRKIT_RUN__
+        sty     ptr4+1
+        ldy     #>(__DHRKIT_SIZE__ + __AUXART_SIZE__)
+        sty     tmp2
+        ldy     #<(__DHRKIT_SIZE__ + __AUXART_SIZE__)
+        jsr     copy
+        ldy     #>(97 * 8)
+        sty     tmp2
+        lda     #<_font
+        ldx     #>_font
+        ldy     #<(97 * 8)
+        jsr     same
+        ldy     #>384
+        sty     tmp2
+        lda     #<ylo
+        ldx     #>ylo
+        ldy     #<384
+        jsr     same
+        ldy     #>__MIRROR_SIZE__
+        sty     tmp2
+        lda     #<__MIRROR_RUN__
+        ldx     #>__MIRROR_RUN__
+        ldy     #<__MIRROR_SIZE__
+        jsr     same
+        sta     $C004
+        rts
+; tmp2 * 256 + Y bytes from A X to the same address (copy), or to ptr4 (copy).
+same:   sta     ptr4
+        stx     ptr4+1
+copy:   sta     ptr3
+        stx     ptr3+1
+        sty     tmp1
+        ldy     #0
+@lp:    lda     tmp1
+        ora     tmp2
+        beq     @done
+        lda     (ptr3),y
+        sta     (ptr4),y
+        inc     ptr3
+        bne     :+
+        inc     ptr3+1
+:       inc     ptr4
+        bne     :+
+        inc     ptr4+1
+:       lda     tmp1
+        bne     :+
+        dec     tmp2
+:       dec     tmp1
+        jmp     @lp
+@done:  rts
+
+        .segment "CODE"
 
 .else
         .segment "DATA"

@@ -230,7 +230,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
 - `src/apple2`: the Apple IIe and IIgs (`apple2.h` declares the machine's own calls).
   - `boot.s`: the boot block. The Disk II boot ROM loads its six sectors at $0800; it reads the rest of the program with its own 6-and-2 sector reader, switches in the language card's RAM and starts the program. The reader stays in memory to load the overlays.
   - `crt0.s`, `sys.s`, `hgr.s`, `disk.s`: the start-up, the Super Serial Card (its 6551 read by interrupt when the card's interrupt switch is on, and polled when it is off), the text screen, the keyboard, the AppleMouse II card's firmware calls, and the graphics screen's routines: on the IIe the entries to the Double Hi-Res kit, on the IIgs Hi-Res drawing.
-  - `dhr.s`, `dhr.h`: the IIe's Double Hi-Res kit, everything that draws on its graphics screen, in the language card's bank 1: text, fills, lines, Hi-Res pictures, places on a board drawn a byte at a time in layers (masks in a color each), columns of such places kept once worked out, sprites with what they cover kept (the pointer and a gliding piece), and lines of color pixels (the title screen).
+  - `dhr.s`, `dhr.h`: the IIe's Double Hi-Res kit, everything that draws on its graphics screen, in the auxiliary memory: text, fills, lines, Hi-Res pictures, places on a board drawn a byte at a time in layers (masks in a color each), columns of such places kept once worked out, sprites with what they cover kept (the pointer and a gliding piece), and lines of color pixels (the title screen). It also makes numbers and dice's pips in whole color pixels.
   - `line.c`: the serial line's settings and opening, start-up and quitting.
   - `setup.c` (an overlay): the start screen and the settings.
   - `splash.c` (an overlay): the title screen.
@@ -250,7 +250,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `line.c`, `setup.c`, `splash.c`: the line's settings, the start screen and the title screen.
   - `draw/`: each game's board.
 - `src/template`: a machine with every call of the interface stubbed, which the build compiles and links with the core and every game, as the start of a port (PORTING.md).
-- `art/`: the font, the title screen's letters (`splash.txt`, each a grid of blocks) and each machine's pictures (`art/apple2`, `art/c64`), as text: in `art/apple2`, `NAME.spr` are Hi-Res pictures and `NAME.dhr` the masks of a game drawn in Double Hi-Res. `tools/apple2_art.py` and `tools/c64_art.py` turn them into assembly (the title letters as a byte a row of blocks; the C64's character set made bold).
+- `art/`: the font, the title screen's letters (`splash.txt`, each a grid of blocks) and each machine's pictures (`art/apple2`, `art/c64`), as text: in `art/apple2`, `NAME.spr` are Hi-Res pictures and `NAME.dhr` the masks of a game drawn in Double Hi-Res, which go into the auxiliary memory with the kit, and `src/apple2/draw/NAME_kinds.s` the kinds of place such a game gives the kit. `tools/apple2_art.py` and `tools/c64_art.py` turn them into assembly (the title letters as a byte a row of blocks; the C64's character set made bold).
 - `Dockerfile`, `build.sh`: the pinned toolchain (cc65 2.19, whose ca65 also assembles the 65816 parts) and the build of every program.
 - `VERSION`, `tools/release.py`: the version, and the release files with their sums.
 - `tools/`:
@@ -265,13 +265,12 @@ The Apple IIe's (the C64's is under The Commodore 64, above):
 
 | Address | What |
 |---|---|
-| $0200-$03CE | the Double Hi-Res kit's parameters and the masks it reads (`dhr.s`) |
+| $0200-$03CE | the Double Hi-Res kit's parameters (`dhr.s`) |
 | $0400-$07FF | the 40-column text screen |
 | $0800-$0DFF | the boot block and sector reader |
 | $0E00-$1FFF | the serial ring, the reply buffer, the C stack |
 | $2000-$3FFF | Double Hi-Res, its main half |
 | $4000-$BFFF | the program |
-| $D000-$DFFF | the Double Hi-Res kit (`dhr.s`, language card RAM, bank 1) |
 | $D000-$DFFF | the command line, the dialogs and the pages of text (`frame.c`, language card RAM, bank 1) |
 | $D000-$F8FF | one overlay: the title screen, the start screen and settings, the sign-in, New game, or a game (language card RAM, bank 2) |
 | $F900-$FEFF | a table's moves and chat, or the lobby's lists (language card RAM, bank 2) |
@@ -279,7 +278,17 @@ The Apple IIe's (the C64's is under The Commodore 64, above):
 
 The language card has two banks at $D000-$DFFF. The overlays use bank 2, and bank 1 holds `frame.c`, which the program loads once from its own overlay before the first lobby and copies there. Each call into it goes through `bank1_call` (`sys.s`), which cc65 puts in front of every call to a function `frame.h` declares, and which switches bank 1 in for the call and back after.
 
-In the auxiliary 64K, $2000-$3FFF is the other half of Double Hi-Res, and $0400-$05DF holds the places the kit keeps worked out, clear of the text page's screen holes. The boot block and PARLOR.SYSTEM load the kit into bank 1, which nothing else uses, and the program's graphics routines (`hgr.s`) call it there, switching bank 1 in and bank 2, the overlays', back out. While bank 1 is in, an overlay's own $D000-$DFFF cannot be seen, so what the kit reads from a game is in $0200-$03CE.
+The Double Hi-Res kit (`dhr.s`) runs in the auxiliary 64K:
+
+| Address (auxiliary) | What |
+|---|---|
+| $0200-$03CE | the kit's copy of its parameters |
+| $0400-$05DF | places the kit keeps once worked out, clear of the text page's screen holes |
+| $0800-$1FFF | the kit, the Double Hi-Res games' masks (`art/apple2/NAME.dhr`) and their kinds of place |
+| $2000-$3FFF | the other half of Double Hi-Res |
+| at their own addresses | the code that switches memory (`hgr.s`'s MIRROR: the kit's entry and the interrupt handler), the font and the line tables, copied from the program |
+
+The boot block and PARLOR.SYSTEM load the kit at $2800, and the program copies it to $0800 at start-up (`dhr_install`, `hgr.s`). The program's graphics routines call it through `kcall`, which copies the parameters from $0200 over and runs the kit with the auxiliary memory switched in for reading and writing (RAMRD, RAMWRT). The kit's other parameters are in the zero page (`hg_*`), which RAMRD does not move, and the code that runs while memory switches is at the same address in both memories. The interrupt handler switches the main memory in for itself and back after.
 
 Under ProDOS the program keeps out of ProDOS's way: it ends below $BF00, the boot block's page holds only the overlay table that PARLOR.SYSTEM fills in, $0900-$0CFF is ProDOS's buffer for an open file and $0D00 a page read at a time. The program runs with the auxiliary zero page, stack and language card switched in (ALTZP), so the overlays and the vectors are in the auxiliary language card while ProDOS stays in the main one; each MLI call switches back to ProDOS's side for the call. That needs 128K, and the /RAM disk is disconnected while the program runs.
 

@@ -5,7 +5,7 @@ The disks hold no operating system. Linear sector n is track n // 16, physical s
 - sectors 0-5: the boot block (boot.bin), which the Disk II boot ROM loads at $0800 and which reads the
   rest itself;
 - then the program (parlor.main, loaded at $4000), the vectors (parlor.vec, at $FF00) and the Double
-  Hi-Res kit (parlor.dhr, at $D000 in the language card's bank 1);
+  Hi-Res kit (parlor.dhr, at $2800, which the program copies into the auxiliary memory);
 - then the overlays (parlor.<name>, each loaded at $D000 when needed), in the order of overlays.txt.
 
 The boot block's load table (at $080D) and overlay table (at $0821) are filled in here. When the
@@ -70,7 +70,7 @@ def build(d):
     main = open(os.path.join(d, "parlor.main"), "rb").read()
     vec = open(os.path.join(d, "parlor.vec"), "rb").read()
     kit = open(os.path.join(d, "parlor.dhr"), "rb").read()
-    assert pages(kit) <= 0x10
+    assert pages(kit) <= 0x18
     names = [o.split(":")[0] for o in open(os.path.join(d, "overlays.txt")).read().split()]
     ovls = [open(os.path.join(d, "parlor." + n), "rb").read() for n in names]
     for n, o in zip(names, ovls):
@@ -109,7 +109,7 @@ def build(d):
     b = bytearray(boot)
     b[LOADTAB:LOADTAB + 12] = bytes([main_at & 255, main_at >> 8, pages(main), 0x40,
                                      vec_at & 255, vec_at >> 8, 1, 0xFF,
-                                     kit_at & 255, kit_at >> 8, pages(kit), 0xD0])
+                                     kit_at & 255, kit_at >> 8, pages(kit), 0x28])
     b[START:START + 2] = bytes([0x00, 0x40])
     for i, (at, n, disk) in enumerate(table):
         b[OVLTAB + i * 4:OVLTAB + i * 4 + 4] = bytes([at & 255, at >> 8, n, disk])

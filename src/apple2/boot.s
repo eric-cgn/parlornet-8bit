@@ -44,8 +44,7 @@ entry:  jmp     boot            ; $0801
 diskid: .byte   1               ; $080A: which disk this is (1 or 2), set by the disk maker
         .byte   "PN"            ; $080B
 ; $080D: the load table, set by the disk maker: up to 4 entries of linear sector (2 bytes), count,
-; first page; an entry with count 0 ends it. Then the start address. An entry for page $D0 goes into the
-; language card's bank 1 (the Double Hi-Res kit), the others where they say, with bank 2 in.
+; first page; an entry with count 0 ends it. Then the start address.
 LOADTAB:
         .res    16, 0           ; $080D-$081C
 start:  .word   0               ; $081D
@@ -155,15 +154,9 @@ ld1:    lda     LOADTAB+2,x
         sta     lin+1
         lda     LOADTAB+3,x
         sta     dpage
-        cmp     #$D0
-        bne     :+
-        bit     $C08B           ; bank 1, to read and write
-        bit     $C08B
-:       txa
+        txa
         pha
         jsr     rd_range
-        bit     $C083           ; bank 2 again
-        bit     $C083
         pla
         bcs     fail
         clc
@@ -439,12 +432,6 @@ dc1:    lda     RAW,y
         beq     dc0
 dc2:    rts
 
-; The 64 disk bytes of 6-and-2 encoding, by value.
-wtab:   .byte   $96,$97,$9A,$9B,$9D,$9E,$9F,$A6,$A7,$AB,$AC,$AD,$AE,$AF,$B2,$B3
-        .byte   $B4,$B5,$B6,$B7,$B9,$BA,$BB,$BC,$BD,$BE,$BF,$CB,$CD,$CE,$CF,$D3
-        .byte   $D6,$D7,$D9,$DA,$DB,$DC,$DD,$DE,$DF,$E5,$E6,$E7,$E9,$EA,$EB,$EC
-        .byte   $ED,$EE,$EF,$F2,$F3,$F4,$F5,$F6,$F7,$F9,$FA,$FB,$FC,$FD,$FE,$FF
-
 patchlo: .byte  <(p0+1),<(p1+1),<(p2+1),<(p3+1),<(p4+1),<(p5+1),<(p6+1),<(p7+1),<(p8+1),<(p9+1),<(p10+1)
 patchhi: .byte  >(p0+1),>(p1+1),>(p2+1),>(p3+1),>(p4+1),>(p5+1),>(p6+1),>(p7+1),>(p8+1),>(p9+1),>(p10+1)
 npatch = 11
@@ -453,3 +440,12 @@ afield: .res    4
 want:   .res    16
 
         .assert * <= RAW, error, "boot code overlaps its buffers"
+
+; (The block's last 64 bytes, after the reader's buffers: the table is needed only to make XLATE.)
+        .res    XLATE + 106 - $0800 - (* - entry) - 1
+; The 64 disk bytes of 6-and-2 encoding, by value.
+wtab:   .byte   $96,$97,$9A,$9B,$9D,$9E,$9F,$A6,$A7,$AB,$AC,$AD,$AE,$AF,$B2,$B3
+        .byte   $B4,$B5,$B6,$B7,$B9,$BA,$BB,$BC,$BD,$BE,$BF,$CB,$CD,$CE,$CF,$D3
+        .byte   $D6,$D7,$D9,$DA,$DB,$DC,$DD,$DE,$DF,$E5,$E6,$E7,$E9,$EA,$EB,$EC
+        .byte   $ED,$EE,$EF,$F2,$F3,$F4,$F5,$F6,$F7,$F9,$FA,$FB,$FC,$FD,$FE,$FF
+        .assert * = $0E00, error, "the disk bytes' table is not at the end of the block"

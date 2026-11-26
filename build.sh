@@ -102,13 +102,21 @@ program() {
 			ca65 --cpu 6502 -o "$pobj/$b.o" "$pobj/$b.s"
 			objs="$objs $pobj/$b.o"
 		done
-		# (on the IIe a game drawn in Double Hi-Res has its masks, NAME_dhr.s, for its Hi-Res pictures)
+		# (on the IIe a game drawn in Double Hi-Res has its masks, NAME_dhr.s, for its Hi-Res pictures, and
+		# they go with the kit into the auxiliary memory: the segment AUXART)
 		art=$PART/${name}_art.s
-		if [ -z "$pdef" ] && [ -f "$PART/${name}_dhr.s" ]; then art=$PART/${name}_dhr.s; fi
+		artseg=OVR_$name
+		if [ -z "$pdef" ] && [ -f "$PART/${name}_dhr.s" ]; then art=$PART/${name}_dhr.s; artseg=AUXART; fi
 		if [ -f "$art" ]; then
-			sed -i "s/\"RODATA\"/\"OVR_$name\"/" "$art"
+			sed -i "s/\"RODATA\"/\"$artseg\"/" "$art"
 			ca65 --cpu 6502 -o "$pobj/${name}_art.o" "$art"
 			objs="$objs $pobj/${name}_art.o"
+		fi
+		# (and its kinds of place for the kit, draw/NAME_kinds.s, there too)
+		if [ "$artseg" = AUXART ] && [ -f "$pm/draw/${name}_kinds.s" ]; then
+			sed "s/\"RODATA\"/\"AUXART\"/" "$pm/draw/${name}_kinds.s" > "$pobj/${name}_kinds.s"
+			ca65 --cpu 6502 -o "$pobj/${name}_kinds.o" "$pobj/${name}_kinds.s"
+			objs="$objs $pobj/${name}_kinds.o"
 		fi
 		mem="$mem    OV_$name: file = \"%O.$name\", start = $povl, size = $povlsize;\\n"
 		for s in OVH OVC OVR OVD OVB; do

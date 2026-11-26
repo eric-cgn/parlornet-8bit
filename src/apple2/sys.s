@@ -181,14 +181,31 @@ a_s3:   lda     $C0A9
 a_d3:   stx     $C0A8
 :       rts
 
+; The interrupt handler. It can come while the Double Hi-Res kit runs in the auxiliary memory (hgr.s's
+; kcall), so it is in the code the start-up copies to the same address there (MIRROR), and it switches the
+; main memory in for rx_take and back after.
+        .segment "MIRROR"
 irq:    pha
+        lda     $C013           ; RAMRD (bit 7: the auxiliary memory is read)
+        pha
+        lda     $C014           ; RAMWRT
+        pha
+        sta     $C002
+        sta     $C004
         txa
         pha
         jsr     rx_take
         pla
         tax
         pla
+        bpl     :+
+        sta     $C005
+:       pla
+        bpl     :+
+        sta     $C003
+:       pla
         rti
+        .segment "CODE"
 
 ; int ser_get(void): the next received byte, or -1.
 _ser_get:
