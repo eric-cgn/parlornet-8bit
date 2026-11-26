@@ -51,6 +51,8 @@ reply that overran the buffer used to lose its final OK, and the program took th
 the lobby or on entering a new table; now it keeps what fits, and a table asks for its own line
 only (`LST table=id`), since a new table's line comes last among the player's own.
 
+`plans/lobby_names.txt` shows a lobby longer than one screen, of every game, for a player made first with `lab/manytables.py nora 16501` (4 tables of their own, 2 invitations and 18 tables waiting for a player): the first screenful and More (`ln_lobby`), the rest and Back to the start (`ln_more`), the first again (`ln_back`), then the lobby after the player's Backgammon table has been opened and left (`ln_after_table`) and the list of New game (`ln_newgame`). Every name is a game's. Loading a game from the self-booting disk used to read the disk's first sector over the lobby's game names, which then showed as stray characters until the player signed in again.
+
 `parlor.sh` takes `MOTD=file` for the parlor's message of the day. `plans/motd.txt` shows the live one
 (`MOTD=deploy/motd.txt`, from the ParlorNet checkout): all 19 lines, a " More: press a key " pause on the
 bottom row since the name prompt does not fit below them, then the name prompt on a fresh screen.
