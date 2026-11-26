@@ -27,15 +27,9 @@
 #endif
 
 extern const unsigned char dhr_c_disc[], dhr_c_tipd[], dhr_face[];
-extern const unsigned char dhr_pip1[], dhr_pip2[], dhr_pip3[], dhr_pip4[], dhr_pip5[], dhr_pip6[];
-extern const unsigned char dhr_c_n2[], dhr_c_n3[], dhr_c_n4[], dhr_c_n5[], dhr_c_n6[], dhr_c_n7[], dhr_c_n8[],
-    dhr_c_n9[], dhr_c_nplus[];
 extern const unsigned char dhr_m_rim[], dhr_m_disc[], dhr_m_tipdf[], dhr_m_tipdl[], dhr_m_side[];
 extern const unsigned char dhr_m_n2[], dhr_m_n3[], dhr_m_n4[], dhr_m_n5[], dhr_m_n6[], dhr_m_n7[], dhr_m_n8[],
     dhr_m_n9[], dhr_m_nplus[];
-static const unsigned char *const pips[] = {dhr_pip1, dhr_pip2, dhr_pip3, dhr_pip4, dhr_pip5, dhr_pip6};
-static const unsigned char *const c_num[] = {dhr_c_n2, dhr_c_n3, dhr_c_n4, dhr_c_n5, dhr_c_n6, dhr_c_n7,
-                                             dhr_c_n8, dhr_c_n9, dhr_c_nplus};
 static const unsigned char *const m_num[] = {dhr_m_n2, dhr_m_n3, dhr_m_n4, dhr_m_n5, dhr_m_n6, dhr_m_n7,
                                              dhr_m_n8, dhr_m_n9, dhr_m_nplus};
 
@@ -278,6 +272,51 @@ static void label_rows(void)
     ui_textn(0, BOT + 1, rows[0], 28);
 }
 
+/* Digits 3 color pixels by 5 lines, a row each in bits 2 (left) to 0, and + */
+static const unsigned char digit[11][5] = {
+    {7, 5, 5, 5, 7}, {2, 6, 2, 2, 7}, {7, 1, 7, 4, 7}, {7, 1, 3, 1, 7}, {5, 5, 7, 1, 1},
+    {7, 4, 7, 1, 7}, {7, 4, 7, 5, 7}, {7, 1, 2, 2, 2}, {7, 5, 7, 5, 7}, {7, 5, 7, 1, 7}, {0, 2, 7, 2, 0}};
+#define PLUS 100
+
+/* A row of color pixels (bit 6 the first) as the 4 bytes of a mask's line at o, each pixel 4 dots. */
+static void pxline(unsigned char b, unsigned char *o)
+{
+    unsigned char d;
+    for (d = 0; d < 28; ++d)
+        if (b & (0x40 >> (d >> 2)))
+            o[d / 7] |= 1 << (d % 7);
+}
+
+/* In color: v (up to 99, or PLUS) into B_NUM's lines 3 to 7 in whole color pixels, so that it has no colored
+   fringe: two digits at pixels 0 and 4, or one (or +) from pixel 4 - sh. */
+static void pxnum(unsigned char v, unsigned char sh)
+{
+    unsigned char r;
+    fill(B_NUM, 48, 0);
+    for (r = 0; r < 5; ++r)
+        pxline(v == PLUS ? digit[10][r] << sh : v >= 10 ? digit[v / 10][r] << 4 | digit[v % 10][r] :
+               digit[v][r] << sh, B_NUM + 12 + 4 * r);
+}
+
+/* A die's pips, each a color pixel by two lines (about square on a monitor), on lines 2 and 3, 5 and 6, and
+   8 and 9 of its face (dhr_face, 5 pixels by 10 lines), at pixel 1 (L), 2 (C) or 3 (R): the middle pip is
+   in the face's very middle. */
+#define PL 0x20
+#define PC 0x10
+#define PR 0x08
+static const unsigned char pip_rows[6][3] = {{0, PC, 0}, {PR, 0, PL}, {PR, PC, PL}, {PL | PR, 0, PL | PR},
+                                             {PL | PR, PC, PL | PR}, {PL | PR, PL | PR, PL | PR}};
+
+static void pips(unsigned char v)
+{
+    unsigned char r;
+    fill(B_NUM, 48, 0);
+    for (r = 0; r < 3; ++r) {
+        pxline(pip_rows[v - 1][r], B_NUM + 8 + 12 * r);
+        pxline(pip_rows[v - 1][r], B_NUM + 12 + 12 * r);
+    }
+}
+
 /* A place at group g, line y, of kind k, with a checker of seat s (white for seat 1) or none (s 2); n,
    when not 0, the number it stands for (2 or more), cut out of it: the digit, or + for 10 or more, in the
    place's color. In monochrome the place's pattern would break up so small a digit, so it is drawn in the
@@ -290,13 +329,12 @@ static void place(unsigned char g, unsigned char y, unsigned char s, unsigned ch
             layer(B_RIM, 4, checker_ink(s ^ 1));
         layer(B_DISC, 4, checker_ink(s));
         if (n) {
-            n = n > 9 ? 8 : n - 2;
-            fill(B_NUM, 48, 0);
             if (mono) {
-                memcpy(B_NUM + 8, m_num[n], 28);
+                fill(B_NUM, 48, 0);
+                memcpy(B_NUM + 8, m_num[n > 9 ? 8 : n - 2], 28);
                 layer(B_NUM, 4, checker_ink(s ^ 1));
             } else {
-                memcpy(B_NUM + 12, c_num[n], 20);
+                pxnum(n > 9 ? PLUS : n, 3);     /* (pixels 1 to 3 of the disc's 0 to 5) */
                 layer(B_NUM, 4, k == K_RED ? SOLID(D_RED) : k == K_GREEN ? SOLID(D_GREEN) : SOLID(D_BROWN));
             }
         }
@@ -304,15 +342,24 @@ static void place(unsigned char g, unsigned char y, unsigned char s, unsigned ch
     go(g, y, 1, PH);
 }
 
-/* Two characters of text (a count, the cube's value) in black or white on a place of 12 lines. */
-static void place_text(unsigned char g, unsigned char y, unsigned char v, unsigned char fg, unsigned char bg)
+/* A number up to 99 (the cube's value, a tray's count) on a place at group g, line y, in color fg on bg:
+   in color in whole color pixels (pxnum), one digit in the middle; in monochrome the font's characters, in
+   white or black. */
+static void place_number(unsigned char g, unsigned char y, unsigned char v, unsigned char fg, unsigned char bg)
 {
-    ui_ink(fg, bg);
-    hg_x = 2 * g;
-    hg_y = y + 2;
-    hgr_char(v >= 10 ? '0' + v / 10 : ' ');
-    hgr_char('0' + v % 10);
-    ui_ink(F_WHITE, F_BLACK);
+    if (mono) {
+        ui_ink(fg == D_WHITE ? F_WHITE : F_BLACK, bg == D_WHITE ? F_WHITE : F_BLACK);
+        hg_x = 2 * g;
+        hg_y = y + 2;
+        hgr_char(v >= 10 ? '0' + v / 10 : ' ');
+        hgr_char('0' + v % 10);
+        ui_ink(F_WHITE, F_BLACK);
+        return;
+    }
+    pxnum(v, 2);
+    layer(0, 0, SOLID(bg));
+    layer(B_NUM, 4, SOLID(fg));
+    go(g, y, 1, PH);
 }
 
 static unsigned char count(signed char v)
@@ -364,9 +411,7 @@ static void draw_bar_off(void)
     go(gt, TOP, 1, BOT - TOP + 1);
     for (s = 0; s < 2; ++s) {
         y = s == me ? BOTP : TOP;
-        if (!mono)
-            place(gt, y, 2, K_BAR, 0);
-        place_text(gt, y, soff[s], F_WHITE, mono ? F_BLACK : F_DHR(D_BROWN));
+        place_number(gt, y, soff[s], D_WHITE, mono ? D_BLACK : D_BROWN);
     }
     draw_cube(gb, gt);
 }
@@ -380,9 +425,11 @@ static void draw_cube(unsigned char gb, unsigned char gt)
         g = gt;
         y = owner == view ? BOTP - PH : TOP + PH;
     }
-    layer(0, 0, SOLID(D_WHITE));
-    go(g, y, 1, PH);
-    place_text(g, y, owner < 0 && cube == 1 ? 64 : cube, F_BLACK, F_WHITE);
+    if (mono) {
+        layer(0, 0, SOLID(D_WHITE));
+        go(g, y, 1, PH);
+    }
+    place_number(g, y, owner < 0 && cube == 1 ? 64 : cube, D_BLACK, D_WHITE);
 }
 
 /* (ax, ay): the place of seat s's checker i on point p, the bar (0) or the tray (25). */
@@ -507,7 +554,7 @@ static void draw_panel(void)
     for (k = 0; k < n; ++k)
         if (left_[k]) {
             g = gmx(n == 4 ? 8 + k : 8 + 2 * k, 1);
-            memcpy(B_NUM, pips[left_[k] - 1], 48);
+            pips(left_[k]);
             layer(0, 0, wood());
             layer(B_FACE, 4, SOLID(D_WHITE));
             layer(B_NUM, 4, SOLID(D_BLACK));
