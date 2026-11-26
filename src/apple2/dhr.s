@@ -71,6 +71,9 @@ o4:     .res    4               ; dhr_cells: a line's four bytes
 dm4:    .res    4               ; and the dots its row's pixels cover
 fgi:    .res    1
 bgi:    .res    1
+lbits:  .res    1               ; the last line's row and colors: a line the same as the last one is
+lfgi:   .res    1               ; written without working its bytes out again
+lbgi:   .res    1
 save:   .res    6 * 11          ; dhr_save: up to 3 offsets in each page, 11 lines
 psave:  .res    6 * 9           ; under the pointer
 pt_on:  .res    1               ; 1 while the pointer is drawn
@@ -352,6 +355,8 @@ _dhr_cells:
         sta     ln
         lda     #0
         sta     mw
+        lda     #$FF            ; (no line before it: no color is $FF / 4)
+        sta     lfgi
 cl_line:
         ldx     ln
         cpx     #192
@@ -389,6 +394,25 @@ cl_line:
         ldy     mw
         lda     (ptr2),y
 cl_m:   sta     bits
+        cmp     lbits
+        bne     cl_new
+        lda     fgi
+        cmp     lfgi
+        bne     cl_new
+        lda     bgi
+        cmp     lbgi
+        bne     cl_new
+        lda     _dh_b
+        cmp     #$FF
+        bne     cl_st
+        jmp     cl_ovst
+cl_new: lda     bits
+        sta     lbits
+        lda     fgi
+        sta     lfgi
+        lda     bgi
+        sta     lbgi
+        lda     bits
         rol     a
         rol     a
         rol     a
@@ -439,7 +463,7 @@ cl_m:   sta     bits
         sta     o4,y
         dey
         bpl     :-
-        lda     _dh_x
+cl_st:  lda     _dh_x
         asl     a
         sta     tmp2            ; the first offset
         sta     AUXON
@@ -482,7 +506,7 @@ cl_over:
         sta     o4,y
         dey
         bpl     :-
-        lda     _dh_x
+cl_ovst:lda     _dh_x
         asl     a
         sta     tmp2
         sta     AUXON
