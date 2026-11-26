@@ -499,13 +499,14 @@ static void draw_panel(void)
     unsigned char s, me = view, left_[4], n, k, g;
     static char key[24];
     /* the dice in the right half's middle row: the ones still to play (a die is blanked as it is played,
-       and comes back with Undo); four for doubles */
+       and comes back with Undo); four for doubles, from the group after next to the cube's, so that black
+       shows between the cube and the first die (a die's last column is black too, between the dice) */
     layer(0, 0, wood());
     go(gmx(7, 6), MID, 6, 97 - MID + 1);
     n = dice_left(left_);
     for (k = 0; k < n; ++k)
         if (left_[k]) {
-            g = gmx(n == 4 ? 7 + k : 8 + 2 * k, 1);
+            g = gmx(n == 4 ? 8 + k : 8 + 2 * k, 1);
             memcpy(B_NUM, pips[left_[k] - 1], 48);
             layer(0, 0, wood());
             layer(B_FACE, 4, SOLID(D_WHITE));
