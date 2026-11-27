@@ -32,7 +32,9 @@ A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammo
   on each side back to command mode, where ATH hangs up, and some numbers stand for a modem's other
   answers: one with BUSY in it gives BUSY, NOCARRIER gives NO CARRIER, SILENT gives nothing until the next
   byte (which stops the dial, with NO CARRIER), and STAY connects but does not notice the parlor hanging
-  up. Everything it sees is in `work/srv/modem.log`.
+  up. Everything it sees is in `work/srv/modem.log`. As a plain relay it can also lose a byte on the
+  way to the Apple, once (its last argument, DROP: the O of the first OK line after that many bytes), so
+  that a reply comes without its final line and the program asks for it again.
 - P dials a modem first, which the plain relay cannot answer, so on port 16601, or with `DIRECT=1`,
   `run.sh` adds `hold cfg_number 0 30` after a plan's `title` step: the dialer's number is then empty, as
   a player on a direct line sets it, and P sends the opening at once.
