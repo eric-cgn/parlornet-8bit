@@ -1,7 +1,8 @@
 # The command line (/): in the lobby, /who answers on the message line and /help is a page of the parlor's
 # commands. At a Reversi table that waits for a player, /invite bot seats the bot, and the typed move /d3
 # plays a disc. /resign opens the resign dialog, which starts on No, and Esc answers No. The lit buttons go
-# unlit while the line is open (cl_typing).
+# unlit while the line is open (cl_typing). The slash is typed on its own, since the screen draws its keys
+# unlit before the line takes keys.
 wait 120
 caps
 title 1800
@@ -17,14 +18,18 @@ type Swordfish 1997\r
 waittext again 600
 type Swordfish 1997\r
 wait 600
-type /who
+type /
+wait 30
+type who
 wait 30
 snap cl_typing
 type \r
 wait 200
 settle
 snap cl_who
-type /help\r
+type /
+wait 30
+type help\r
 wait 300
 settle
 snap cl_help
@@ -38,18 +43,24 @@ click 1
 wait 900
 settle
 snap cl_waiting
-type /invite bot\r
+type /
+wait 30
+type invite bot\r
 wait 300
 settle
 snap cl_invited
 wait 600
 settle
 snap cl_seated
-type /d3\r
+type /
+wait 30
+type d3\r
 wait 600
 settle
 snap cl_typed_move
-type /resign\r
+type /
+wait 30
+type resign\r
 wait 200
 settle
 snap cl_resign_dialog
@@ -57,11 +68,15 @@ key esc
 wait 300
 settle
 snap cl_resign_no
-type /xyzzy\r
+type /
+wait 30
+type xyzzy\r
 wait 200
 settle
 snap cl_unknown
-type /leave\r
+type /
+wait 30
+type leave\r
 wait 400
 settle
 snap cl_lobby
