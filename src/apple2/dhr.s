@@ -78,9 +78,9 @@ kp:     .res    2               ; the kinds of place (d_types)
         rts
 ; (0 to 6 hgr.s's, from 7 on dhr.h's)
 ktl:    .lobytes d_clear-1, d_rect-1, d_blit-1, d_char-1, d_vline-1, d_hline-1, d_ptr-1, d_place-1
-        .lobytes d_glide-1, d_unglide-1, d_pxline-1, d_types-1, d_column-1, d_num-1, d_pips-1
+        .lobytes d_glide-1, d_unglide-1, d_pxline-1, d_types-1, d_column-1, d_num-1, d_pips-1, d_vbar-1
 kth:    .hibytes d_clear-1, d_rect-1, d_blit-1, d_char-1, d_vline-1, d_hline-1, d_ptr-1, d_place-1
-        .hibytes d_glide-1, d_unglide-1, d_pxline-1, d_types-1, d_column-1, d_num-1, d_pips-1
+        .hibytes d_glide-1, d_unglide-1, d_pxline-1, d_types-1, d_column-1, d_num-1, d_pips-1, d_vbar-1
 
 ; Each color's byte for a byte k of the line, by k mod 4: colpat + color * 4 + k mod 4.
 colpat: .repeat 64, i
@@ -508,16 +508,31 @@ m0:     .res    1
 k1:     .res    1               ; its last byte and mask
 m1:     .res    1
 c4:     .res    1               ; its color * 4
+hcol:   .res    1               ; a line's color * 4 (white but for d_vbar's)
 sxor:   .res    1               ; 1: flipped
 par:    .res    1
 ya:     .res    1
 yb:     .res    1
 
 d_hline:
+        jsr     white
         lda     _hg_w
         beq     hl_out
         jsr     hl_d0
-        lda     _hg_w
+        jsr     hl_d1
+        ldx     _hg_y
+        cpx     #192
+        bcs     hl_out
+        jmp     hspan
+hl_out: rts
+hl_d0:  lda     _hg_px
+        asl     a
+        sta     hd0
+        lda     _hg_px+1
+        rol     a
+        sta     hd0+1
+        rts
+hl_d1:  lda     _hg_w           ; hd1: the last dot of hg_w pixels from hd0
         asl     a
         sta     tmp1
         lda     #0
@@ -534,34 +549,41 @@ d_hline:
         bne     :+
         dec     hd1+1
 :       dec     hd1
-        ldx     _hg_y
-        cpx     #192
-        bcs     hl_out
-        jmp     hspan
-hl_out: rts
-hl_d0:  lda     _hg_px
-        asl     a
-        sta     hd0
-        lda     _hg_px+1
-        rol     a
-        sta     hd0+1
         rts
 
+white:  lda     #15 * 4
+        sta     hcol
+        rts
+
+; d_vbar: hg_w pixels across and hg_h lines down from (hg_px, hg_y), as hgr_vline is one pixel across, in
+; the color hg_p[0].
+d_vbar: lda     _hg_p
+        asl     a
+        asl     a
+        sta     hcol
+        lda     _hg_w
+        beq     hl_out
+        jsr     hl_d0
+        jsr     hl_d1
+        jmp     vl_go
+
 d_vline:
+        jsr     white
         jsr     hl_d0
         lda     hd0
         sta     hd1
         inc     hd1
         lda     hd0+1
         sta     hd1+1
-        lda     _hg_h
+vl_go:  lda     _hg_h
         beq     hl_out
         sta     hcnt
+        jsr     hprep           ; the same bytes and masks on every line
         ldx     _hg_y
 :       cpx     #192
         bcs     hl_out
         stx     hln
-        jsr     hspan
+        jsr     span
         ldx     hln
         inx
         dec     hcnt
@@ -570,7 +592,12 @@ d_vline:
 
 ; Dots hd0 to hd1 of line X.
 hspan:  stx     hln
-        lda     zmono
+        jsr     hprep
+        ldx     hln
+        jmp     span
+
+; The span of dots hd0 to hd1: its bytes k0 and k1, their masks, the color and whether it flips.
+hprep:  lda     zmono
         bne     :+
         lda     hd0
         and     #$FC
@@ -602,12 +629,11 @@ hspan:  stx     hln
         tax
         lda     lomask,x
         sta     m1
-        lda     #15 * 4
+        lda     hcol
         sta     c4
         lda     _hg_xor
         sta     sxor
-        ldx     hln
-        jmp     span
+        rts
 
 ; A dot (A low, X high; under 560) as its byte along the line (Y) and its bit (A).
 div7:   ldy     #0

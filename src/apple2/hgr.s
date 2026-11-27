@@ -93,6 +93,7 @@ _hgr_text:
 KIT     = $0800                 ; the kit's entry, in the auxiliary memory
 KPLACE  = 7                     ; the kit's entries from here take the parameters at $0200 (dhr.h)
 KPXLINE = 10                    ; and this one dl_buf too
+KVBAR   = 15                    ; (but not this one, which takes only the hg_ parameters)
 
 ; The entries: X the kit's entry number, A passed on to it (hgr_char's character).
 _hgr_clear:
@@ -137,6 +138,8 @@ kcall:  sta     zka
         sta     zmono
         cpx     #KPLACE
         bcc     @go
+        cpx     #KVBAR
+        bcs     @go
         sta     $C005           ; RAMWRT: writes go to the auxiliary memory
         ldy     #PARMN - 1
 :       lda     _dl_x,y
