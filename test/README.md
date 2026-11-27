@@ -19,11 +19,11 @@ A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammo
 
 - `mame/run.lua` is the step runner MAME loads; it reads the plan (wait, waittext, title, type, key,
   arrows, click, point, oa, caps, snap, dumptext, set, hold, need, joy, stick, button, nostick, where,
-  exit) one step per line. The title
+  poke, watch, exit) one step per line. The title
   screen waits for a key, so every plan has a `title` step, which waits for the title screen and presses
   Return (`gsrun.lua` has the same step for the IIgs). `splash.txt` shows the title screen on a color
   monitor, and `splash_mono.txt` on a monochrome monitor, with `hold mono 1 900` keeping the program's
-  mono setting on while it starts; the title screen is the same in either setting.
+  mono setting on while it starts; in monochrome the title's blocks are white.
 - `lab/orch.py` answers a plan's `need` lines: it signs in as the player on a connection of its own,
   reads the table's view and writes the clicks and keys of a legal move back to the runner.
 - `lab/bridge.py` is the other end of the serial line: a plain relay to the parlor (port 16601) or a
@@ -89,9 +89,29 @@ board on the left (`d01` on). The orchestrator's `bgsnapX` plays the first legal
 snapshots `X01` to `X30`. `plans/bg_bar.txt` plays until a checker is on the bar (`bgplay`, which hits),
 then until one of the player's is (`bgbarme`, which does not), and each time points at the bar from point
 7 with the up arrow: the pointer sits on the player's checkers on the bar, below the cube, with the home
-board on the right and on the left. Tall stacks show four checkers and +n. `plans/fingers.txt` opens Five in
+board on the right and on the left. `plans/fingers.txt` opens Five in
 a Row, Naval Combat and Grid Words and shows the pointer on the middle of a point or square, at the first one
 and one along and one down from it.
+
+`plans/dhr_backgammon.txt` shows the IIe's Double Hi-Res screens: the title screen (`dhr_title`), the lobby
+(`dhr_lobby`) and a new Backgammon board in color (`dhr_color`, and `dhr_color_ptr` with the pointer on point 6),
+then in monochrome on MAME's green, white and amber monitors (`dhr_green`, `dhr_green_ptr`, `dhr_white`,
+`dhr_amber`), and a step gliding (`a01` to `a30`). MAME's monitor is set with `set :a2video:a2_video_config
+Monitor type N`: 0 color, 4 white, 5 green, 6 amber.
+
+`plans/dhr_timing.txt` times Backgammon's drawing. Build with `-D DHR_TIMING` added to `A2FLAGS` in build.sh,
+and draw/backgammon.c marks each drawing at $FEFF (in the language card, which the kit's switches to the auxiliary memory do not move), which the plan's `watch FEFF` logs frame by frame:
+full boards in color and in monochrome (the plan sets the display with `hold mono`, and closing help draws the whole table again),
+a step of the player's and the bot's turn. `python3 test/lab/marks.py OUTDIR/run.log` prints the frames each
+took. The machine runs at 1.023 MHz, 60 frames a second, so a frame is about 17,000 cycles. The `poke` step
+writes bytes into the program's memory (into an overlay's, it waits for a frame where the language card's bank
+2 is in, since the Double Hi-Res kit runs with bank 1 in), so a position can be put into Backgammon's `pt[]`
+and drawn by the display toggle.
+
+`plans/k64.txt` boots the self-booting disk on a IIe without the auxiliary 64K
+(`MAMEARGS="-ramsize 64K -aux std80"`, or `-aux ""` for none) and shows the boot block's sentence, "ParlorNet
+needs an Apple IIe with 128K, or a IIc or IIgs." (`k64`, `k64_text`). `MACH=apple2c` runs any plan on a IIc,
+whose modem port takes the serial line, and which needs MAME's apple2c ROM set.
 
 `plans/clock.txt` shows the time signed in, in whole minutes. The sign-in screen has no clock (`ck_name`); it
 is "0m" at the right end of the lobby's title row right after sign-in (`ck_lobby`), "1m" by the table's

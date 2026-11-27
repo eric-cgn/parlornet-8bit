@@ -1,15 +1,77 @@
-/* ParlorNet for the Apple IIe: the title screen shown at start-up, an overlay (ovl.h). PARLOR over NET in
-   the title's block letters (art/splash.txt, tools/apple2_art.py), as on the C64: each block 4 color
-   pixels across and 6 lines down, lit but for a black gap on its right and bottom edge, and each row of
-   blocks a color of its own, warm for PARLOR and cool for NET. A row of blocks has one color, so no screen
-   byte mixes the two palette groups, and every block of a row has the same pixels lit. The screen is the
-   same with the display set to monochrome, and on a monochrome monitor the colored blocks show as fine
-   stripes. main.c keeps it up until a key is pressed. */
+/* ParlorNet for the Apple IIe and IIgs: the title screen shown at start-up, an overlay (ovl.h). PARLOR over
+   NET in the title's block letters (art/splash.txt, tools/apple2_art.py), as on the C64, each row of blocks a
+   color of its own, warm for PARLOR and cool for NET. main.c keeps it up until a key is pressed.
+
+   On the IIe the screen is Double Hi-Res (dhr.h): a block is 4 color pixels across, 3 of them lit, and 6 lines
+   down, 5 of them lit, and the rows have the C64's colors, as near as Double Hi-Res has them. In monochrome
+   every block is white.
+
+   On the IIgs the screen is Hi-Res: each block 4 color pixels across and 6 lines down, lit but for a black gap
+   on its right and bottom edge. A row of blocks has one color, so no screen byte mixes the two palette
+   groups, and every block of a row has the same pixels lit. The screen is the same with the display set to
+   monochrome, and on a monochrome monitor the colored blocks show as fine stripes. */
 #include "machine.h"
 #include "apple2.h"
 #include "ovl.h"
 #include "version.h"
+#ifndef IIGS
+#include "dhr.h"
 
+extern const unsigned char sg_P[], sg_A[], sg_R[], sg_L[], sg_O[], sg_N[], sg_E[], sg_T[];
+
+static const unsigned char *const parlor_word[] = {sg_P, sg_A, sg_R, sg_L, sg_O, sg_R, 0};
+static const unsigned char *const net_word[] = {sg_N, sg_E, sg_T, 0};
+
+/* Each row of blocks, top first, in the C64's colors: PARLOR yellow, pink, orange, red and brown, NET white,
+   green, aqua, light blue, purple and blue. */
+static const unsigned char warm[9] = {13, 13, 11, 11, 9, 9, 1, 1, 8};
+static const unsigned char cool[9] = {15, 12, 14, 14, 7, 7, 3, 3, 6};
+
+#define GAP 3                           /* color pixels between letters */
+
+/* One word, centered, its top at line y: each row of blocks made as a line of 140 color pixels in dl_buf and
+   drawn on its 5 lines. A letter's data: its width in blocks, then a byte a row of 9, the blocks in bits 7
+   down. */
+static void word(const unsigned char *const *w, unsigned char y, const unsigned char *colors)
+{
+    unsigned char total = 0, x, r, c, bits, k, col;
+    const unsigned char *const *p;
+    const unsigned char *g;
+    for (p = w; *p; ++p)
+        total += (*p)[0] * 4 + GAP;
+    total -= GAP + 1;                   /* (the last block's gap) */
+    for (r = 0; r < 9; ++r, y += 6) {
+        for (x = 0; x < 140; ++x)
+            dl_buf[x] = 0;
+        col = mono ? 15 : colors[r];
+        x = (140 - total) / 2;
+        for (p = w; *p; ++p) {
+            g = *p;
+            bits = g[1 + r];
+            for (c = 0; c < g[0]; ++c, bits <<= 1, x += 4)
+                if (bits & 0x80)
+                    for (k = 0; k < 3; ++k)
+                        dl_buf[x + k] = col;
+            x += GAP;
+        }
+        dl_y = y;
+        dl_h = 5;
+        dhr_call(DK_PXLINE);
+    }
+}
+
+static void show(void)
+{
+    hgr_clear();
+    word(parlor_word, 20, warm);
+    word(net_word, 80, cool);
+    ui_ink(F_WHITE, F_BLACK);
+    hg_bold = !mono;
+    ui_text(4, 146, "ParlorNet for the Apple IIe " PN_VERSION);
+    ui_text(14, 164, "Press a key");
+    gr_mode();
+}
+#else
 extern const unsigned char hgr_ylo[], hgr_yhi[];
 extern const unsigned char sg_P[], sg_A[], sg_R[], sg_L[], sg_O[], sg_N[], sg_E[], sg_T[];
 
@@ -90,11 +152,7 @@ static void word(const unsigned char *const *w, unsigned char y0, const unsigned
         for (l = 0; l < 5; ++l) {
             LINE(y0 + l);
             for (b = 0; b < 40; ++b)
-#ifdef IIGS
                 gs_scr_put(row + b, line[b] | hi);
-#else
-                row[b] = line[b] | hi;
-#endif
         }
     }
 }
@@ -106,14 +164,11 @@ static void show(void)
     word(net_word, 80, cool);
     ui_ink(F_WHITE, F_BLACK);
     hg_bold = 1;
-#ifdef IIGS
     ui_text(4, 146, "ParlorNet for the Apple IIgs " PN_VERSION);
-#else
-    ui_text(4, 146, "ParlorNet for the Apple IIe " PN_VERSION);
-#endif
     ui_text(14, 164, "Press a key");
     gr_mode();
 }
+#endif
 
 #pragma rodata-name (push, "OVHDR")
 const struct splash splash_header = {show};

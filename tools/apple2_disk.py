@@ -4,7 +4,8 @@
 The disks hold no operating system. Linear sector n is track n // 16, physical sector n % 16:
 - sectors 0-5: the boot block (boot.bin), which the Disk II boot ROM loads at $0800 and which reads the
   rest itself;
-- then the program (parlor.main, loaded at $4000) and the vectors (parlor.vec, at $FF00);
+- then the program (parlor.main, loaded at $4000), the vectors (parlor.vec, at $FF00) and the Double
+  Hi-Res kit (parlor.dhr, at $2800, which the program copies into the auxiliary memory);
 - then the overlays (parlor.<name>, each loaded at $D000 when needed), in the order of overlays.txt.
 
 The boot block's load table (at $080D) and overlay table (at $0821) are filled in here. When the
@@ -15,8 +16,8 @@ The images are .dsk files in DOS 3.3 sector order, as emulators and disk tools e
 of a track is the file's sector DOS_SKEW[p] of that track.
 
 It also makes the files for running the program under ProDOS, in build/prodos/: PARLOR.SYSTEM
-(prodsys.bin with its table filled in), PARLOR.DAT (the program, its vectors and every overlay, each
-starting on a page) and parlor-files.po, a 140K ProDOS volume (ProDOS block order) named PARLORNET that
+(prodsys.bin with its table filled in), PARLOR.DAT (the program, its vectors, the kit and every overlay,
+each starting on a page) and parlor-files.po, a 140K ProDOS volume (ProDOS block order) named PARLORNET that
 holds just those two files, for copying them to a ProDOS disk. ProDOS itself is not on it.
 
 Usage: apple2_disk.py [build]   (writes parlornet.dsk, and parlornet-2.dsk when needed, there,
@@ -68,6 +69,8 @@ def build(d):
     assert len(boot) == BOOT_SECTORS * 256 and boot[0] == BOOT_SECTORS
     main = open(os.path.join(d, "parlor.main"), "rb").read()
     vec = open(os.path.join(d, "parlor.vec"), "rb").read()
+    kit = open(os.path.join(d, "parlor.dhr"), "rb").read()
+    assert pages(kit) <= 0x18
     names = [o.split(":")[0] for o in open(os.path.join(d, "overlays.txt")).read().split()]
     ovls = [open(os.path.join(d, "parlor." + n), "rb").read() for n in names]
     for n, o in zip(names, ovls):
@@ -80,6 +83,8 @@ def build(d):
     lin = place(disk1, lin, main)
     vec_at = lin
     lin = place(disk1, lin, vec)
+    kit_at = lin
+    lin = place(disk1, lin, kit)
     # Overlays: on disk 1 while there is room, the rest (DISK2 names) on disk 2.
     total1 = lin + sum(pages(o) for o in ovls)
     on2 = set()
@@ -102,8 +107,9 @@ def build(d):
     assert len(table) <= 20
 
     b = bytearray(boot)
-    b[LOADTAB:LOADTAB + 8] = bytes([main_at & 255, main_at >> 8, pages(main), 0x40,
-                                    vec_at & 255, vec_at >> 8, 1, 0xFF])
+    b[LOADTAB:LOADTAB + 12] = bytes([main_at & 255, main_at >> 8, pages(main), 0x40,
+                                     vec_at & 255, vec_at >> 8, 1, 0xFF,
+                                     kit_at & 255, kit_at >> 8, pages(kit), 0x28])
     b[START:START + 2] = bytes([0x00, 0x40])
     for i, (at, n, disk) in enumerate(table):
         b[OVLTAB + i * 4:OVLTAB + i * 4 + 4] = bytes([at & 255, at >> 8, n, disk])
@@ -123,6 +129,7 @@ def build(d):
         f.write("disk 1 boot 0 %d\n" % BOOT_SECTORS)
         f.write("disk 1 main %d %d %d\n" % (main_at, pages(main), len(main)))
         f.write("disk 1 vec %d 1 %d\n" % (vec_at, len(vec)))
+        f.write("disk 1 dhr %d %d %d\n" % (kit_at, pages(kit), len(kit)))
         for n, o, (at, cnt, disk) in zip(names, ovls, table):
             f.write("disk %d %s %d %d %d\n" % (disk, n, at, cnt, len(o)))
         f.write("used 1 %d\n" % lin)
@@ -133,7 +140,7 @@ def build(d):
 
 # ---- ProDOS ---------------------------------------------------------------------------------------
 PRODOS_TOP = 0xBF00     # the program must end below ProDOS's global page
-NPAGES_AT, OVLTAB_AT = 5, 6     # in prodsys.bin
+NPAGES_AT, OVLTAB_AT, KPAGES_AT = 5, 6, 86     # in prodsys.bin
 
 
 def program_end(d):
@@ -148,11 +155,12 @@ def program_end(d):
 def prodos_files(d):
     main = open(os.path.join(d, "parlor.main"), "rb").read()
     vec = open(os.path.join(d, "parlor.vec"), "rb").read()
+    kit = open(os.path.join(d, "parlor.dhr"), "rb").read()
     names = [o.split(":")[0] for o in open(os.path.join(d, "overlays.txt")).read().split()]
     ovls = [open(os.path.join(d, "parlor." + n), "rb").read() for n in names]
     end = program_end(d)
     assert end <= PRODOS_TOP, "the program ends at $%04X, past ProDOS's $BF00" % end
-    dat = pad(main) + pad(vec)
+    dat = pad(main) + pad(vec) + pad(kit)
     table = bytearray(80)
     for i, o in enumerate(ovls):
         page = len(dat) // 256
@@ -161,6 +169,7 @@ def prodos_files(d):
     loader = bytearray(open(os.path.join(d, "prodsys.bin"), "rb").read())
     assert loader[3:5] == b"PN"
     loader[NPAGES_AT] = pages(main)
+    loader[KPAGES_AT] = pages(kit)
     loader[OVLTAB_AT:OVLTAB_AT + 80] = table
     out = os.path.join(d, "prodos")
     os.makedirs(out, exist_ok=True)

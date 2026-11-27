@@ -6,7 +6,8 @@
 ; PARLOR.DAT beside it into $4000. Then it fills in the overlay table at $0821 (each game's first page
 ; in PARLOR.DAT) and marks the disk number at $080A 0, so the program knows it runs under ProDOS, keeps
 ; ProDOS's stack pointer at $081F, switches to the auxiliary zero page, stack and language card, puts
-; the program's 6502 vectors there and starts it. tools/apple2_disk.py fills in NPAGES and OVLTAB.
+; the program's 6502 vectors there, and starts it, with its Double Hi-Res kit read into $2800 for the program
+; to copy into the auxiliary memory. tools/apple2_disk.py fills in NPAGES, OVLTAB and KPAGES.
 
         .setcpu "6502"
 
@@ -21,6 +22,7 @@ HOME    = $FC58
         .byte   "PN"            ; $2003
 npages: .byte   0               ; $2005: the program's pages, then one of vectors, then the games
 ovltab: .res    80, 0           ; $2006: as the boot block's, the start a page in PARLOR.DAT
+kpages: .byte   0               ; $2056: the Double Hi-Res kit's pages, after the vectors
 
 start:  cld
         lda     $C01E           ; RDALTCHAR: the character set as we found it, for quitting (prodos.c)
@@ -118,6 +120,18 @@ have_pfx:
         bcc     :+
         jmp     nofile
 :
+        lda     #$00            ; the Double Hi-Res kit, at $2800, from where the program copies it
+        sta     r_buf
+        lda     #$28
+        sta     r_buf+1
+        lda     kpages
+        sta     r_len+1
+        jsr     MLI
+        .byte   $CA
+        .word   p_read
+        bcc     :+
+        jmp     nofile
+:
         jsr     MLI
         .byte   $CC
         .word   p_close
@@ -155,7 +169,7 @@ fail:   lda     msgs,x
         brk
 
 msgs:
-m_128:  .byte   "PARLORNET NEEDS AN APPLE IIE WITH 128K.", $0D, "PRESS A KEY.", 0
+m_128:  .byte   "ParlorNet needs an Apple IIe with 128K,", $0D, "or a IIc or IIgs. Press a key.", 0
 m_file: .byte   "PARLOR.DAT IS NOT BESIDE PARLOR.SYSTEM.", $0D, "PRESS A KEY.", 0
 
 p_getpfx:
