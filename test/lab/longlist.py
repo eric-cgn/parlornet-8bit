@@ -12,7 +12,7 @@ NAME = sys.argv[1]
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 16501
 PW = "Swordfish 1997"
 GAMES = ["backgammon standard", "cannonfire classic", "checkers american", "dotsandboxes standard",
-         "fiveinarow standard", "gridwords english", "mancala kalah", "navalcombat classic", "reversi standard",
+         "fiveinarow standard", "gridwords standard", "mancala kalah", "navalcombat classic", "reversi standard",
          "rummytile standard"]
 
 
