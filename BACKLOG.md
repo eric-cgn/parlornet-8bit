@@ -21,7 +21,11 @@ Testing would be in MAME's apple2p machine with a language card, the same lab sc
 
 ## Games in the IIe's auxiliary 64K
 
-On the IIe a game overlay has 10,496 bytes in the language card. Running the games from the auxiliary 64K instead would give each one most of a 32K space. The switch between the two halves costs only a few cycles, so the work is in what the games share with the main program. This plan is for when a game outgrows 10K.
+On the IIe a game overlay has 10,496 bytes in the language card. Running the games from the auxiliary 64K instead would give each one most of a 32K space. The switch between the two halves costs only a few cycles, so the work is in what the games share with the main program. This plan is for when a game outgrows 10K. It waits until the C64 and the IIgs program have an answer too, since the games share their rules and the room matters only if every machine can use it.
+
+In 2.0.8 Cannon Fire, Backgammon and Grid Words fill 92 to 98 percent of the overlay space on all three machines. The C64's Cannon Fire has 172 bytes left, its Backgammon 239 and its Grid Words 713. The IIgs program's Backgammon has 257. The rules those games share are 1.9K, 4.5K and 5.7K, and the rest of each overlay is the machine's own drawing.
+
+On the C64 the resident program is 34K and has 30 bytes free. Making the lobby an overlay of its own would free about 6K for the games, at the cost of a disk load each time a player goes back to the lobby. Part of the 4K of RAM under the I/O at $D000 holds only sprite shapes and could hold data. On the IIgs the games would need 65816 code to run in another bank, with long calls and the data bank set, and memory from the GS/OS Memory Manager. A IIgs also runs the IIe disk, which would get the IIe plan as it is.
 
 Every game would run this way, the small ones too, so that there is one mechanism and the code stays simple.
 
