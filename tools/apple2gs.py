@@ -10,6 +10,7 @@
 - parlornet-gs.po: an 800K ProDOS volume (ProDOS block order) named PARLORNET holding those two files,
   for a 3.5-inch disk or for copying them to the player's own GS/OS disk. GS/OS and Marinetti are not
   on it.
+- parlornet-gs.shk: a ShrinkIt archive (tools/nufx.py) of the same two files, with the same file types.
 
 The OMF is version 2.0, as the System Loader reads it (Apple IIgs GS/OS Reference, appendix F): a
 segment header, then an LCONST record with the bytes (or a DS record of zeros) and an END record.
@@ -20,7 +21,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from apple2_disk import pad, pages, prodos_volume  # noqa: E402
+import nufx  # noqa: E402
+from apple2_disk import ACCESS, pad, pages, prodos_volume  # noqa: E402
 
 OVLTAB, DISKID = 0x21, 0x0A     # in the page at $0800, as in the boot block
 STACK = 0x1000                  # the direct page and stack segment
@@ -87,10 +89,11 @@ def build(d):
         f.write(app)
     with open(os.path.join(d, "PARLOR.DAT"), "wb") as f:
         f.write(dat)
-    vol = prodos_volume("PARLORNET", [("PARLORNET", 0xB3, 0x0000, app),
-                                      ("PARLOR.DAT", 0x06, 0x0000, dat)], blocks=1600)
+    files = [("PARLORNET", 0xB3, 0x0000, app), ("PARLOR.DAT", 0x06, 0x0000, dat)]
     with open(os.path.join(d, "parlornet-gs.po"), "wb") as f:
-        f.write(vol)
+        f.write(prodos_volume("PARLORNET", files, blocks=1600))
+    with open(os.path.join(d, "parlornet-gs.shk"), "wb") as f:
+        f.write(nufx.archive(files, ACCESS))
 
 
 if __name__ == "__main__":

@@ -25,6 +25,8 @@ jobs:
           echo "VERSION=$v" >> "$GITHUB_ENV"
       - name: Build
         run: tools/build.sh
+      - name: Install NuLib2
+        run: sudo apt-get update -q && sudo apt-get install -y -q nulib2
       - name: Test
         run: python3 -m unittest discover test
       - name: Release files

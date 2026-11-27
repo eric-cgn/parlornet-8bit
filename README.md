@@ -24,8 +24,8 @@ tools/build.sh
 
 It builds the toolchain image (cc65 2.19 on Debian, pinned by digest, from `Dockerfile`), compiles and links the programs in it (`build.sh`), and makes the disks in `build/`:
 - `parlornet.dsk`, a 140K disk in DOS 3.3 sector order that boots by itself;
-- `prodos/` with `PARLOR.SYSTEM` and `PARLOR.DAT` for ProDOS;
-- `gs/` with the IIgs application, `PARLORNET`, its `PARLOR.DAT`, and `parlornet-gs.po`, an 800K disk holding the two;
+- `prodos/` with `PARLOR.SYSTEM` and `PARLOR.DAT` for ProDOS, with a disk holding the two (`parlor-files.po`) and a ShrinkIt archive of them (`parlornet.shk`);
+- `gs/` with the IIgs application, `PARLORNET`, and its `PARLOR.DAT`, with an 800K disk holding the two (`parlornet-gs.po`) and a ShrinkIt archive of them (`parlornet-gs.shk`);
 - `c64/parlornet.d64`, the C64's 1541 disk.
 
 The same source always gives the same disks. `APPLE2_IMAGE` names another image with cc65 2.19 and Python 3 to use instead.
@@ -34,7 +34,7 @@ The same source always gives the same disks. `APPLE2_IMAGE` names another image 
 
 The version is in `VERSION`, one for the whole repository. Changes go into `dev` by pull request, squashed; `main` takes only merges from `dev`, which is how a release is made. Every pull request and every push to `main` builds and runs `python3 -m unittest discover test` (`.github/workflows/ci.yml`); the MAME and VICE labs need ROMs and run only by hand (test/README.md). A pull request into `main` fails unless it comes from `dev`. Every push to `dev` publishes a `dev` pre-release that replaces the last one, with files named for the version, `-dev-` and the commit, such as `parlornet-1.0-dev-46a0304.dsk` (`.github/workflows/dev.yml`).
 
-A push to `main` whose version has no release yet runs the release (`.github/workflows/release.yml`): it builds, runs the tests, tags the commit `v<version>` and publishes a GitHub Release with `parlornet.dsk` (the Apple IIe's self-booting disk), `parlor-files.po` (the ProDOS files, on a ProDOS volume), `parlornet-gs.po` (the Apple IIgs disk) and `parlornet.d64` (the Commodore 64's disk), with their SHA-256 and MD5 sums. `tools/release.py` gathers those files from `build/` into `build/release/`.
+A push to `main` whose version has no release yet runs the release (`.github/workflows/release.yml`): it builds, runs the tests, tags the commit `v<version>` and publishes a GitHub Release with `parlornet.dsk` (the Apple IIe's self-booting disk), `parlor-files.po` (the ProDOS files, on a ProDOS volume), `parlornet.shk` (the same files in a ShrinkIt archive), `parlornet-gs.po` (the Apple IIgs disk), `parlornet-gs.shk` (the IIgs files in a ShrinkIt archive) and `parlornet.d64` (the Commodore 64's disk), with their SHA-256 and MD5 sums. `tools/release.py` gathers those files from `build/` into `build/release/`.
 
 ## Connecting
 
@@ -121,7 +121,7 @@ So far it has been played in MAME's IIgs (ROM 03) with System 6.0.1 and Marinett
 
 ### Installing
 
-`parlornet-gs.po` is an 800K ProDOS disk with two files, `PARLORNET` (the application) and `PARLOR.DAT` (the games). Run PARLORNET from that disk, or copy both files into one folder on your hard disk and run it from there. The settings are kept in `PARLOR.CFG` in the same folder, so the disk must not be write-protected if you want them kept.
+`parlornet-gs.po` is an 800K ProDOS disk with two files, `PARLORNET` (the application) and `PARLOR.DAT` (the games). Run PARLORNET from that disk, or copy both files into one folder on your hard disk and run it from there. `parlornet-gs.shk` is a ShrinkIt archive of the same two files, for unpacking with GS-ShrinkIt into a folder of your own. The settings are kept in `PARLOR.CFG` in the same folder, so the disk must not be write-protected if you want them kept.
 
 ### Connecting
 
@@ -296,7 +296,7 @@ Under ProDOS the program keeps out of ProDOS's way: it ends below $BF00, the boo
 
 ## Disks and files
 
-`tools/build.sh` builds everything into `build/`: `parlornet.dsk`, the self-booting disk (DOS 3.3 sector order, 140K, with every game), and `prodos/` with `PARLOR.SYSTEM`, `PARLOR.DAT` and `parlor-files.po`, a ProDOS volume holding just those two files. ProDOS is not part of this program: the player copies the two files to a disk that has their own ProDOS. On the IIe the overlays are packed on the disk and in PARLOR.DAT, and unpacked in place as they load (docs/overlay-packing.md), so a 140K disk holds ProDOS and both files. `gs/` has the IIgs program: `PARLORNET`, `PARLOR.DAT` and `parlornet-gs.po`, an 800K ProDOS volume holding just those two. GS/OS and Marinetti are not on it. `c64/` has the C64's disk, `parlornet.d64` (The Commodore 64, above).
+`tools/build.sh` builds everything into `build/`: `parlornet.dsk`, the self-booting disk (DOS 3.3 sector order, 140K, with every game), and `prodos/` with `PARLOR.SYSTEM`, `PARLOR.DAT` and `parlor-files.po`, a ProDOS volume holding just those two files. `parlornet.shk` is a ShrinkIt archive of the same two files with their file types, made by `tools/nufx.py`. ProDOS is not part of this program: the player copies the two files to a disk that has their own ProDOS. On the IIe the overlays are packed on the disk and in PARLOR.DAT, and unpacked in place as they load (docs/overlay-packing.md), so a 140K disk holds ProDOS and both files. `gs/` has the IIgs program: `PARLORNET`, `PARLOR.DAT` and `parlornet-gs.po`, an 800K ProDOS volume holding just those two. Their ShrinkIt archive is `parlornet-gs.shk`. GS/OS and Marinetti are not on it. `c64/` has the C64's disk, `parlornet.d64` (The Commodore 64, above).
 
 On the IIgs the program's bank has the same layout as the IIe's memory, with nothing at $2000-$3FFF (the screen is Hi-Res page 1, in bank $E0), no Double Hi-Res kit and no vectors at the top; its zero page is in the direct page GS/OS gives the application. In a bank of its own $C000-$CFFF is memory like any other, so the program runs on to $CFFF there, with `frame.c` a part of it.
 
