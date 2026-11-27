@@ -174,7 +174,7 @@ static void board_view(void)
     if (!home_read) {
         home_read = 1;
         q_set("PRF GET bghome");
-        if (net_req() == R_OK && r_n && strncmp(r_line[0], "PRF bghome l", 12) == 0)
+        if (net_req() == R_OK && r_n && strncmp(r_text, "PRF bghome l", 12) == 0)
             left = 1;
     }
 }

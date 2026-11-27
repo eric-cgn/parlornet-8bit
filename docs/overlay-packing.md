@@ -26,7 +26,7 @@ A piece is read in whole pages, so it starts with a byte that says where the pac
 
 ## Unpacking in place
 
-An overlay's pieces are read into the top pages of $D000-$F8FF and unpacked from there to $D000. The output goes up behind the input, so it must never reach input that is still to be read. `tools/apple2_lz.py` works out how far the output can get ahead of the input for each piece, and the build fails when a piece would not fit its region that way.
+An overlay's pieces are read into the top pages of $D000-$FEFF and unpacked from there to $D000. The output goes up behind the input, so it must never reach input that is still to be read. `tools/apple2_lz.py` works out how far the output can get ahead of the input for each piece, and the build fails when a piece would not fit its region that way.
 
 Help is packed one help at a time. The help overlay's first page is its index: each help's first page in the overlay and its number of packed pages (2 bytes each), and from byte 128 each help's number of pages unpacked. The program reads the index into the reply buffer, then the help's packed pages to the top of the pages it will take there, and unpacks them in place.
 

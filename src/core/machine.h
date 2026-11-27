@@ -62,10 +62,11 @@ void serial_open(void);
 /* The line as the start screen and console describe it: "9600 8N1", "2400 user port". */
 const char *line_desc(void);
 
-/* The reply reader (net.c's net_reply): read lines from ser_get into sr_buf, at most sr_max bytes, each ended
-   by a 0, until a final line (OK, ERR, ASK, or a modem's NO CARRIER) has ended, or with sr_any any line, or
-   until sr_ticks ticks pass with no byte (sr_gap ticks once part of the reply has come). Returns the bytes
-   stored; sr_final is the final line's first letter (O, E, A, N) or 0. It must keep up with the line at its full speed, so on the 6502 machines it is
+/* The reply reader (net.c): read a page of a reply, lines from ser_get into sr_buf, at most sr_max bytes,
+   each ended by a 0, until a final line (OK, ERR, ASK, or a modem's NO CARRIER) or the CNT that ends a page
+   has ended, or with sr_any any line, or until sr_ticks ticks pass with no byte (sr_gap ticks once part of
+   the page has come). Returns the bytes stored; sr_final is the last line's first letter (O, E, A, N, or C
+   for CNT) or 0. It must keep up with the line at its full speed, so on the 6502 machines it is
    assembly shared by both (src/common/6502/reply.inc, which each sys.s includes); a machine on another
    processor writes its own. */
 unsigned int ser_reply(void);

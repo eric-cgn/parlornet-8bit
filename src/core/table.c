@@ -169,136 +169,150 @@ static void chat_step(void)
     chat_show();
 }
 
-/* The table's line in LST: the names in its seats. Only that line is asked for (table=): a player's
-   whole list can be longer than the reply buffer, and a new table's line comes last among their own.
-   A parlor without table= answers ERR, and then the whole list is read. */
-static void load_names(void)
+/* The table's line in LST: the names in its seats. Only that line is asked for (table=), and the reply
+   stops once it has come. */
+static void name_line(void)
 {
-    unsigned char i, s;
+    unsigned char s;
     char *p;
-    q_set("LST table=");
-    q_cat(utoa10(g_table));
-    if (net_req() != R_OK) {
-        q_set("LST");
-        if (net_req() != R_OK)
-            return;
-    }
-    for (i = 0; i < r_n; ++i) {
-        if (strncmp(r_line[i], "TAB ", 4) != 0)
-            continue;
-        words(r_line[i]);
-        if (wn < 7 || num(w[1]) != g_table)
-            continue;
-        strncpy(g_rules, w[3], 12);
-        strncpy(gtype, w[2], 15);
-        p = strchr(w[4], '/');
-        g_seats = p ? num(p + 1) : 2;
-        if (g_seats > 8)
-            g_seats = 8;
-        memset(g_names, 0, sizeof g_names);
-        s = 0;
-        p = w[6];
-        while (*p && s < 8) {
-            char *e = strchr(p, ',');
-            if (e)
-                *e = 0;
-            strncpy(g_names[s], p, 12);
-            if (strcmp(p, me) == 0)
-                g_seat = s;
-            ++s;
-            if (!e)
-                break;
-            p = e + 1;
-        }
+    if (strncmp(r_text, "TAB ", 4) != 0)
         return;
+    words(r_text);
+    if (wn < 7 || num(w[1]) != g_table)
+        return;
+    r_stop = 1;
+    strncpy(g_rules, w[3], 12);
+    strncpy(gtype, w[2], 15);
+    p = strchr(w[4], '/');
+    g_seats = p ? num(p + 1) : 2;
+    if (g_seats > 8)
+        g_seats = 8;
+    memset(g_names, 0, sizeof g_names);
+    s = 0;
+    p = w[6];
+    while (*p && s < 8) {
+        char *e = strchr(p, ',');
+        if (e)
+            *e = 0;
+        strncpy(g_names[s], p, 12);
+        if (strcmp(p, me) == 0)
+            g_seat = s;
+        ++s;
+        if (!e)
+            break;
+        p = e + 1;
     }
 }
 
+static void load_names(void)
+{
+    q_set("LST table=");
+    q_cat(utoa10(g_table));
+    r_each = name_line;
+    net_req();
+}
+
 static void poll_events(void);
+
+static unsigned char v_show, v_newer;
+
+/* A line of the view. Its first, "V type seq", starts it: the last view's lines are forgotten (the game's
+   begin), unless events came after the last SIN (v_show), which are read first; the reply then stops. (A
+   parlor's notice, INF, may come before it.) */
+static void view_line(void)
+{
+    static unsigned char n;
+    static char *l;
+    l = r_text;
+    if (l[0] == 'V' && l[1] == ' ') {
+        words(l);
+        if (wn > 2) {
+            if (v_show && num(w[2]) > ev_seq) {
+                v_newer = r_stop = 1;
+                return;
+            }
+            v_seq = num(w[2]);
+            strncpy(gtype, w[1], 15);
+        }
+        m_n = 0;
+        mused = 0;
+        stale = 0;
+        g_bot = 0;
+        have_clk = 0;
+        g_status[0] = 0;
+        g_started = 0;
+        if (G)
+            G->begin();
+        return;
+    }
+    if (l[0] == 'S' && l[1] == ' ') {
+        strncpy(g_status, l + 2, 40);
+        g_status[40] = 0;
+        return;
+    }
+    if (l[0] == 'M' && l[1] == ' ') {
+        n = strlen(l + 2);
+        if (m_n < MAXM && mused + n + 1 <= sizeof mbuf) {
+            m_tok[m_n++] = mbuf + mused;
+            strcpy(mbuf + mused, l + 2);
+            mused += n + 1;
+        }
+        return;
+    }
+    words(l);
+    if (!wn)
+        return;
+    if (is(w[0], "W") && wn > 1) {
+        g_started = 1;
+        g_turn = (w[1][0] == '-') ? -1 : (signed char)num(w[1]);
+    } else if (is(w[0], "CLK") && wn > 2) {
+        g_started = 1;
+        have_clk = 1;
+        clk_seat = num(w[1]);
+        clk_secs = 0;
+        for (l = w[2]; *l >= '0' && *l <= '9'; ++l)
+            clk_secs = clk_secs * 10 + (*l - '0');
+        clk_at = ticks;
+    } else if (is(w[0], "BOT")) {
+        for (n = 1; n < wn; ++n)
+            g_bot |= 1 << num(w[n]);
+    } else if (is(w[0], "T") && wn > 2) {
+        n = num(w[1]);
+        if (n < 8)
+            g_score[n] = snum(w[2]);
+    }
+    if (G)
+        G->line();
+}
 
 /* Fetch the view: 1 if it came. With show (the table on the screen), events that came after the last SIN
    and before the view are shown first, as they would have been: SIN reads them, then the view is fetched
    again, up to show times. An opponent who moves while the player's own move is being shown (the bot
    answers within a second or two) would otherwise be seen only in the view, their move's events
-   skipped. */
+   skipped. The view is drawn only after its final OK, so a broken one is never shown. */
 static unsigned char __fastcall__ fetch(unsigned char show)
 {
-    unsigned char i, n, asked_g = !view_g;
-    char *l;
+    unsigned char n, asked_g = !view_g;
 again:
     q_set("VUE");
     q_num(g_table);
     q_add(view_g ? "T" : "GT");
     if (!G || !G->no_m)
         q_cat("M");
+    v_show = show;
+    v_newer = 0;
+    r_each = view_line;
     if (net_req() != R_OK) {
         if (r_final)
             g_message(err_text(r_final));
         return 0;
     }
-    words(r_line[0]);                   /* the view's first line: V type seq */
-    if (wn > 2) {
-        if (show && num(w[2]) > ev_seq) {
-            --show;
-            in_view = 1;                /* (no refresh from SIN: this is one) */
-            poll_events();
-            in_view = 0;
-            goto again;
-        }
-        v_seq = num(w[2]);
-        strncpy(gtype, w[1], 15);
-    }
-    m_n = 0;
-    mused = 0;
-    stale = 0;
-    g_bot = 0;
-    have_clk = 0;
-    g_status[0] = 0;
-    g_started = 0;
-    if (G)
-        G->begin();
-    for (i = 0; i < r_n; ++i) {
-        l = r_line[i];
-        if (l[0] == 'S' && l[1] == ' ') {
-            strncpy(g_status, l + 2, 40);
-            g_status[40] = 0;
-            continue;
-        }
-        if (l[0] == 'M' && l[1] == ' ') {
-            n = strlen(l + 2);
-            if (m_n < MAXM && mused + n + 1 <= sizeof mbuf) {
-                m_tok[m_n++] = mbuf + mused;
-                strcpy(mbuf + mused, l + 2);
-                mused += n + 1;
-            }
-            continue;
-        }
-        words(l);
-        if (!wn)
-            continue;
-        if (is(w[0], "V"))              /* (read above) */
-            continue;
-        if (is(w[0], "W") && wn > 1) {
-            g_started = 1;
-            g_turn = (w[1][0] == '-') ? -1 : (signed char)num(w[1]);
-        } else if (is(w[0], "CLK") && wn > 2) {
-            g_started = 1;
-            have_clk = 1;
-            clk_seat = num(w[1]);
-            clk_secs = 0;
-            for (l = w[2]; *l >= '0' && *l <= '9'; ++l)
-                clk_secs = clk_secs * 10 + (*l - '0');
-            clk_at = ticks;
-        } else if (is(w[0], "BOT")) {
-            for (n = 1; n < wn; ++n)
-                g_bot |= 1 << num(w[n]);
-        } else if (is(w[0], "T") && wn > 2) {
-            n = num(w[1]);
-            if (n < 8)
-                g_score[n] = snum(w[2]);
-        }
-        if (G)
-            G->line();
+    if (v_newer) {
+        --show;
+        in_view = 1;                    /* (no refresh from SIN: this is one) */
+        poll_events();
+        in_view = 0;
+        goto again;
     }
     if (strcmp(g_status, "Waiting for players") == 0)
         g_started = 0;
@@ -524,6 +538,10 @@ static void refresh(void)
         redraw();
 }
 
+/* A roll with no legal step passes the turn at once: the events after our move say so with our own PASS
+   (pass_watch, while send_move reads them). */
+static unsigned char passed, pass_watch;
+
 static unsigned char send_move(const char *verb, const char *tokens)
 {
     unsigned char k;
@@ -534,23 +552,18 @@ static unsigned char send_move(const char *verb, const char *tokens)
     k = net_req();
     g_reply_more = g_reply_done = 0;
     if (k == R_OK) {
-        unsigned char i, passed = 0;
-        unsigned int seq;
         if (strcmp(r_final, "OK more") == 0)
             g_reply_more = 1;
         if (strcmp(r_final, "OK done") == 0)
             g_reply_done = 1;
-        /* a roll with no legal step passes the turn at once: say so (but not after a pass of our own) */
-        for (i = 0; i < r_n && !(tokens && is(tokens, "PASS")); ++i) {
-            words(r_line[i]);
-            if (wn > 4 && is(w[0], "EVT") && is(w[3], "PASS") && num(w[4]) == g_seat)
-                passed = 1;
-        }
         g_message("");
         /* the events since the view, ours and any that came after them (the bot answers at once and
            the view may show its turn already), then the view: the game draws from both */
         stale = 1;
+        passed = 0;
+        pass_watch = !tokens || !is(tokens, "PASS");    /* (but not after a pass of our own) */
         poll_events();
+        pass_watch = 0;
         if (stale)
             refresh();
         if (passed)
@@ -602,71 +615,89 @@ unsigned char __fastcall__ g_chk(const char *tokens)
 /* SIN: keep chat, and fetch the view again if anything else happened since it. What a player plays with
    (CLIENT seat text, right after their JOIN or when it changes) goes into the chat too: "ann joined with
    GameMaster 1.0.0 on a Macintosh Plus". */
+static unsigned char said, join, jseat, chat_was;
+static char jname[13];                  /* the name in the last JOIN, for the CLIENT and chat that follow it
+                                           (the names are read after the events) */
+
+/* An event from SIN. The first line starts afresh (a reply asked for again after a broken one). */
+static void event_line(void)
+{
+    static unsigned char j, n, s;
+    static char *b;
+    static const char *who, *tail;
+    if (!r_n) {
+        said = join = 0;
+        jseat = 255;
+        chat_n = chat_was;
+    }
+    words(r_text);
+    if (wn < 4 || !is(w[0], "EVT"))
+        return;
+    s = num(w[4]);
+    who = g_name(s);
+    tail = ":";
+    if (is(w[3], "JOIN") && wn > 5) {
+        jseat = s;
+        strncpy(jname, w[5], 12);
+    }
+    if (is(w[3], "CLIENT")) {
+        if (s == (unsigned char)g_seat)
+            return;
+        tail = " now plays";
+        if (s == jseat) {
+            who = jname;
+            tail = " joined";
+        }
+    } else if (is(w[3], "CHT")) {
+        if (w[4][0] == 0x2D)
+            who = "watcher";
+        else if (s == jseat)
+            who = jname;
+    } else {
+        if (pass_watch && is(w[3], "PASS") && s == (unsigned char)g_seat)
+            passed = 1;
+        if (!g_over && num(w[2]) > v_seq) {
+            stale = 1;
+            if (G && G->event)
+                G->event();
+            if (is(w[3], "JOIN") || is(w[3], "LEAVE") || is(w[3], "GONE"))
+                join = 1;
+        }
+        return;
+    }
+    if (wn < 6)
+        return;
+    if (chat_n == CHAT_N) {
+        memmove(chat_l[0], chat_l[1], (CHAT_N - 1) * CHAT_W);
+        --chat_n;
+        if (chat_tk)
+            --chat_tk;
+        if (chat_was)
+            --chat_was;
+    }
+    b = chat_l[chat_n++];
+    strcpy(b, who);
+    strcat(b, tail);
+    for (j = 5; j < wn; ++j) {
+        n = strlen(b);
+        if (n >= CHAT_W - 2)
+            break;
+        b[n] = ' ';
+        b[++n] = 0;
+        strncat(b, w[j], CHAT_W - 1 - n);
+    }
+    ++said;
+}
+
 static void poll_events(void)
 {
-    unsigned char i, j, n, s, said = 0, join = 0, jseat = 255;
-    char *b;
-    const char *who, *tail, *jname;
     q_set("SIN");
     q_num(g_table);
     q_num(ev_seq);
+    chat_was = chat_n;
+    r_each = event_line;
     if (net_req() != R_OK)
         return;
-    for (i = 0; i < r_n; ++i) {
-        words(r_line[i]);
-        if (wn < 4 || !is(w[0], "EVT"))
-            continue;
-        s = num(w[4]);
-        who = g_name(s);
-        tail = ":";
-        if (is(w[3], "JOIN")) {
-            jseat = s;      /* its name, for the CLIENT and chat that follow: the names are read after these */
-            jname = w[5];
-        }
-        if (is(w[3], "CLIENT")) {
-            if (s == (unsigned char)g_seat)
-                continue;
-            tail = " now plays";
-            if (s == jseat) {
-                who = jname;
-                tail = " joined";
-            }
-        } else if (is(w[3], "CHT")) {
-            if (w[4][0] == 0x2D)
-                who = "watcher";
-            else if (s == jseat)
-                who = jname;
-        } else {
-            if (!g_over && num(w[2]) > v_seq) {
-                stale = 1;
-                if (G && G->event)
-                    G->event();
-                if (is(w[3], "JOIN") || is(w[3], "LEAVE") || is(w[3], "GONE"))
-                    join = 1;
-            }
-            continue;
-        }
-        if (wn < 6)
-            continue;
-        if (chat_n == CHAT_N) {
-            memmove(chat_l[0], chat_l[1], (CHAT_N - 1) * CHAT_W);
-            --chat_n;
-            if (chat_tk)
-                --chat_tk;
-        }
-        b = chat_l[chat_n++];
-        strcpy(b, who);
-        strcat(b, tail);
-        for (j = 5; j < wn; ++j) {
-            n = strlen(b);
-            if (n >= CHAT_W - 2)
-                break;
-            b[n] = ' ';
-            b[++n] = 0;
-            strncat(b, w[j], CHAT_W - 1 - n);
-        }
-        ++said;
-    }
     if (r_final[2])
         ev_seq = num(r_final + 3);
     if (said) {
@@ -741,16 +772,15 @@ static void chat(void)
    screen again after. */
 void __fastcall__ g_help(unsigned char k)
 {
-    char *p = (char *)(((unsigned int)net_rbuf() + 255) & 0xFF00);
+    char *p = net_rbuf();               /* (a page's start) */
     unsigned char n;
     if (!ovl_help(k, (unsigned int)p >> 8))
         return;
-    for (n = 0; *p != 4 && n < MAXL; ++n) {
-        r_line[n] = p;
+    for (n = 0; *p != 4 && n < PG_LINES; ++n) {
+        pg_line[n] = p;
         p += strlen(p) + 1;
     }
-    r_n = 0;                            /* (the reply is gone) */
-    pages(r_line[0], r_line + 1, n - 1);
+    pages(pg_line[0], pg_line + 1, n - 1);
 }
 
 

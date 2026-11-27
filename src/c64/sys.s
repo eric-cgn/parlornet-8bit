@@ -8,7 +8,7 @@
         .importzp       ptr1, ptr2, tmp1, tmp2, tmp3, tmp4
         .import         popa, pusha
         .import         nmi_vec, irq_tx, _ser_irq, pb_on, pb_update
-        .import         _q_set, _net_req, _r_n, _r_line
+        .import         _q_set, _net_req, _r_n, _r_text
         .import         _signed_in, _ui_hide, _ui_show, _ui_ink, _hgr_text, _hg_x, _hg_y
         .import         _ser_get
 

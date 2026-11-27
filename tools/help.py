@@ -16,6 +16,7 @@ HELP = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "co
 ORDER = ["lobby", "reversi", "backgammon", "gridwords", "checkers", "mancala", "fiveinarow", "dotsandboxes",
          "navalcombat", "cannonfire", "rummytile", "tutorial"]
 WIDTH = 40
+MAX = 1024                             # the reply buffer (RBUF, net.h), which a help is loaded into
 ROWS = {"apple2": 18, "c64": 20}       # the rows of a page, from line 16 to the message line
 
 KEYS = {"apple2": {"RET": "Return", "ESC": "Esc"},
@@ -83,14 +84,14 @@ def main():
         data = b""
         for k, h in enumerate(helps):
             n = (len(h) + 255) // 256
-            assert n <= 11, "%s is %d bytes" % (ORDER[k], len(h))
+            assert n * 256 <= MAX, "%s is %d bytes" % (ORDER[k], len(h))
             index[k * 2:k * 2 + 2] = bytes([1 + len(data) // 256, n])
             data += h.ljust(n * 256, b"\0")
         open(out, "wb").write(bytes(index) + data)
     else:
         os.makedirs(out, exist_ok=True)
         for k, h in enumerate(helps):
-            assert len(h) <= 11 * 256, "%s is %d bytes" % (ORDER[k], len(h))
+            assert len(h) <= MAX, "%s is %d bytes" % (ORDER[k], len(h))
             open(os.path.join(out, "help%d" % k), "wb").write(h)
 
 

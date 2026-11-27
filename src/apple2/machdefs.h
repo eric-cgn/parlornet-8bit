@@ -42,7 +42,7 @@
 
 /* Where overlays are loaded (ovl.h): the language card's RAM, up to OVL_TOP. */
 #define OVL_ADDR 0xD000
-#define OVL_TOP 0xF900
+#define OVL_TOP 0xFF00
 
 /* The table screen's frame (game.h): a title line at the top, then the game's area (lines 9 to 166), a
    message line (167), the status line (176) and the buttons (184). */

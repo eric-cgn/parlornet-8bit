@@ -127,18 +127,15 @@ static unsigned char greet(void)
 {
     unsigned int start = ticks;
     unsigned char k;
-    net_reset();
     while (ticks - start < 6 * 60) {
         k = key_out();
         if (k)
             return k + 2;
         if (net_line(60) && r_n) {
-            char *l = r_line[r_n - 1];
-            if (strncmp(l, "PARLORNET/", 10) == 0 && strchr(l, ' ')) {
-                strcpy(q, l);
+            if (strncmp(r_text, "PARLORNET/", 10) == 0 && strchr(r_text, ' ')) {
+                strcpy(q, r_text);
                 return 1;
             }
-            net_reset();
         } else if (r_final) {
             /* another final line: an ERR UNKNOWN from a parlor that greeted this line already, say, or
                a modem's ERROR; parlor_there tells */
@@ -156,16 +153,22 @@ static unsigned char greet(void)
 
 /* No greeting: is a parlor there all the same, on a line it greeted before? Only a parlor answers PRL
    with a PRO line (its own PARLORNET/1 is always one); a shell, a modem or nothing at all does not. */
+static unsigned char pro;
+static void pro_line(void)
+{
+    if (strncmp(r_text, "PRO ", 4) == 0)
+        pro = 1;
+}
+
 static unsigned char parlor_there(void)
 {
-    unsigned char i;
     q_set("PRL");
     ser_drop();
     net_send_line(q);
-    if (net_reply(6) == R_OK)
-        for (i = 0; i < r_n; ++i)
-            if (strncmp(r_line[i], "PRO ", 4) == 0)
-                return 1;
+    pro = 0;
+    r_each = pro_line;
+    if (net_reply(6) == R_OK && pro)
+        return 1;
     net_lost = 0;
     return 0;
 }
@@ -217,21 +220,27 @@ static void modem_cmd(const char *s)
 /* The modem's answer within a second's quiet, or 0: OK when it came, else the first line that is a modem's
    word (capitals) and not the echo. Anything else is skipped, such as the escape codes a Unix shell sends
    after the echoed line (bash's ESC [?2004l). With keys set, Escape or C first stops the wait (cancel). */
+static char said[41];                   /* the modem's first word that is not the echo */
+static void modem_line(void)
+{
+    char *l = r_text;
+    if (!said[0] && l[0] >= 'A' && l[0] <= 'Z' && (l[0] != 'A' || (l[1] | 0x20) != 't') && strcmp(l, sent))
+        strncpy(said, l, 40);
+}
+
 static char *modem_read(unsigned char keys)
 {
-    unsigned char i;
-    char *l;
     if (keys && (cancel = key_out()) != 0)
         return 0;
+    said[0] = 0;
+    r_each = modem_line;
     net_reply(1);
+    r_each = 0;
     net_lost = 0;
     if (r_final)
         return r_final;
-    for (i = 0; i < r_n; ++i) {
-        l = r_line[i];
-        if (l[0] >= 'A' && l[0] <= 'Z' && (l[0] != 'A' || (l[1] | 0x20) != 't') && strcmp(l, sent))
-            return l;
-    }
+    if (said[0])
+        return said;
     if (sr_final == 'N')
         return "NO CARRIER";            /* (net_reply takes it as the end of the connection) */
     return 0;
@@ -336,6 +345,13 @@ static void hangup(void)
 }
 #endif
 
+/* An INF line of the sign-in, shown as it comes. */
+static void inf_line(void)
+{
+    if (strncmp(r_text, "INF", 3) == 0)
+        show_wrapped(r_text[3] ? r_text + 4 : " ");
+}
+
 /* The sign-in dialog after USER, REG or HELO. 1 when signed in, 0 when refused, 2 for the console. */
 static unsigned char dialogue(void)
 {
@@ -344,10 +360,8 @@ static unsigned char dialogue(void)
     unsigned char kind, i, secret, yn, k;
     char *label, *p;
     for (;;) {
+        r_each = inf_line;
         kind = net_req();
-        for (i = 0; i < r_n; ++i)
-            if (strncmp(r_line[i], "INF", 3) == 0)
-                show_wrapped(r_line[i][3] ? r_line[i] + 4 : " ");
         if (kind == R_OK)
             return 1;
         if (kind == R_NONE)
@@ -416,12 +430,9 @@ static unsigned char dialogue(void)
 
 static void prefs_load(void)
 {
-    unsigned char i;
     q_set("PRF GET a2disp");
-    if (net_req() == R_OK)
-        for (i = 0; i < r_n; ++i)
-            if (strncmp(r_line[i], "PRF a2disp ", 11) == 0)
-                mono = r_line[i][11] == 'm';
+    if (net_req() == R_OK && r_n && strncmp(r_text, "PRF a2disp ", 11) == 0)
+        mono = r_text[11] == 'm';       /* (its one line) */
 }
 
 static void screen(void)
@@ -444,6 +455,27 @@ static void more(void)
     txt_inv = 0;
     ui_wait_key();
     screen();
+}
+
+/* A line of the message of the day, shown as it comes (a page of the reply is in already, so the line
+   waits while the player reads). A line that fits the row is shown as it is, spaces and all (an ASCII
+   layout, a blank line); a longer one (up to 73 characters) is wrapped and takes at most three rows. */
+static void motd_line(void)
+{
+    const char *p;
+    unsigned char n;
+    if (strncmp(r_text, "MOTD", 4) != 0)
+        return;
+    p = r_text[4] ? r_text + 5 : "";
+    n = strlen(p);
+    if (txt_y + (n > 40 ? 3 : 1) > 23)
+        more();
+    if (n > 40)
+        show_wrapped(p);
+    else if (n < 40)
+        sayln(p);
+    else
+        say(p);                         /* 40: the row's end starts the next */
 }
 
 /* The sign-in overlay's entry: connect if the line has not been greeted yet, then sign in.
@@ -553,27 +585,13 @@ connect:
     q_set("Connected to ");
     q_cat(server_name);
     show_wrapped(q);
+    /* Replies in pages that fit the reply buffer, from here on. */
+    net_paged();
     /* The message of the day, all of it, a screen at a time. */
     q_set("MOTD");
-    if (net_req() == R_OK) {
-        for (k = 0; k < r_n; ++k)
-            if (strncmp(r_line[k], "MOTD", 4) == 0) {
-                /* A line that fits the row is shown as it is, spaces and all (an ASCII layout, a blank
-                   line); a longer one (up to 73 characters) is wrapped and takes at most three rows. */
-                p = r_line[k][4] ? r_line[k] + 5 : "";
-                n = strlen(p);
-                if (txt_y + (n > 40 ? 3 : 1) > 23)
-                    more();
-                if (n > 40)
-                    show_wrapped(p);
-                else if (n < 40)
-                    sayln(p);
-                else
-                    say(p);             /* 40: the row's end starts the next */
-            }
-        if (txt_y > 20)                 /* no room left for the name prompt below it */
-            more();
-    }
+    r_each = motd_line;
+    if (net_req() == R_OK && txt_y > 20)
+        more();                         /* (no room left for the name prompt below it) */
     if (net_lost)
         goto lost;
 names:

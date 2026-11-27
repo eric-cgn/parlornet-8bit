@@ -125,13 +125,15 @@ unsigned char __fastcall__ dialog(const char *words, unsigned char how)
 #define P_BACK 1
 #define P_CLOSE 2
 
-void __fastcall__ pages(const char *title, char **lines, unsigned char n)
+static unsigned char pg_more;           /* pages of a reply with more of it at the parlor (net_more) */
+static unsigned char first[8];          /* each page's first line */
+static unsigned char np;
+
+/* Where each page starts: at a "\f", or at a line that would not fit below the one before. */
+static void __fastcall__ paginate(char **lines, unsigned char n)
 {
-    static unsigned char first[8];      /* each page's first line */
-    static unsigned char np, p, i, k, row, keep;
-    static const char *s;
-    static char b[48];
-    /* where each page starts: at a "\f", or at a line that would not fit below the one before */
+    unsigned char i, k, row;
+    const char *s;
     np = 1;
     first[0] = 0;
     row = 0;
@@ -150,6 +152,15 @@ void __fastcall__ pages(const char *title, char **lines, unsigned char n)
         }
         row += k;
     }
+}
+
+void __fastcall__ pages(const char *title, char **lines, unsigned char n)
+{
+    static unsigned char p, i, k, row, keep;
+    unsigned char more;
+    static const char *s;
+    static char b[48];
+    paginate(lines, n);
     keep = ui_retkey;
     ui_retkey = 2;                      /* the arrows, Space and Return come as keys */
     p = 0;
@@ -178,12 +189,13 @@ void __fastcall__ pages(const char *title, char **lines, unsigned char n)
             } while (*s);
         }
         /* the foot: what Space, Left and Esc do here */
-        if (p + 1 < np)
+        more = p + 1 < np || (pg_more && r_more);
+        if (more)
             ui_button(0, BUTTON_Y, "Next page", P_NEXT);
         if (p)
             ui_button(13, BUTTON_Y, "Page back", P_BACK);
         ui_button(26, BUTTON_Y, "Close", P_CLOSE);
-        ui_status(p + 1 < np ? "Space shows more, and " KEY_ESC " closes." :
+        ui_status(more ? "Space shows more, and " KEY_ESC " closes." :
                   p ? "Left goes back, and " KEY_ESC " closes." : KEY_ESC " closes this page.");
         ui_point(0);
         do
@@ -193,6 +205,16 @@ void __fastcall__ pages(const char *title, char **lines, unsigned char n)
             k = ui_clicked == P_NEXT ? ' ' : ui_clicked == P_BACK ? K_LEFT : K_ESC;
         if ((k == ' ' || k == K_RIGHT) && p + 1 < np)
             ++p;
+        else if ((k == ' ' || k == K_RIGHT) && more) {
+            /* the reply's next page from the parlor, in place of this one's lines */
+            r_each = net_text;
+            pg_n = 0;
+            if (net_more() != R_OK && !pg_n)
+                break;
+            n = pg_n;
+            paginate(lines, n);
+            p = 0;
+        }
         else if (k == K_LEFT && p)
             --p;
         else if (k == K_ESC || k == K_RET || k == K_BACK)
@@ -215,23 +237,26 @@ void cmd_show(void)
 /* The reply to a command: a confirmation's dialog, or what to show. */
 static unsigned char cmd_reply(void)
 {
-    static unsigned char i, r, out;
+    static unsigned char i, out;
+    r_each = net_text;
     if (net_req() != R_OK) {
         if (!r_final)
             return C_SENT;
         strncpy(cmd_said, err_text(r_final), 80);
         return C_SENT | C_SAID;
     }
-    if (r_n && strncmp(r_line[0], "DLG ", 4) == 0) {
+    if (!r_n)
+        return C_SENT;
+    if (strncmp(pg_line[0], "DLG ", 4) == 0) {
         /* DLG kind [table], then the dialog's words: Yes sends CMD [table] YES /kind */
-        words(r_line[0]);
         words_[0] = 0;
-        for (i = 1; i < r_n; ++i)
-            if (strlen(words_) + strlen(r_line[i]) < sizeof words_ - 2) {
+        for (i = 1; i < pg_n; ++i)
+            if (strlen(words_) + strlen(pg_line[i]) < sizeof words_ - 2) {
                 if (i > 1)
                     strcat(words_, " ");
-                strcat(words_, r_line[i] + (r_line[i][3] ? 4 : 3));
+                strcat(words_, pg_line[i]);
             }
+        words(pg_line[0]);
         out = is(w[1], "quit");
         q_set("CMD");
         if (wn > 2)
@@ -246,20 +271,18 @@ static unsigned char cmd_reply(void)
         }
         return cmd_reply() | C_REDRAW;
     }
-    for (i = 0; i < r_n; ++i)
-        r_line[i] += r_line[i][3] ? 4 : 3;      /* "INF text" -> "text"; "INF" alone, an empty line */
-    if (!r_n)
-        return C_SENT;
     /* lines that fit the message line and the status line together, joined; more as pages */
     cmd_said[0] = 0;
-    for (i = 0; i < r_n && strlen(cmd_said) + strlen(r_line[i]) < sizeof cmd_said - 1; ++i) {
+    for (i = 0; i < pg_n && strlen(cmd_said) + strlen(pg_line[i]) < sizeof cmd_said - 1; ++i) {
         if (i)
             strcat(cmd_said, " ");
-        strcat(cmd_said, r_line[i]);
+        strcat(cmd_said, pg_line[i]);
     }
-    if (i == r_n)
+    if (i == pg_n && !r_more)
         return C_SENT | C_SAID;
-    pages(cmd, r_line, r_n);
+    pg_more = 1;
+    pages(cmd, pg_line, pg_n);
+    pg_more = 0;
     return C_SENT | C_REDRAW;
 }
 

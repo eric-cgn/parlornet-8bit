@@ -11,9 +11,11 @@ NO CARRIER, SILENT gives nothing until the next byte from the Apple (which, as o
 with NO CARRIER), and STAY connects but does not notice the parlor hanging up, so that only +++ and ATH
 end the call. Everything it sees is logged. In bridge mode, CUT (seconds) hangs up the line that long after
 the connection to the parlor opens, as when the parlor restarts: the dialer at the other end (ATZ in the Unix
-shell) then says NO CARRIER.
+shell) then says NO CARRIER. DROP (bytes) loses one byte on the way to the Apple, once, as noise on the line
+would: the first O of an OK line after that many bytes from the parlor, so that a reply has no final line
+and the program asks again (net.c).
 
-usage: bridge.py LISTENPORT PARLORHOST PARLORPORT [modem|bridge] [log] [CUT]
+usage: bridge.py LISTENPORT PARLORHOST PARLORPORT [modem|bridge] [log] [CUT] [DROP]
 """
 import select
 import socket
@@ -25,10 +27,26 @@ listen, phost, pport = int(sys.argv[1]), sys.argv[2], int(sys.argv[3])
 modem = len(sys.argv) > 4 and sys.argv[4] == "modem"
 logf = open(sys.argv[5] if len(sys.argv) > 5 else "/dev/null", "a", buffering=1)
 cut = float(sys.argv[6]) if len(sys.argv) > 6 else 0
+drop = [int(sys.argv[7]) if len(sys.argv) > 7 else 0, 0]      # after so many bytes, and the bytes so far
 
 
 def log(what, data):
     logf.write("%.3f %s %r\n" % (time.time(), what, data))
+
+
+def lose(b):
+    """b without the O of its first OK line, once drop's bytes have gone by (once)."""
+    if not drop[0]:
+        return b
+    drop[1] += len(b)
+    if drop[1] < drop[0]:
+        return b
+    i = b.find(b"\nOK")
+    if i < 0:
+        return b
+    drop[0] = 0
+    log("dropped", b[i + 1:i + 2])
+    return b[:i + 1] + b[i + 2:]
 
 
 def relay(src, dst, what, done):
@@ -38,7 +56,7 @@ def relay(src, dst, what, done):
             if not b:
                 break
             log(what, b)
-            dst.sendall(b)
+            dst.sendall(lose(b) if what == "A2<" else b)
     except OSError:
         pass
     done.set()
