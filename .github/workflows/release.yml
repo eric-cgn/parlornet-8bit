@@ -1,8 +1,10 @@
 # Every push to main: if VERSION names a version with no release yet, build the programs with
 # tools/build.sh (cc65 in a Debian image pinned by digest), run the tests, tag the commit v<version>
 # and publish a GitHub Release with the Apple IIe's self-booting disk (parlornet.dsk), the ProDOS files on a
-# ProDOS volume (parlor-files.po), the Apple IIgs disk (parlornet-gs.po), and their SHA-256 and MD5 sums
-# (SHA256SUMS, MD5SUMS, and in the release notes). A push that keeps the version does nothing.
+# ProDOS volume (parlor-files.po) and in a ShrinkIt archive (parlornet.shk), the Apple IIgs disk
+# (parlornet-gs.po) and its files' ShrinkIt archive (parlornet-gs.shk), the C64's disk (parlornet.d64), and
+# their SHA-256 and MD5 sums (SHA256SUMS, MD5SUMS, and in the release notes). A push that keeps the version
+# does nothing.
 # Run it by hand on main to release a version whose push did not run it.
 name: Release
 
@@ -38,6 +40,9 @@ jobs:
       - name: Build
         if: steps.version.outputs.new == 'yes'
         run: tools/build.sh
+      - name: Install NuLib2
+        if: steps.version.outputs.new == 'yes'
+        run: sudo apt-get update -q && sudo apt-get install -y -q nulib2
       - name: Test
         if: steps.version.outputs.new == 'yes'
         run: python3 -m unittest discover test
@@ -58,6 +63,9 @@ jobs:
             echo "  own ProDOS. They fit on one 140K disk together with ProDOS."
             echo "- parlornet-gs.po is an 800K ProDOS volume with the Apple IIgs program, PARLORNET, and its PARLOR.DAT. It"
             echo "  runs under System 6.0.1 with Marinetti."
+            echo "- parlornet.shk is a ShrinkIt archive of the two files on parlor-files.po, and parlornet-gs.shk is a"
+            echo "  ShrinkIt archive of the two files on parlornet-gs.po. They keep the files' ProDOS types. Any version of"
+            echo "  ShrinkIt or NuLib2 unpacks them."
             echo "- parlornet.d64 is the Commodore 64's 1541 disk. LOAD\"*\",8,1 starts it, and a C128 boots it by itself."
             echo
             echo "The Apple IIe program draws in Double Hi-Res and needs 128K. That means a IIe with an extended"

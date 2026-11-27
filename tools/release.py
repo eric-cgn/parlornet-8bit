@@ -4,7 +4,9 @@
 
   parlornet.dsk        the Apple IIe's self-booting disk (and parlornet-2.dsk, when the build makes one)
   parlor-files.po      PARLOR.SYSTEM and PARLOR.DAT for the player's own ProDOS, on a ProDOS volume
+  parlornet.shk        the same two files in a ShrinkIt archive
   parlornet-gs.po      the Apple IIgs program, PARLORNET, and its PARLOR.DAT, on an 800K ProDOS volume
+  parlornet-gs.shk     the same two files in a ShrinkIt archive
   parlornet.d64        the Commodore 64's disk (a 1541's, 170K)
 
 The version is the one in VERSION; the release workflow tags it v<version>.
@@ -15,7 +17,8 @@ import shutil
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FILES = ["parlornet.dsk", "parlornet-2.dsk", "prodos/parlor-files.po", "gs/parlornet-gs.po", "c64/parlornet.d64"]
+FILES = ["parlornet.dsk", "parlornet-2.dsk", "prodos/parlor-files.po", "prodos/parlornet.shk", "gs/parlornet-gs.po",
+         "gs/parlornet-gs.shk", "c64/parlornet.d64"]
 
 
 def version():

@@ -2,7 +2,9 @@
 
 `test_disk.py` checks the disk tools: the ProDOS volume they write reads back as ProDOS would read it,
 and a built client (`tools/build.sh`) fits its disk and, under ProDOS, ends below ProDOS's
-global page. Run it with `python3 -m unittest discover test`.
+global page. `test_nufx.py` reads the ShrinkIt archives back with NuLib2 (the `nulib2` package on Debian
+and Ubuntu) and checks that they hold the same files as the ProDOS volumes, with the same types. Without
+NuLib2 those tests are skipped. Run them all with `python3 -m unittest discover test`.
 
 ## Playing in MAME
 

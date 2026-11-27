@@ -24,7 +24,8 @@ of a track is the file's sector DOS_SKEW[p] of that track.
 It also makes the files for running the program under ProDOS, in build/prodos/: PARLOR.SYSTEM
 (prodsys.bin with its table filled in), PARLOR.DAT (the program, its vectors, the kit and every overlay
 packed as on the disk, each starting on a page) and parlor-files.po, a 140K ProDOS volume (ProDOS block order) named PARLORNET that
-holds just those two files, for copying them to a ProDOS disk. ProDOS itself is not on it.
+holds just those two files, for copying them to a ProDOS disk. ProDOS itself is not on it. It also puts
+the same two files, with the same file types, in parlornet.shk, a ShrinkIt archive (tools/nufx.py).
 
 Usage: apple2_disk.py [build]   (writes parlornet.dsk, and parlornet-2.dsk when needed, there,
 and layout.txt)
@@ -35,6 +36,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import apple2_lz  # noqa: E402
+import nufx  # noqa: E402
 
 TRACKS = 35
 SECTORS = TRACKS * 16
@@ -183,6 +185,7 @@ def build(d):
 
 # ---- ProDOS ---------------------------------------------------------------------------------------
 PRODOS_TOP = 0xBF00     # the program must end below ProDOS's global page
+ACCESS = 0xC3           # each file's access bits: read, write, rename, destroy
 NPAGES_AT, OVLTAB_AT, KPAGES_AT = 5, 6, 86     # in prodsys.bin
 
 
@@ -220,10 +223,11 @@ def prodos_files(d):
         f.write(loader)
     with open(os.path.join(out, "PARLOR.DAT"), "wb") as f:
         f.write(dat)
-    vol = prodos_volume("PARLORNET", [("PARLOR.SYSTEM", 0xFF, 0x2000, bytes(loader)),
-                                      ("PARLOR.DAT", 0x06, 0x0000, dat)])
+    files = [("PARLOR.SYSTEM", 0xFF, 0x2000, bytes(loader)), ("PARLOR.DAT", 0x06, 0x0000, dat)]
     with open(os.path.join(out, "parlor-files.po"), "wb") as f:
-        f.write(vol)
+        f.write(prodos_volume("PARLORNET", files))
+    with open(os.path.join(out, "parlornet.shk"), "wb") as f:
+        f.write(nufx.archive(files, ACCESS))
     return end
 
 
@@ -277,7 +281,7 @@ def prodos_volume(volname, files, blocks=280):
         e[0x11:0x13] = key.to_bytes(2, "little")
         e[0x13:0x15] = count.to_bytes(2, "little")
         e[0x15:0x18] = len(data).to_bytes(3, "little")
-        e[0x1E] = 0xC3                  # read, write, rename, destroy
+        e[0x1E] = ACCESS
         e[0x1F:0x21] = aux.to_bytes(2, "little")
         e[0x25:0x27] = (2).to_bytes(2, "little")
         entries.append(e)
