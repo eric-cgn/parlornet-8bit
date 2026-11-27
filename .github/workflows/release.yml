@@ -51,11 +51,17 @@ jobs:
         run: |
           notes="$RUNNER_TEMP/notes.md"
           {
-            echo "ParlorNet for the Apple IIe, IIgs and C64 $VERSION. parlornet.dsk is the Apple IIe's self-booting disk (140K,"
-            echo "DOS 3.3 sector order); parlor-files.po is a ProDOS volume with PARLOR.SYSTEM and PARLOR.DAT, to copy to a"
-            echo "disk with your own ProDOS; parlornet-gs.po is an 800K ProDOS volume with the Apple IIgs program, PARLORNET,"
-            echo "and its PARLOR.DAT, for System 6.0.1 with Marinetti; parlornet.d64 is the Commodore 64's 1541 disk"
-            echo "(LOAD\"*\",8,1 starts it; a C128 boots it by itself). Built from this commit by tools/build.sh; the README"
+            echo "ParlorNet for the Apple IIe, IIgs and C64 $VERSION."
+            echo
+            echo "- parlornet.dsk is the Apple IIe's self-booting 140K disk, in DOS 3.3 sector order. It needs no ProDOS."
+            echo "- parlor-files.po is a 140K ProDOS volume with PARLOR.SYSTEM and PARLOR.DAT. Copy them to a disk with your"
+            echo "  own ProDOS. They fit on one 140K disk together with ProDOS."
+            echo "- parlornet-gs.po is an 800K ProDOS volume with the Apple IIgs program, PARLORNET, and its PARLOR.DAT. It"
+            echo "  runs under System 6.0.1 with Marinetti."
+            echo "- parlornet.d64 is the Commodore 64's 1541 disk. LOAD\"*\",8,1 starts it, and a C128 boots it by itself."
+            echo
+            echo "The Apple IIe program draws in Double Hi-Res and needs 128K. That means a IIe with an extended"
+            echo "80-column card, a IIc or a IIgs. Each file was built from this commit by tools/build.sh, and the README"
             echo "has the details."
             echo
             echo "SHA-256:"
