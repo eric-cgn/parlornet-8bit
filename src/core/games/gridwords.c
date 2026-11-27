@@ -42,7 +42,20 @@ static unsigned char px[7], py[7], pr[7];   /* where, and which rack tile */
 static char pl[7];                      /* the letter (lower case for a blank) */
 static unsigned char used;              /* bit per rack tile placed */
 static unsigned char swap_mode, swap_marks;
+static unsigned char nogeo;             /* 1 until this view's first PRM or TIL line */
 static void preview(void);
+
+/* The view's geometry replaces the last one, both the premiums and the points. The first PRM or TIL line
+   of a view clears the old ones. This is also the empty board while the table waits (game.h), and there a
+   view that brought no geometry leaves the board plain. */
+static void new_geometry(void)
+{
+    if (nogeo) {
+        memset(prm, 0, sizeof prm);
+        memset(val, 0, sizeof val);
+        nogeo = 0;
+    }
+}
 
 static void gw_begin(void)
 {
@@ -50,6 +63,7 @@ static void gw_begin(void)
     rack[0] = 0;
     nrack = 0;
     last[0] = 0;
+    nogeo = 1;
 }
 
 static void gw_line(void)
@@ -70,6 +84,7 @@ static void gw_line(void)
         rack[7] = 0;
         nrack = strlen(rack);
     } else if (is(w[0], "PRM") && wn > 1) {
+        new_geometry();
         k = is(w[1], "DL") ? 1 : is(w[1], "TL") ? 2 : is(w[1], "DW") ? 3 : is(w[1], "TW") ? 4 : 0;
         for (i = 2; i + 1 < wn; i += 2) {
             x = num(w[i]) - 1;
@@ -78,6 +93,7 @@ static void gw_line(void)
                 prm[y][x] = k;
         }
     } else if (is(w[0], "TIL") && wn > 2) {
+        new_geometry();
         k = w[1][0] == '_' ? 26 : (w[1][0] & 0x1F) - 1;
         if (k < 27)
             val[k] = num(w[2]);
@@ -491,25 +507,7 @@ static void gw_event(void)
     }
 }
 
-/* The empty board, while the table waits (game.h). */
-static void gw_empty(void)
-{
-    /* the premium squares, as the parlor's geometry gives them (PRM) */
-    static const char *const l[] = {"PRM TW 1 1 8 1 15 1 1 8 15 8 1 15 8 15 15 15",
-        "PRM DW 2 2 14 2 3 3 13 3 4 4 12 4 5 5 11 5 8 8 5 11 11 11 4 12 12 12 3 13 13 13 2 14 14 14",
-        "PRM TL 6 2 10 2 2 6 6 6 10 6 14 6 2 10 6 10 10 10 14 10 6 14 10 14",
-        "PRM DL 4 1 12 1 7 3 9 3 1 4 8 4 15 4 3 7 7 7 9 7 13 7 4 8 12 8 3 9 7 9 9 9 13 9 1 12 8 12 15 12",
-        "PRM DL 7 13 9 13 4 15 12 15"};
-    unsigned char i;
-    memset(prm, 0, sizeof prm);
-    for (i = 0; i < 5; ++i) {
-        strcpy(dlg_words, l[i]);
-        words(dlg_words);
-        gw_line();
-    }
-}
-
 #pragma rodata-name (push, "OVHDR")
 const struct game g_gridwords = {"gridwords", "Grid Words", gw_begin, gw_line, gw_draw, gw_click, gw_key, 0,
-                                 gw_event, gw_hover, 0, 0, gw_empty};
+                                 gw_event, gw_hover, 0, 0, new_geometry};
 #pragma rodata-name (pop)

@@ -323,8 +323,9 @@ again:
     }
     g_over = strncmp(g_status, "Game over", 9) == 0 || (g_started && g_turn < 0);
     g_myturn = g_seat >= 0 && g_turn == g_seat && !g_over && g_started;
-    /* The geometry (G) comes once the game has begun: until then, ask for it again; when it comes,
-       draw everything (a board drawn before it lacks what the geometry says). */
+    /* The geometry (G) is asked for in every view until the game has begun, since a parlor may send it
+       only then. Once a view of the game under way has brought it, draw everything, because a board drawn
+       before it may lack what the geometry says. */
     if (asked_g && g_started) {
         view_g = 1;
         g_full = 1;
