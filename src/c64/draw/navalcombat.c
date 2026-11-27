@@ -70,7 +70,7 @@ static void buttons(void)
     if (want == 'p') {
         ui_button_draw(SX, PY + 32, "Random");
         ui_button_draw(SX, PY + 48, "Undo");
-        ui_button_draw(SX + 7, PY + 48, "Clear");
+        ui_button_draw(SX + 7, PY + 48, "Reset");
         ui_button_draw(SX, PY + 64 - 8, "Ready");
     }
 }
@@ -101,7 +101,7 @@ static void nc_draw(void)
         if (g_full) {
             for (y = 0; y < 10; ++y)
                 for (x = 0; x < 10; ++x)
-                    ui_target((X0 + 2 * x) * 4 + 8, Y0 + y * 16 + 8, 7, 7, y * 10 + x);
+                    ui_target((X0 + 2 * x) * 4 + 4, Y0 + y * 16 + 8, 4, 8, y * 10 + x);
             ui_target(SX * 4 + 16, PY + 36, 16, 4, ID_RANDOM);
             ui_target(SX * 4 + 12, PY + 52, 12, 4, ID_UNDO);
             ui_target((SX + 7) * 4 + 14, PY + 52, 14, 4, ID_CLEAR);

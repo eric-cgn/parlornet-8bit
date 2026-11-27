@@ -11,6 +11,9 @@
    burst and the path's dots are flipped (exclusive-or) onto the screen, so drawing one again takes it
    away. */
 #include "apple2.h"
+#ifndef IIGS
+#include "dhr.h"
+#endif
 
 #define BASE 140                        /* the line of height 0 */
 #define TOP 9                           /* the first line of the arena */
@@ -181,19 +184,39 @@ static void guns(void)
 
 /* ---- the ground, the tanks and the path ------------------------------------------------------------- */
 
-/* One column of ground: green in color (only its odd pixels), white in monochrome. */
+#ifndef IIGS
+/* On the IIe, w pixels across and h lines down from (x, y) in the Double Hi-Res color c. */
+static void bar(unsigned int x, unsigned char w, unsigned char y, unsigned char h, unsigned char c)
+{
+    hg_px = x;
+    hg_w = w;
+    hg_y = y;
+    hg_h = h;
+    hg_p[0] = c;
+    dhr_call(DK_VBAR);
+}
+#endif
+
+/* One column of ground: green in color (on the IIgs only its odd pixels), white in monochrome. */
 static void column(unsigned char x)
 {
-    unsigned int p = ox + x * scale, e = p + scale;
+    unsigned int p = ox + x * scale;
     unsigned char top = ly(ht[x]);
+#ifdef IIGS
+    unsigned int e = p + scale;
+#endif
     shown_ht[x] = ht[x];
+#ifdef IIGS
+    hg_y = top;
+    hg_h = BASE - top + 1;
     for (; p < e; ++p)
         if (mono || (p & 1)) {
             hg_px = p;
-            hg_y = top;
-            hg_h = BASE - top + 1;
             hgr_vline();
         }
+#else
+    bar(p, scale, top, BASE - top + 1, mono ? 15 : 12);
+#endif
 }
 
 /* The screen bytes a column (or a tank round it) covers, to be cleared and drawn again. */
@@ -242,27 +265,32 @@ static void trajectory(void)
     tr_on ^= 1;
 }
 
+#ifdef IIGS
 static unsigned char *row;
 #define LINE(y) (((unsigned char *)&row)[0] = hgr_ylo[y], ((unsigned char *)&row)[1] = hgr_yhi[y])
+#endif
 
 /* Clear the pixels from x0 to x1 on lines y0 to y1 (in the arena). */
 static void clear_box(unsigned int x0, unsigned int x1, unsigned char y0, unsigned char y1)
 {
+#ifdef IIGS
     static unsigned char b, m, y;
+#endif
     if (y0 < TOP)
         y0 = TOP;
+#ifdef IIGS
     for (; x0 <= x1 && x0 < 280; ++x0) {
         b = x0 / 7;
         m = ~(1 << (x0 % 7));
         for (y = y0; y <= y1; ++y) {
             LINE(y);
-#ifdef IIGS
             gs_scr_put(row + b, gs_scr_get(row + b) & m);
-#else
-            row[b] &= m;
-#endif
         }
     }
+#else
+    if (x0 < 280 && x0 <= x1 && y0 <= y1)
+        bar(x0, (x1 < 280 ? x1 : 279) - x0 + 1, y0, y1 - y0 + 1, 0);
+#endif
 }
 
 /* A tank's health over its letter (cell b): what is left of its 100, as "87%" (a wreck's, nothing). */
@@ -414,9 +442,12 @@ static void fly(unsigned char hit, unsigned char hx, unsigned char hy, unsigned 
 }
 
 /* The ground a crater took, dissolving: the pixels between each column's old top and its new one are
-   cleared in eight steps, an eighth of them each, in the order of a 4 by 4 ordered dither. */
-static const unsigned char dz_rc[16] = {0, 10, 2, 8, 5, 15, 7, 13, 1, 11, 3, 9, 4, 14, 6, 12};
+   cleared in eight steps, an eighth of them each. On the IIgs they go in the order of a 4 by 4 ordered
+   dither. On the IIe, where the kit clears a column's width of a line at a time, every eighth line goes
+   in each step, in the order of dz_ln. */
 static unsigned char dz_n, dz_x[40], dz_t[40], dz_b[40];
+#ifdef IIGS
+static const unsigned char dz_rc[16] = {0, 10, 2, 8, 5, 15, 7, 13, 1, 11, 3, 9, 4, 14, 6, 12};
 
 static void dissolve(void)
 {
@@ -438,11 +469,7 @@ static void dissolve(void)
                             continue;
                         for (y = dz_t[i] + (((rc >> 2) - dz_t[i]) & 3); y < dz_b[i]; y += 4) {
                             LINE(y);
-#ifdef IIGS
                             gs_scr_put(row + b, gs_scr_get(row + b) & m);
-#else
-                            row[b] &= m;
-#endif
                         }
                     }
                 }
@@ -455,6 +482,20 @@ static void dissolve(void)
         nap(4);
     }
 }
+#else
+static const unsigned char dz_ln[8] = {0, 4, 2, 6, 1, 5, 3, 7};
+
+static void dissolve(void)
+{
+    static unsigned char f, i, y;
+    for (f = 0; f < 8; ++f) {
+        for (i = 0; i < dz_n; ++i)
+            for (y = dz_t[i] + dz_ln[f]; y < dz_b[i]; y += 8)
+                bar(ox + dz_x[i] * scale, scale, y, 1, 0);
+        nap(4);
+    }
+}
+#endif
 
 /* The box round the ground that goes, and the flipped drawings in it (the path's dots, the guns), which
    are taken away while it dissolves and put back after. */
@@ -556,13 +597,13 @@ static void cf_draw(void)
         memset(shown_ht, 255, sizeof shown_ht);
         memset(shown_tx, 0, sizeof shown_tx);
         g_on = tr_on = 0;
-        ui_button(0, BY, "<", ID_AL);
-        ui_button(3, BY, ">", ID_AR);
-        ui_button(7, BY, "-", ID_PD);
-        ui_button(10, BY, "+", ID_PU);
-        ui_button(14, BY, "Fire", ID_FIRE);
-        ui_button(21, BY, "Move<", ID_ML);
-        ui_button(29, BY, "Move>", ID_MR);
+        ui_button(0, BY, "Fire", ID_FIRE);
+        ui_button(7, BY, "Drive<", ID_ML);
+        ui_button(16, BY, "Drive>", ID_MR);
+        ui_button(25, BY, "<", ID_AL);
+        ui_button(28, BY, ">", ID_AR);
+        ui_button(32, BY, "-", ID_PD);
+        ui_button(35, BY, "+", ID_PU);
     }
     /* the flipped drawings off, while the ground is drawn */
     if (g_on)

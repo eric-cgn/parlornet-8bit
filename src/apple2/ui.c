@@ -1,5 +1,6 @@
-/* ParlorNet for the Apple IIe: the Hi-Res screen kit (core/machine.h), with the shared parts in
-   src/common (ui_targets.c, ui_hgr.c). */
+/* ParlorNet for the Apple IIe and IIgs: the screen kit (core/machine.h), with the shared parts in
+   src/common (ui_targets.c, ui_hgr.c). The IIe draws in Double Hi-Res (dhr.s), which takes a fill by its
+   number; the IIgs draws in Hi-Res, whose fills are the byte patterns below. */
 #include <string.h>
 #include "machine.h"
 #include "apple2.h"
@@ -9,6 +10,7 @@ static unsigned int ptr_x;
 static unsigned char ptr_y;
 static unsigned char mouse_was;
 
+#ifdef IIGS
 /* Per fill: even line (even column, odd column), odd line (even, odd). */
 static const unsigned char fills[][4] = {
     {0x00, 0x00, 0x00, 0x00},   /* black */
@@ -35,6 +37,18 @@ void __fastcall__ ui_ink(unsigned char fg, unsigned char bg)
     hg_bg[0] = fills[bg][0];
     hg_bg[1] = fills[bg][1];
 }
+#else
+void __fastcall__ ui_fill(unsigned char f)
+{
+    hg_p[0] = f;
+}
+
+void __fastcall__ ui_ink(unsigned char fg, unsigned char bg)
+{
+    hg_fg[0] = fg;
+    hg_bg[0] = bg;
+}
+#endif
 
 void ui_rect(unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char f)
 {
@@ -57,7 +71,7 @@ void ui_cls(void)
 {
     ui_hide();
     hgr_clear();
-    clk_shown = 255;                    /* (the connected time drawn again: clk_show) */
+    clk_shown = 255;                    /* (the time signed in drawn again: clk_show) */
     ui_targets_clear();
     ui_ink(F_WHITE, F_BLACK);
     hg_bold = !mono;
@@ -192,13 +206,13 @@ unsigned char ui_poll(void)
                 k -= 32;
             return U_OA | k;
         }
-        if (k == K_LEFT || k == K_RIGHT || k == K_UP || k == K_DOWN) {
+        if ((k == K_LEFT || k == K_RIGHT || k == K_UP || k == K_DOWN) && ui_retkey < 2) {
             n = ui_nearest(k);
             if (n < t_n)
                 ui_point(n);
             return 0;
         }
-        if ((k == K_RET && !ui_retkey || k == 0x20) && t_cur < t_n) {
+        if ((k == K_RET && !ui_retkey || k == 0x20 && ui_retkey < 2) && t_cur < t_n) {
             ui_clicked = t_id[t_cur];
             return U_CLICK;
         }

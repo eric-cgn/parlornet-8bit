@@ -6,8 +6,8 @@
      $0002-$008F  zero page (cc65's and ours); the KERNAL's above
      $0400-$05FF  the serial line's receive and send rings
      $0600-$07FF  cc65's C stack
-     $0800-$14FF  the reply buffer (net.c), and the loader (PARLORNET) before it
-     $1500-       the program (PN.MAIN), then its zeroed data, then the lobby and the tables (PN.PARLOR,
+     $0800-$13FF  the reply buffer (net.c), and the loader (PARLORNET) before it
+     $1400-       the program (PN.MAIN), then its zeroed data, then the lobby and the tables (PN.PARLOR,
                  loaded before the first sign-in: ovl.c)
      OVL_ADDR-$600  a table's moves and chat (TABLE), or the lobby's lists (LOBBY)
      OVL_ADDR-$BFFF one overlay at a time: the sign-in, a game, the start screen or the title screen
@@ -53,8 +53,8 @@ unsigned char __fastcall__ k_readfile(const char *name, unsigned char *buf, unsi
 unsigned char __fastcall__ k_writefile(const char *name, const unsigned char *buf, unsigned char n);
 
 /* The settings as kept in PARLOR.CFG (setup.c), and as last read or written (line.c). */
-#define CFG_LEN 72
-#define CFG_VER 4                       /* PARLOR.CFG's version (setup.c) */
+#define CFG_LEN 110
+#define CFG_VER 5                       /* PARLOR.CFG's version (setup.c) */
 extern unsigned char cfg_saved[CFG_LEN];
 void cfg_load(void);                    /* the settings from PARLOR.CFG, if it has them (line.c) */
 unsigned char __fastcall__ baud_ok(unsigned char iface, unsigned char b);

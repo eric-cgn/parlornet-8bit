@@ -65,7 +65,7 @@ static void db_click(unsigned char id)
     static char tok[8];
     unsigned char i, j, i2, j2, open;
     if (!g_myturn) {
-        g_message("Not your turn.");
+        g_message("It's not your turn.");
         return;
     }
     if (seld < 0 || seld == id) {
@@ -74,7 +74,7 @@ static void db_click(unsigned char id)
         seld = seld == id ? -1 : id;
         sel_frame();
         ui_show();
-        g_message(seld < 0 ? "" : "Now a dot next to it.");
+        g_message("");
         return;
     }
     i = seld % (bw + 1);
@@ -119,7 +119,84 @@ static void db_click(unsigned char id)
     g_move(tok);
 }
 
+/* A dot's name ("c3") into b. */
+static void dot_name(char *b, unsigned char id)
+{
+    b[0] = 'a' + id % (bw + 1);
+    strcpy(b + 1, utoa10(id / (bw + 1) + 1));
+}
+
+/* What Return does on the dot under the pointer: pick it, or draw the line to it from the dot picked. */
+static void db_hover(unsigned char id)
+{
+    static char b[42], d[4];
+    unsigned char a, c;
+    if (id == 255) {
+        g_message("Move to a dot.");
+        return;
+    }
+    dot_name(d, id);
+    if (seld < 0 || seld == id) {
+        strcpy(b, seld < 0 ? "Press " KEY_RET " to pick dot " : "Pick a dot next to ");
+        strcat(b, d);
+        strcat(b, seld < 0 ? "." : ", or press " KEY_ESC ".");
+    } else {
+        a = seld < id ? seld : id;
+        c = seld < id ? id : seld;
+        if (c == a + 1 && a % (bw + 1) != bw || c == a + bw + 1) {
+            strcpy(b, "Press " KEY_RET " to draw the line ");
+            dot_name(b + strlen(b), a);
+            strcat(b, "-");
+            dot_name(b + strlen(b), c);
+            strcat(b, ".");
+        } else
+            strcpy(b, "Pick a dot next to the one picked.");
+    }
+    g_message(b);
+}
+
+/* The other player's line in words: "ann drew a1-b1 and closed a box." */
+static void db_event(void)
+{
+    if (is(w[3], "LINE") && wn > 5 && num(w[4]) != (unsigned char)g_seat) {
+        strcat(g_who(num(w[4])), " drew ");
+        strcat(g_last, w[5]);
+        if (wn > 7)
+            strcat(g_last, wn > 8 ? " and closed two boxes" : " and closed a box");
+        strcat(g_last, ".");
+    }
+}
+
+/* Your turn again after closing a box. */
+static const char *db_say(void)
+{
+    return g_myturn && strstr(g_status, "again") ? "You closed a box, so it's your turn again." : 0;
+}
+
+/* Esc lets go of a picked dot. */
+static unsigned char db_key(unsigned char k)
+{
+    if (k != K_ESC || seld < 0)
+        return 0;
+    ui_hide();
+    sel_frame();
+    seld = -1;
+    ui_show();
+    g_message("");
+    return 1;
+}
+
+/* The empty board, while the table waits (game.h). */
+static void db_empty(void)
+{
+    bw = bh = 5;
+    memset(hl, '.', sizeof hl);
+    memset(vl, '.', sizeof vl);
+    memset(bx, '.', sizeof bx);
+    memset(cnt, 0, 4);
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct game g_dotsandboxes = {"dotsandboxes", "Dots and Boxes", db_begin, db_line, db_draw, db_click, 0,
-                                    "A dot, then the dot next to it", 1};
+const struct game g_dotsandboxes = {"dotsandboxes", "Dots and Boxes", db_begin, db_line, db_draw, db_click, db_key,
+                                    1, db_event, db_hover, 0, db_say, db_empty};
 #pragma rodata-name (pop)

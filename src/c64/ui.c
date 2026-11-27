@@ -95,7 +95,7 @@ void ui_cls(void)
     hg_kbg = hg_bg;
     hg_kfg = mono ? C_WHITE : C_YELLOW;
     hgr_clear();
-    clk_shown = 255;                    /* (the connected time drawn again: clk_show) */
+    clk_shown = 255;                    /* (the time signed in drawn again: clk_show) */
     VIC_BORDER = hg_bg;
     hg_bold = 0;
 }
@@ -196,12 +196,12 @@ static unsigned char poll_mouse(void)
         ptr_place(mx, my);
         spr_on |= 3;
         t_cur = 255;
+        /* A target covers from its center less half its width up to its center plus half, that last
+           not included, so that squares side by side meet without overlapping. */
         for (i = 0; i < t_n; ++i) {
             int dx = (int)(mx >> 1) - t_x[i];
             int dy = (int)my - t_y[i];
-            if (dx < 0) dx = -dx;
-            if (dy < 0) dy = -dy;
-            if (t_hw[i] && dx <= t_hw[i] && dy <= t_hh[i]) {
+            if (t_hw[i] && dx >= -(int)t_hw[i] && dx < t_hw[i] && dy >= -(int)t_hh[i] && dy < t_hh[i]) {
                 t_cur = i;
                 break;
             }
@@ -209,6 +209,8 @@ static unsigned char poll_mouse(void)
     }
     if (mouse_btn && !mouse_was) {
         mouse_was = 1;
+        if (mouse_btn & 1)              /* the right button: the second button, which cancels */
+            return K_BACK;
         if (t_cur < t_n) {
             ui_clicked = t_id[t_cur];
             return U_CLICK;
@@ -229,13 +231,13 @@ unsigned char ui_poll(void)
                 k -= 32;
             return U_OA | k;
         }
-        if (k == K_LEFT || k == K_RIGHT || k == K_UP || k == K_DOWN) {
+        if ((k == K_LEFT || k == K_RIGHT || k == K_UP || k == K_DOWN) && ui_retkey < 2) {
             n = ui_nearest(k);
             if (n < t_n)
                 ui_point(n);
             return 0;
         }
-        if ((k == K_RET && !ui_retkey || k == 0x20) && t_cur < t_n) {
+        if ((k == K_RET && !ui_retkey || k == 0x20 && ui_retkey < 2) && t_cur < t_n) {
             ui_clicked = t_id[t_cur];
             return U_CLICK;
         }

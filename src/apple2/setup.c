@@ -113,6 +113,7 @@ static void setup_settings(void)
         setting_line(8, "D", "Display: ", mono ? "monochrome" : "color");
         setting_line(9, "T", "Title screen at start: ", cfg_title ? "on" : "off");
         setting_line(10, "J", "Joystick: ", joy_on ? "on" : "off");
+        setting_line(11, "K", "Stay signed in: ", cfg_stay ? "on" : "off");
         txt_goto(1, 19);
         say("Press a setting's key to change it and");
         txt_goto(1, 20);
@@ -130,6 +131,8 @@ static void setup_settings(void)
             cfg_title ^= 1;
         else if (k == 'J')
             joy_on ^= 1;
+        else if (k == 'K')
+            cfg_stay ^= 1;
         else if (k == K_RET || k == K_ESC)
             return;
         else if (k == '1') {
@@ -162,8 +165,9 @@ static void start_screen(void)
     say(" ");
     say(utoa10(cfg_port));
     setting_line(11, "D", "Display: ", mono ? "monochrome" : "color");
+    setting_line(13, "T", "Tutorial: how every game works", "");
     txt_goto(1, 22);
-    say("Open-Apple-Q: quit");
+    say(OA "Q: quit to the Finder");
 }
 #else
 static void setup_settings(void)
@@ -202,13 +206,15 @@ static void setup_settings(void)
         }
         setting_line(16, "J", "Joystick: ", joy_on ? "on" : "off");
         setting_line(17, "D", "Display: ", mono ? "monochrome" : "color");
-        if (PRODOS)
+        if (PRODOS) {                   /* (the self-booting disk writes no settings file) */
             setting_line(18, "T", "Title screen at start: ", cfg_title ? "on" : "off");
-        txt_goto(1, 19);
-        say("Press a setting's key to change it and");
+            setting_line(19, "K", "Stay signed in: ", cfg_stay ? "on" : "off");
+        }
         txt_goto(1, 20);
-        say("Return when done. Parlors use 6501.");
+        say("Press a setting's key to change it and");
         txt_goto(1, 21);
+        say("Return when done. Parlors use 6501.");
+        txt_goto(1, 22);
         txt_clreol();
         do
             k = kbd_get();
@@ -223,6 +229,8 @@ static void setup_settings(void)
             joy_on ^= 1;
         else if (k == 'T' && PRODOS)
             cfg_title ^= 1;
+        else if (k == 'K' && PRODOS)
+            cfg_stay ^= 1;
         else if (k == K_RET || k == K_ESC)
             return; else if (!cfg_conn)
             switch (k) {
@@ -237,11 +245,11 @@ static void setup_settings(void)
                 edit_space = 1;
                 if (k == '6') {
                     strcpy(b, cfg_init);
-                    if (edit_line(21, "Init string: ", b, DIAL_INIT_MAX))
+                    if (edit_line(22, "Init string: ", b, DIAL_INIT_MAX))
                         strcpy(cfg_init, b);
                 } else {
                     strcpy(b, cfg_number);
-                    if (edit_line(21, "Number: ", b, DIAL_NUM_MAX))
+                    if (edit_line(22, "Number: ", b, DIAL_NUM_MAX))
                         strcpy(cfg_number, b);
                 }
                 edit_space = 0;
@@ -256,12 +264,12 @@ static void setup_settings(void)
             case '5': edit_ip(21, "DNS server: ", cfg_dns); break;
             case '6':
                 strcpy(b, cfg_host);
-                if (edit_line(21, "Parlor: ", b, 31) && b[0])
+                if (edit_line(22, "Parlor: ", b, 31) && b[0])
                     strcpy(cfg_host, b);
                 break;
             case '7':
                 strcpy(b, utoa10(cfg_port));
-                if (edit_line(21, "Port: ", b, 5) && b[0])
+                if (edit_line(22, "Port: ", b, 5) && b[0])
                     cfg_port = num(b);
                 break;
             }
@@ -294,9 +302,10 @@ static void start_screen(void)
         say(line_desc());
     }
     setting_line(13, "D", "Display: ", mono ? "monochrome" : "color");
+    setting_line(15, "T", "Tutorial: how every game works", "");
     if (PRODOS) {
         txt_goto(1, 22);
-        say("Open-Apple-Q: back to ProDOS");
+        say(OA "Q: back to ProDOS");
     }
     if (cfg_conn || cfg_number[0])      /* (P connects or dials: the menu says enough) */
         return;
@@ -309,7 +318,7 @@ static void start_screen(void)
     txt_goto(1, 19);
     sayln("ATDT and the parlor's name and port,");
     txt_goto(1, 20);
-    say("then press Open-Apple-P.");
+    say("then press " OA "P.");
 }
 
 #endif
@@ -318,16 +327,17 @@ static void start_screen(void)
 static const char cfg_name[] = "\012PARLOR.CFG";
 
 /* The settings, in this order, after a version byte (CFG_VER, one more whenever the layout changes); then
-   the addresses, the port and the parlor's name, then whether the title screen is off (bit 0) and whether
-   the joystick is on (bit 1, which older versions left clear); then, on the IIe, the modem's init string,
-   number and pulse dial. A file of another version or size is left alone: the settings stay as they start
-   until they are saved again. */
-#define CFG_VER 3
+   the addresses, the port and the parlor's name, then whether the title screen is off (bit 0), whether the
+   joystick is on (bit 1, which older versions left clear) and whether the tutorial has been offered (bit 2); then, on the IIe, the modem's init string,
+   number and pulse dial; then Stay signed in, the player's name and this computer's sign-in key. A file of
+   another version or size is left alone: the settings stay as they start until they are saved again. */
+#define CFG_VER 4
 #ifdef IIGS
-#define CFG_LEN 60
+#define CFG_DIAL 60
 #else
-#define CFG_LEN (60 + DIAL_INIT_MAX + 1 + DIAL_NUM_MAX + 1 + 1)
+#define CFG_DIAL (60 + DIAL_INIT_MAX + 1 + DIAL_NUM_MAX + 1 + 1)
 #endif
+#define CFG_LEN (CFG_DIAL + 1 + 13 + 24)
 static unsigned char *const fields[] = {&cfg_slot, &cfg_baud, &cfg_parity, &cfg_flow, &cfg_echo, &cfg_conn,
                                         &cfg_eslot, &mono};
 
@@ -344,12 +354,15 @@ static void pack(unsigned char *b)
     b[25] = cfg_port;
     b[26] = cfg_port >> 8;
     memcpy(b + 27, cfg_host, 32);
-    b[59] = !cfg_title | joy_on << 1;
+    b[59] = !cfg_title | joy_on << 1 | cfg_tutor << 2;
 #ifndef IIGS
     memcpy(b + 60, cfg_init, DIAL_INIT_MAX + 1);
     memcpy(b + 60 + DIAL_INIT_MAX + 1, cfg_number, DIAL_NUM_MAX + 1);
-    b[CFG_LEN - 1] = cfg_pulse;
+    b[CFG_DIAL - 1] = cfg_pulse;
 #endif
+    b[CFG_DIAL] = cfg_stay;
+    memcpy(b + CFG_DIAL + 1, cfg_user, 13);
+    memcpy(b + CFG_DIAL + 14, cfg_key, 24);
 }
 
 static void pd_load(void)
@@ -370,11 +383,15 @@ static void pd_load(void)
         cfg_host[31] = 0;
         cfg_title = !(b[59] & 1);
         joy_on = b[59] >> 1 & 1;
+        cfg_tutor = b[59] >> 2 & 1;
 #ifndef IIGS
         memcpy(cfg_init, b + 60, DIAL_INIT_MAX);
         memcpy(cfg_number, b + 60 + DIAL_INIT_MAX + 1, DIAL_NUM_MAX);
-        cfg_pulse = b[CFG_LEN - 1] & 1;
+        cfg_pulse = b[CFG_DIAL - 1] & 1;
 #endif
+        cfg_stay = b[CFG_DIAL] & 1;
+        memcpy(cfg_user, b + CFG_DIAL + 1, 12);
+        memcpy(cfg_key, b + CFG_DIAL + 14, 23);
     }
     pd_close();
 }
@@ -402,13 +419,18 @@ static void pd_save(void)
     pd_close();
 }
 
-static void after_settings(void)
+static void save(void)
 {
-    setup_settings();
-    if (PRODOS)
+    if (PRODOS)                            /* (the self-booting disk keeps no file) */
         pd_save();
 }
 
+static void after_settings(void)
+{
+    setup_settings();
+    save();
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct setup setup_header = {after_settings, start_screen, pd_load};
+const struct setup setup_header = {after_settings, start_screen, pd_load, save};
 #pragma rodata-name (pop)

@@ -1,6 +1,6 @@
 ; ParlorNet on the Commodore 64: the machine. Start-up (BASIC and the KERNAL switched out, the VIC in bank 3),
 ; the raster interrupt (60 ticks a second on PAL and NTSC, the sprites, the keyboard, the joysticks and the
-; 1351 mouse), the 40-column text screen, the keyboard queue, and the time connected (common/6502/clock.inc).
+; 1351 mouse), the 40-column text screen, the keyboard queue, and the time signed in (common/6502/clock.inc).
 ;
 ; The interrupt vectors are ours at $FFFA-$FFFF while the KERNAL is out, and at $0314 (IRQ) and $0318 (NMI)
 ; while it is in for the disk (disk.s); the handlers take either way in.
@@ -9,7 +9,7 @@
         .import         popa, pusha
         .import         nmi_vec, irq_tx, _ser_irq, pb_on, pb_update
         .import         _q_set, _net_req, _r_n, _r_line
-        .import         _connected, _ui_hide, _ui_show, _ui_ink, _hgr_text, _hg_x, _hg_y
+        .import         _signed_in, _ui_hide, _ui_show, _ui_ink, _hgr_text, _hg_x, _hg_y
         .import         _ser_get
 
         .export         sys_start, _tick_poll, _ticks, _pal
@@ -169,22 +169,6 @@ sys_start:
         lda     CIA2+$0D
         lda     #$35            ; RAM at $A000 and $E000, I/O at $D000
         sta     $01
-        ; the character set's inverse half
-        ldx     #0
-:       lda     CHARS,x
-        eor     #$FF
-        sta     CHARS+$400,x
-        lda     CHARS+$100,x
-        eor     #$FF
-        sta     CHARS+$500,x
-        lda     CHARS+$200,x
-        eor     #$FF
-        sta     CHARS+$600,x
-        lda     CHARS+$300,x
-        eor     #$FF
-        sta     CHARS+$700,x
-        inx
-        bne     :-
         ; the VIC: bank 3 ($C000-$FFFF), no sprites yet, the raster interrupt at line 251
         lda     CIA2+$02
         ora     #$03
@@ -319,8 +303,8 @@ scan:
         jsr     mouse
         lda     _has_mouse
         beq     :+
-        lda     iz2             ; with the mouse in port 1, its buttons are not a joystick
-        and     #$10
+        lda     iz2             ; with the mouse in port 1, its buttons are not a joystick: the left one
+        and     #$11            ; is fire ($10), the right one up ($01)
         sta     _mouse_btn
         lda     #0
         sta     iz2
@@ -637,7 +621,7 @@ _kbd_flush:
         sta     _kq_tail
         rts
 
-; void tick_poll(void): ticks up to the interrupt's count, the connected time with them. Call it often.
+; void tick_poll(void): ticks up to the interrupt's count, the time signed in with them. Call it often.
 _tick_poll:
         lda     _ticks
         cmp     _irq_ticks
@@ -657,8 +641,25 @@ tp_done:
 ; The text screen: screen codes are the character set's, ASCII; inverse is $80 up.
 
 ; void txt_mode(void), void gr_mode(void): the text screen ($C800, characters at $C000) or the bitmap
-; ($E000, colors at $CC00).
+; ($E000, colors at $CC00). While the bitmap shows, the character set's inverse half and the text screen
+; ($C400-$CBE7) hold a table's moves and chat or the lobby's lists (TABLE and LOBBY, c64.cfg), so the
+; inverse half is made again here, from the first half, each time the text screen comes back.
 _txt_mode:
+        ldx     #0
+:       lda     CHARS,x
+        eor     #$FF
+        sta     CHARS+$400,x
+        lda     CHARS+$100,x
+        eor     #$FF
+        sta     CHARS+$500,x
+        lda     CHARS+$200,x
+        eor     #$FF
+        sta     CHARS+$600,x
+        lda     CHARS+$300,x
+        eor     #$FF
+        sta     CHARS+$700,x
+        inx
+        bne     :-
         lda     #$20
         sta     VIC+$18
         lda     #$1B
@@ -840,7 +841,7 @@ tp:     lda     $FFFF
 :       rts
 
 ; ---------------------------------------------------------------------------------------------------
-; Reading a reply (net.c) and the connected time: the same code as every machine's.
+; Reading a reply (net.c) and the time signed in: the same code as every machine's.
 
         .include "reply.inc"
         .include "clock.inc"

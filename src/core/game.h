@@ -11,11 +11,22 @@ struct game {
     void (*draw)(void);                 /* draw the table; everything when g_full */
     void (*click)(unsigned char id);    /* a target of the game's was clicked */
     unsigned char (*key)(unsigned char k);  /* a key; 1 if the game took it */
-    const char *help;                   /* the game's keys, for Keys (a second press), or 0 */
     unsigned char no_m;                 /* 1: the view is fetched without its M lines (too many) */
     void (*event)(void);                /* an EVT line, in w[] (w[3] its kind), before the view is
                                            fetched again; or 0 */
-    void (*hover)(unsigned char id);    /* the pointer rests on a target (255: none), or 0 */
+    /* The pointer rests on a target (255: none) on the player's turn: the second sentence of the sentence
+       line, what Return does there and the shortcuts that apply, with g_message; or 0. */
+    void (*hover)(unsigned char id);
+    /* An offer waiting for the player's answer (a double, a draw offer, an offer to resign), or 0. With 0,
+       whether one waits: its dialog's words in dlg_words (frame.h) and the dialog's flags (D_OFFER, and
+       D_FIRST to start on Accept), or 0 for none. With 1 or 2, the answer: Accept or Decline. */
+    unsigned char (*offer)(unsigned char answer);
+    /* The first sentence of the sentence line when the game has its own ("Your shot.", "You must
+       jump."), or 0 for the table's ("Your turn.", "Waiting for ann."); or 0 for none. */
+    const char *(*say)(void);
+    /* The game's empty board, made ready for draw, which a table shows while it waits for players (the
+       parlor has no view of a game that has not begun); or 0 when begin leaves it empty. */
+    void (*empty)(void);
 };
 
 /* The table, as the last view and the lobby list say. */
@@ -45,15 +56,21 @@ unsigned char __fastcall__ g_chk(const char *tokens);   /* CHK; the reply's OK t
 extern char g_chkinfo[42];
 unsigned char g_end(void);
 unsigned char g_undo(void);
+void __fastcall__ g_cmd(const char *line);  /* a command line run as if typed, such as "/pass" */
 extern unsigned char g_reply_more;      /* the last MOV said OK more (staged) */
 extern unsigned char g_reply_done;      /* ... OK done */
 
 /* The screen's frame, from the machine (machdefs.h): a title line at the top, then the game's area (from
    line GAME_TOP), a message line (MSG_Y), the status line (STATUS_Y) and the buttons (BUTTON_Y). */
-void g_message(const char *s);
+void g_message(const char *s);          /* until the next key; "" for the second sentence (hover) */
+/* The other player's move in a sentence, made by the game's event as it comes ("ann placed a disc on d3
+   and flipped 2."): g_who(seat) starts it with the player's name and returns it to add to. */
+extern char g_last[48];
+char *__fastcall__ g_who(unsigned char seat);
 void g_redraw(void);                    /* clear the screen and draw it all again */
+void __fastcall__ g_help(unsigned char k);  /* help k (machine.h, ovl_help) as pages over the screen */
 void g_title(void);
-const char *__fastcall__ g_name(unsigned char seat);   /* the seat's player, or "bot" */
+const char *__fastcall__ g_name(unsigned char seat);   /* the seat's player, or "open seat" */
 
 /* Ids of the frame's buttons; games use ids below 200. */
 #define B_LOBBY 250

@@ -49,7 +49,7 @@ static void buttons(void)
     if (want == 'p') {
         ui_button_draw(SX, 120, "Random");
         ui_button_draw(SX, 131, "Undo");
-        ui_button_draw(SX + 7, 131, "Clear");
+        ui_button_draw(SX + 7, 131, "Reset");
         ui_button_draw(SX, 142, "Ready");
     }
 }

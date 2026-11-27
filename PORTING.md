@@ -10,9 +10,9 @@ The program is a shared core and a machine layer. The core knows the parlor's pr
             src/core                                  src/<machine>
   +-------------------------------+          +-------------------------------+
   | protocol (net.c)              |          | start-up and quitting         |
-  | connecting, dialer, sign-in   |          | the line: serial, network     |
+  | console, dialer, sign-in      |          | the line: serial, network     |
   |   (parlor.c)                  |  calls   | keyboard, joystick, mouse     |
-  | console and main loop (main.c)| -------> | text screen                   |
+  | main loop (main.c)            | -------> | text screen                   |
   | lobby (lobby.c)               |machine.h | graphics screen kit (ui_*)    |
   | table, chat, clock (table.c)  |          | overlays from the disk        |
   | the ten games' rules          | includes | settings file, title screen   |
@@ -33,7 +33,7 @@ The Apple II and the C64 are built with cc65 2.19, from a Debian image pinned by
 For a Z80 machine (the ZX Spectrum, the MSX, the Amstrad CPC, CP/M) the likely route is z88dk, and for the 6809 (the Tandy Color Computer) the CMOC compiler. Neither has been tried, and these are the things to check first.
 
 - **Integer sizes.** The core assumes 16-bit `int` and 8-bit `char`, as all three compilers have, and uses `unsigned char` wherever the sign matters. `char` is unsigned in cc65; check how a plain `char` behaves in the new compiler where the core compares characters.
-- **Byte order.** The 6502 and the Z80 are little-endian and the 6809 is big-endian. The core keeps the connected time as three bytes in `clk_t`, low byte first, and the 6502 machines' assembly reads it that way. A big-endian machine has to keep those bytes in the same order.
+- **Byte order.** The 6502 and the Z80 are little-endian and the 6809 is big-endian. The core keeps the time signed in as three bytes in `clk_t`, low byte first, and the 6502 machines' assembly reads it that way. A big-endian machine has to keep those bytes in the same order.
 - **cc65's keywords and pragmas.** The core marks some functions `__fastcall__`, which another compiler can ignore if `machdefs.h` defines it as nothing. The core places data with `#pragma bss-name` and `#pragma rodata-name` (the table's buffers, each overlay's header), which another compiler does with its own section names, and builds with `-Cl` (local variables static), which only matters for speed.
 - **The memory model and overlays.** The core and one overlay at a time must fit in the machine's memory, with about 32K for the resident program and about 10K for the largest overlay. cc65's linker writes each overlay as its own file to load at `OVL_ADDR`. z88dk and CMOC have their own ways of building code to load at a fixed address, and on a machine with banked memory (a Spectrum 128, an MSX2) the overlays could live in banks instead.
 - **The 6502 assembly in `src/common/6502`.** The reply reader and the clock are assembly that both 6502 machines include. A machine on another processor writes them itself, and `src/template/template.c` has both in C to start from.
@@ -55,11 +55,11 @@ For a Z80 machine (the ZX Spectrum, the MSX, the Amstrad CPC, CP/M) the likely r
 - **Input.** `kbd_get` and `kbd_mods`, with the key codes in `machdefs.h`.
 - **The text screen**, 40 by 24, for the console, the sign-in and the dialer: the `txt_` calls and variables.
 - **Drawing.** The graphics screen kit, the `ui_` calls: text, fills, buttons, the status and message lines, the pointer, targets, input on the graphics screen, and line editing.
-- **The games' drawing.** The contract for `draw/NAME.c` is in `machine.h`, and each game's rules file says in its first comment which functions its drawing defines and which target ids it uses. `src/template/draw/` has a stub for each.
+- **The games' drawing.** The contract for `draw/NAME.c` is in `machine.h`, and each game's rules file says in its first comment which functions its drawing defines and which target ids it uses. `src/template/draw/` has a stub for each, and one for the tutorial's squares (`draw/tutorial.c`).
 - **Storage and settings.** There are no calls here, since the setup overlay reads and writes the settings file itself.
 - **Overlays and memory.** `ovl_load`, `OVL_ADDR`, and the two flags `connected` and `signin_note`.
 - **The progress bar.** There are no calls here either. A machine with a slow disk shows the load's progress itself, inside `ovl_load`.
-- **The clock.** `ticks` (60 a second), `tick_poll`, and the connected time, the `clk_` calls.
+- **The clock.** `ticks` (60 a second), `tick_poll`, and the time signed in, the `clk_` calls.
 - **Start-up and shutdown.** `sys_init` and `sys_quit`.
 
 The overlays the machine writes itself are the setup overlay (`setup.c`, the start screen and the settings), the title screen (`splash.c`) and the sign-in's network part (`signin_net.c`). Their headers are in `src/core/ovl.h`.
@@ -68,9 +68,9 @@ The overlays the machine writes itself are the setup overlay (`setup.c`, the sta
 
 Only the resident program and one overlay are in memory at a time. The overlays are the sign-in, each of the ten games, the start screen with the settings, and the title screen. The core calls `ovl_load` before it uses one, and the machine loads it to `OVL_ADDR`.
 
-On the Apple IIe the program is at $4000-$BFFF and the overlays run in the language card's RAM at $D000. The self-booting disk has its own sector reader in the boot block, and under ProDOS the overlays come from PARLOR.DAT. The reply buffer and the serial ring are in low memory.
+On the Apple IIe the program is at $4000-$BFFF and the overlays run in the language card's RAM at $D000, bank 2, with the command line and the dialogs in bank 1; the Double Hi-Res drawing runs in the auxiliary 64K. The self-booting disk has its own sector reader in the boot block, and under ProDOS the overlays come from PARLOR.DAT. The reply buffer and the serial ring are in low memory.
 
-On the C64, BASIC and the KERNAL are switched out. The program is at $1500, the overlays at $9900-$BFFF, the character set at $C000, the screens in the VIC's bank 3, and the bitmap under the KERNAL at $E000. The KERNAL is switched back in only to load from the disk. The overlays are packed files (`tools/c64_pack.py`), loaded at the top of their space and unpacked in place, and a bar on the bottom row fills as each loads. The start-up loads only what the title, the start screen, the settings and the console need (PN.MAIN). The lobby, the tables and the protocol are linked after the program's variables and cut off into a file of their own (PN.PARLOR), which is loaded once, before the first sign-in. A machine with a slow drive can do the same with `PLATE` in `build.sh`. The README has both machines' full memory maps.
+On the C64, BASIC and the KERNAL are switched out. The program is at $1400, the overlays at $9B00-$BFFF, the character set at $C000, the screens in the VIC's bank 3, and the bitmap under the KERNAL at $E000. The KERNAL is switched back in only to load from the disk. The overlays are packed files (`tools/c64_pack.py`), loaded at the top of their space and unpacked in place, and a bar on the bottom row fills as each loads. The start-up loads only what the title, the start screen and the settings need (PN.MAIN). The lobby, the tables and the protocol are linked after the program's variables and cut off into a file of their own (PN.PARLOR), which is loaded once, before the first sign-in. A machine with a slow drive can do the same with `PLATE` in `build.sh`. The README has both machines' full memory maps.
 
 ## Connecting
 
@@ -89,15 +89,15 @@ The serial driver is where most of a port's trouble will be. These are the lesso
 ## Drawing
 
 - **Square-looking boards.** Make squares and discs look square and round on the machine's own monitor. An Apple II Hi-Res pixel is about 7/6 as tall as it is wide, so a Reversi square there is 21 pixels by 18 lines. A C64 pixel is nearly square on PAL and narrower on NTSC, where the squares are square in pixels.
-- **Work with the color limits.** The C64 has two colors in each 8 by 8 cell, so its boards are laid out on whole cells wherever two colors meet. The Apple II's Hi-Res has its own color rules within each 7-pixel byte. Plan a board around these limits first.
-- **Keep pieces round and checkers readable.** Backgammon shows four checkers on a tall point and +n for the rest (two and +n on the bar).
+- **Work with the color limits.** The C64 has two colors in each 8 by 8 cell, so its boards are laid out on whole cells wherever two colors meet. The Apple IIe's Double Hi-Res has 16 colors at 140 pixels a line, each pixel four dots, and seven pixels are four whole bytes of the screen, so its boards are laid out in groups of 7 pixels, drawn a byte at a time. (The IIgs program's Hi-Res has its own color rules within each 7-pixel byte.) Plan a board around these limits first.
+- **Keep pieces round and checkers readable.** Backgammon's checkers are solid discs, white and black, on their point's color. A tall stack shows what fits, and the last checker shown stands for itself and the checkers not shown: it has that number cut out of it, a digit from 2 to 9 or a + for more, with the point's color showing through. A 1 never shows. On the Apple IIe and the C64 that is four on a point and two on the bar.
 - **Keep the frame's lines visible.** The message line shows the bot's greeting when a table opens, what the players say, and who joined with which program ("bob joined with GameMaster 1.0.0 + ParlorNet 0.5 on a Macintosh Plus"). A board must not draw over it.
 - **Use the same target ids.** The lab's plans and the orchestrator click by id, so they work on every machine.
-- **Offer a monochrome look.** D on the start screen and OA-D at a table switch to it, for monochrome monitors and black-and-white TVs.
+- **Offer a monochrome look.** D on the start screen and the lobby's Display button switch to it, for monochrome monitors and black-and-white TVs.
 
 ## Text on the screen
 
-What the program says on the screen stays in the voice of its period. It talks about modems, lines, disks and parlors as a program of its time would, and it says nothing about modern setups, emulators, WiFi bridges or the internet. Things a modern setup needs (a Zimodem's quoted number, `ATS62=0`, netcat through a Unix shell) go in the README and the player's guide, not on the screen. Messages are plain sentences, and key legends follow the machine's own names for its keys.
+What the program says on the screen stays in the voice of its period. It talks about modems, lines, disks and parlors as a program of its time would, and it says nothing about modern setups, emulators, WiFi bridges or the internet. Things a modern setup needs (a Zimodem's quoted number, `ATS62=0`, netcat through a Unix shell) go in the README and the player's guide, not on the screen. Messages are plain sentences, and key legends follow the machine's own names for its keys. Wherever a screen names the command key, in a legend or in a sentence, it shows the key's symbol (`OA` in `machdefs.h`, a character of the machine's font) and the letter after it, never the key's name spelled out.
 
 ## Settings files
 

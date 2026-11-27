@@ -1,11 +1,15 @@
 /* ParlorNet on the Commodore 64: Grid Words' board and rack (core/games/gridwords.c includes it). A square is
-   one cell, so a tile is its letter in the cell's two colors: in black on light green, a blank's (in lower
-   case) on cyan, one being laid on yellow. An empty square is black with a gray dot; the premium squares
-   keep clear of the commercial game's colors: word squares orange, letter squares purple, a triple the
-   whole cell and a double a diamond, with a legend beside the board. The start of a play shows an arrow,
-   across or down. Beside the board: the scores, the bag, the rack (seven tiles a cell apart, swap marks
-   under them), the buttons and the last word. In monochrome a tile is white with its letter in black (one
-   being laid the other way round) and the premium squares grays. */
+   one cell, so a tile is its letter in the cell's two colors: in black on light green, one being laid on
+   yellow. A tile's letter is a capital of its own (art/c64/tiles.txt), 6 lines tall in the middle of the
+   cell, so it has a clear line of the tile's color on every side. A blank's letter is the same capital,
+   in black on cyan, or in blue on the yellow of one being laid. An empty square is
+   black with a gray dot; the premium squares keep clear of the commercial game's colors: word squares
+   orange, letter squares purple, a triple the whole cell and a double a diamond, with a legend beside the
+   board. The start of a play shows an arrow, across or down. Beside the board: the scores, the bag, the
+   rack (seven tiles a cell apart, swap marks under them), the buttons and the last word. In monochrome a
+   tile is white with its letter in black, one being laid the other way round, and a blank's letter is
+   gray on either. The premium squares are grays there too, so a blank keeps the white or black tile and
+   does not run into a gray square beside it. */
 #include "gfx.h"
 
 #define X0 2                            /* the board's first cell column, and its top line */
@@ -37,20 +41,20 @@ static void cell8(unsigned char x, unsigned char y, unsigned char fg, unsigned c
     hgr_blit();
 }
 
-/* A tile at (hg_x, hg_y), in hg_fg on hg_bg: its letter, c. The font draws a capital in the top 7 lines
-   and keeps the last one for descenders, so a letter that reaches the top line and leaves the last one
-   empty goes down a line. It then has a clear line above it and does not seem to run into the tile above.
-   A blank's letter with a descender (g, j, p, q or y) needs all 8 lines and stays where it is, and the
-   other small letters sit clear of the top already. */
-static void tile8(char c)
+/* Grid Words' tile letters (gridwords_art.s, from art/c64/tiles.txt): A to Z, then ?, 6 lines each. */
+extern const unsigned char tile_glyphs[];
+
+/* A tile at (hg_x, hg_y), in hg_fg on hg_bg: its letter c (a blank's in lower case), or ? for a blank on
+   the rack. The glyph fills lines 1 to 6 and leaves lines 0 and 7 clear. */
+static void tile_letter(char c)
 {
-    const unsigned char *g = (const unsigned char *)0xC000 + c * 8;     /* the font (c64.h) */
-    unsigned char s = g[0] && !g[7];
+    unsigned char i = c == '?' ? 26 : (c & 0x1F) - 1;
+    i += i << 1;                        /* 6 bytes a glyph: i * 3, then twice that, in shifts */
+    memcpy(pic + 3, tile_glyphs + (unsigned char)(i << 1), 6);
+    pic[2] = pic[9] = 0;
     hg_w = 1;
     hg_h = 8;
     hgr_color();
-    pic[2] = 0;
-    memcpy(pic + 2 + s, g, 8 - s);
     hg_src = pic;
     hgr_blit();
 }
@@ -68,18 +72,20 @@ static void draw_square(unsigned char x, unsigned char y, unsigned char c)
     unsigned char cx = X0 + x, cy = Y0 + 8 * y, k;
     shown[y][x] = c;
     if (c >= 'A' || (c & 0x80)) {
-        unsigned char letter = c & 0x7F, bg;
+        unsigned char letter = c & 0x7F, blank = letter >= 'a';
         if (mono) {
-            hg_fg = c & 0x80 ? C_WHITE : C_BLACK;
-            bg = c & 0x80 ? C_BLACK : C_WHITE;
+            hg_fg = blank ? C_GREY : c & 0x80 ? C_WHITE : C_BLACK;
+            hg_bg = c & 0x80 ? C_BLACK : C_WHITE;
+        } else if (c & 0x80) {
+            hg_fg = blank ? C_BLUE : C_BLACK;
+            hg_bg = C_YELLOW;
         } else {
             hg_fg = C_BLACK;
-            bg = c & 0x80 ? C_YELLOW : letter >= 'a' ? C_CYAN : C_LGREEN;
+            hg_bg = blank ? C_CYAN : C_LGREEN;
         }
-        hg_bg = bg;
         hg_x = cx;
         hg_y = cy;
-        tile8(letter);
+        tile_letter(letter);
         return;
     }
     if (c == 1 || c == 2) {
@@ -118,9 +124,9 @@ static void draw_rack(void)
         hg_x = RACK_X + 2 * i;
         hg_y = RACK_Y;
         if (on) {
-            hg_fg = C_BLACK;
+            hg_fg = mono && c == '?' ? C_GREY : C_BLACK;
             hg_bg = mono ? C_WHITE : c == '?' ? C_CYAN : C_LGREEN;
-            tile8(c);
+            tile_letter(c);
         } else {
             ui_ink(F_WHITE, F_BLACK);
             hgr_char(c);
@@ -181,13 +187,13 @@ static void gw_draw(void)
         memset(shown_rack, 0xFF, sizeof shown_rack);
         for (y = 0; y < N; ++y)
             for (x = 0; x < N; ++x)
-                ui_target((X0 + x) * 4 + 4, Y0 + 8 * y + 4, 3, 3, y * N + x);
+                ui_target((X0 + x) * 4 + 2, Y0 + 8 * y + 4, 2, 4, y * N + x);
         for (i = 0; i < 7; ++i)
-            ui_target((RACK_X + 2 * i) * 4 + 4, RACK_Y + 4, 3, 4, ID_RACK + i);
+            ui_target((RACK_X + 2 * i) * 4 + 2, RACK_Y + 4, 4, 4, ID_RACK + i);
         ui_button(PX, 120, "Play", ID_PLAY);
-        ui_button(PX + 7, 120, "Clear", ID_CLEAR);
-        ui_button(PX, 136, "Swap", ID_SWAP);
-        ui_button(PX + 7, 136, "Pass", ID_PASS);
+        ui_button(PX + 7, 120, "Pass", ID_PASS);
+        ui_button(PX, 136, "Exchange", ID_SWAP);
+        ui_button(PX + 11, 136, "Cancel", ID_CLEAR);
         legend();
     }
     for (y = 0; y < N; ++y)
@@ -195,7 +201,7 @@ static void gw_draw(void)
             c = want(x, y);
             if (c != shown[y][x])
                 draw_square(x, y, c);
-            t_hw[y * N + x] = 3;
+            t_hw[y * N + x] = 2;
         }
     draw_panel();
 }

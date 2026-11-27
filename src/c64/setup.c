@@ -98,6 +98,7 @@ static void setup_settings(void)
         setting_line(15, "D", "Display: ", mono ? "monochrome" : "color");
         setting_line(16, "T", "Title screen at start: ", cfg_title ? "on" : "off");
         setting_line(17, "M", "1351 mouse in port 1: ", mouse_on ? "on" : "off");
+        setting_line(18, "K", "Stay signed in: ", cfg_stay ? "on" : "off");
         txt_goto(1, 19);
         say("Press a setting's key to change it and");
         txt_goto(1, 20);
@@ -116,6 +117,7 @@ static void setup_settings(void)
         case 'D': mono ^= 1; break;
         case 'T': cfg_title ^= 1; break;
         case 'M': mouse_on ^= 1; break;
+        case 'K': cfg_stay ^= 1; break;
         default:
             if (k < '1' || k > '7' + sw)
                 break;
@@ -165,26 +167,28 @@ static void start_screen(void)
     setting_line(9, "C", "Console: set up the line by hand", "");
     setting_line(11, "S", "Settings: ", line_desc());
     setting_line(13, "D", "Display: ", mono ? "monochrome" : "color");
+    setting_line(15, "T", "Tutorial: how every game works", "");
     txt_goto(1, 22);
-    say(OA "-Q: quit to BASIC");
+    say(OA "Q: quit to BASIC");
     if (cfg_number[0])                  /* (P dials the number: the menu says enough) */
         return;
-    txt_goto(1, 16);
-    sayln("If the line already reaches the");
     txt_goto(1, 17);
-    sayln("parlor's native port (6501), press P.");
+    sayln("If the line already reaches the");
     txt_goto(1, 18);
-    sayln("To dial a modem first, press C, type");
+    sayln("parlor's native port (6501), press P.");
     txt_goto(1, 19);
-    sayln("ATDT and the parlor's name and port,");
+    sayln("To dial a modem first, press C, type");
     txt_goto(1, 20);
-    say("then press " OA_NAME "-P.");
+    sayln("ATDT and the parlor's name and port,");
+    txt_goto(1, 21);
+    say("then press " OA "P.");
 }
 
 /* PARLOR.CFG: 'P', 'C', a version (CFG_VER, one more whenever the layout or the meaning of a byte changes), the
-   modem (SER_USER or SER_SWIFT), its speed and flow control, the echo, the display, the title screen, pulse dialing, then the init string and the
+   modem (SER_USER or SER_SWIFT), its speed and flow control, the echo, the display, the title screen (bit 0) and whether the tutorial has been offered (bit 1), pulse dialing, then the init string and the
    number, each with
-   its 0 and room to spare, whether a mouse is in port 1 (byte 70) and the SwiftLink's address (byte 71). A file of another version or size is
+   its 0 and room to spare, whether a mouse is in port 1 (byte 70), the SwiftLink's address (byte 71), Stay signed in (byte 72), the
+   player's name (73) and this computer's sign-in key (86). A file of another version or size is
    left alone: the settings stay as they start until they are saved again. The start-up reads the file
    (line.c, cfg_load) without this overlay; when it had none, cfg_saved is packed here the first time the
    start screen shows, before anything can change the settings. */
@@ -199,19 +203,21 @@ static void pack(unsigned char *b)
     b[5] = cfg_flow;
     b[6] = cfg_echo;
     b[7] = mono;
-    b[8] = cfg_title;
+    b[8] = cfg_title | cfg_tutor << 1;
     b[9] = cfg_pulse;
     memcpy(b + 10, cfg_init, DIAL_INIT_MAX + 1);
     memcpy(b + 10 + DIAL_INIT_MAX + 1, cfg_number, DIAL_NUM_MAX + 1);
     b[70] = mouse_on;
     b[71] = cfg_acia;
+    b[72] = cfg_stay;
+    memcpy(b + 73, cfg_user, 13);
+    memcpy(b + 86, cfg_key, 24);
 }
 
-/* After the settings: PARLOR.CFG written again when they changed. */
-static void after_settings(void)
+/* PARLOR.CFG written again when the settings changed. */
+static void save(void)
 {
     static unsigned char b[CFG_LEN];
-    setup_settings();
     pack(b);
     if (memcmp(b, cfg_saved, CFG_LEN) == 0)
         return;
@@ -222,6 +228,12 @@ static void after_settings(void)
         memcpy(cfg_saved, b, CFG_LEN);
 }
 
+static void after_settings(void)
+{
+    setup_settings();
+    save();
+}
+
 #pragma rodata-name (push, "OVHDR")
-const struct setup setup_header = {after_settings, start_screen, cfg_load};
+const struct setup setup_header = {after_settings, start_screen, cfg_load, save};
 #pragma rodata-name (pop)

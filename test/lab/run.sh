@@ -11,8 +11,8 @@
 # settings.
 #
 # usage: A2ROMS=/path/to/roms run.sh PORT DISK PLAN OUTDIR
-# A2ROMS is a directory with MAME's apple2ee, a2ssc, a2mouse, m68705p3 and a2diskiing ROM sets, which you
-# supply; none are part of this repository.
+# A2ROMS is a directory with MAME's apple2ee, a2ssc, a2mouse, m68705p3 and a2diskiing ROM sets (and apple2c for
+# MACH=apple2c), which you supply; none are part of this repository.
 set -eu
 PORT=$1
 DISK=$2
@@ -30,7 +30,7 @@ mkdir -p "$OUTDIR" "$XCHG" "$SCRIPTS"
 OUTDIR=$(cd "$OUTDIR" && pwd)
 DISKDIR=$(cd "$(dirname "$DISK")" && pwd)
 rm -f "$XCHG/need" "$XCHG/steps.txt" "$XCHG/use_w5100"
-for s in t_n t_cur t_id mono cfg_number; do
+for s in t_n t_cur t_id mono cfg_number cfg_tutor; do
 	printf '%s %s\n' "$s" "$(grep -o "_$s  *[0-9A-F]*" "$DISKDIR/parlor.map" | head -1 | awk '{print $2}')"
 done > "$XCHG/addr.txt"
 cp "$TEST/mame/run.lua" "$TEST/mame/w5100.lua" "$TEST/mame/joy.lua" "$SCRIPTS/"
@@ -48,9 +48,15 @@ if [ -n "${ETH:-}" ]; then
 	RELAY=$!
 fi
 LINE=${LINE:-host.docker.internal:$PORT}
+# MACH=apple2c runs it on a IIc, whose modem port takes the line; MAMEARGS adds MAME options, such as
+# "-ramsize 64K -aux std80" for a IIe without the auxiliary 64K (plans/k64.txt).
+if [ "${MACH:-apple2ee}" = apple2c ]; then
+	PORTS="-modem null_modem -bitb socket.$LINE -gameio joy"
+else
+	PORTS="-sl2 ssc -sl2:ssc:rs232 null_modem -bitb socket.$LINE -sl4 mouse -gameio joy"
+fi
 docker run --rm ${NET:+--network "$NET"} -v "$A2ROMS:/roms:ro" -v "$SCRIPTS:/scripts:ro" -v "$OUTDIR:/out" -v "$DISKDIR:/disk:ro" \
-	-v "$XCHG:/xchg" "$IMAGE" sh -c "cd /tmp && /usr/games/mame apple2ee -rompath /roms \
-		-sl2 ssc -sl2:ssc:rs232 null_modem -bitb socket.$LINE -sl4 mouse -gameio joy \
-		-flop1 /disk/$(basename "$DISK") -video none -sound none -skip_gameinfo \
+	-v "$XCHG:/xchg" "$IMAGE" sh -c "cd /tmp && /usr/games/mame ${MACH:-apple2ee} -rompath /roms $PORTS \
+		-flop1 /disk/$(basename "$DISK") ${MAMEARGS:-} -video none -sound none -skip_gameinfo \
 		-autoboot_script /scripts/run.lua 2>&1 | grep -v -E 'XDG_RUNTIME|ALSA|seconds_to_run' || true"
 kill $ORCH $RELAY 2>/dev/null || true

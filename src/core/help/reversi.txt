@@ -1,0 +1,21 @@
+Reversi help
+Moving
+Move to a square with a dot and press {RET} to place a disc there. The discs it closes in turn to your color.
+
+Keys for Reversi
+Reversi has no keys of its own.
+
+Commands
+Type a move after the slash, as /d3.
+
+Every game
+{OA}R resigns, after asking first. {OA}T opens the chat. {ESC} goes back to the lobby, and the game goes on without you.
+---
+Reversi help
+The rules
+A disc must close in at least one line of the other player's discs, across, down or corner to corner, and every disc closed in turns over. When you have no such square, your turn passes. The player with more discs at the end wins.
+
+The board
+The columns are a to h from the left and the rows 1 to 8 from the top. The dots show where you can place a disc.
+
+/say, /note, /time and /resign work at every table, and /tutorial shows how the games work.

@@ -7,7 +7,7 @@ C128 boots the disk and goes to 64 mode to start the program) and
                 idle-loop vector), and LOAD"*",8 then RUN starts it too
   PN.BOOT       the loader (loader.bin, at $C800)
   PN.CHARS      the character set (chars.bin, at $C000)
-  PN.MAIN       the program (parlor.main up to its zeroed data, for $1500): what starts it and runs the start
+  PN.MAIN       the program (parlor.main up to its zeroed data, for $1400): what starts it and runs the start
                 screen, the settings and the console
   PN.PARLOR     the lobby, the tables, the parlor's protocol, the catalog and the bitmap's buttons and
                 pointer (the rest of parlor.main, from PCODE, after the zeroed data), loaded before the
@@ -164,9 +164,9 @@ def packed(data, start, end):
 def default_cfg():
     """PARLOR.CFG as c64/setup.c packs the settings they start with: SwiftLink compatible at 19200, no flow
     control, no echo, color, the title screen, tone dialing, the init string ATZ, the number
-    parlornet.org:6501, no mouse, the SwiftLink at $DE00 (byte 71: 0)."""
-    b = bytearray(72)
-    b[0:10] = bytes([ord("P"), ord("C"), 4, 2, 5, 0, 0, 0, 1, 0])     # (version 4, as setup.c's CFG_VER)
+    parlornet.org:6501, no mouse, the SwiftLink at $DE00 (byte 71: 0), and Stay signed in off, with no key."""
+    b = bytearray(110)
+    b[0:10] = bytes([ord("P"), ord("C"), 5, 2, 5, 0, 0, 0, 1, 0])     # (version 5, as setup.c's CFG_VER)
     b[10:13] = b"ATZ"
     num = b"parlornet.org:6501"
     b[10 + 24:10 + 24 + len(num)] = num
@@ -199,16 +199,18 @@ def main():
     add("PN.CHARS", prg(0xC000, open(os.path.join(d, "chars.bin"), "rb").read()))
     # parlor.main: the program to its zeroed data, then (the zeroed data not in the file) PCODE and PRODATA
     prog = open(os.path.join(d, "parlor.main"), "rb").read()
-    cut = syms["__BSS_RUN__"] - 0x1500
+    cut = syms["__BSS_RUN__"] - 0x1400
     late = syms["__PCODE_RUN__"]
     assert late == syms["__BSS_RUN__"] + syms["__BSS_SIZE__"]
     assert len(prog) == cut + syms["__PRODATA_RUN__"] + syms["__PRODATA_SIZE__"] - late
-    add("PN.MAIN", packed(prog[:cut], 0x1500, 0xC000))
+    add("PN.MAIN", packed(prog[:cut], 0x1400, 0xC000))
     add("PN.PARLOR", packed(prog[cut:], late, 0xC000))
     for n in names:
         p = os.path.join(d, "parlor." + n)
         if os.path.exists(p) and os.path.getsize(p):
             add("PN." + n.upper(), packed(open(p, "rb").read(), ovl, 0xC000))
+    for k in range(12):                 # the help pages (tools/help.py), loaded into the reply buffer
+        add("PN.HELP%d" % k, prg(0x0800, open(os.path.join(d, "help", "help%d" % k), "rb").read()))
     add("PARLOR.CFG", default_cfg(), 0x81)
     img = disk.finish()
     free = sum(spt(t) - len(disk.used[t]) for t in range(1, TRACKS + 1) if t != 18)

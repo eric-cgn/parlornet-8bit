@@ -97,16 +97,16 @@ static void info(void)
     b[0] = 0;
     if (g_myturn) {
         if (tp_code == 'n')
-            strcpy(b, "Nothing played: Done draws a tile");
+            strcpy(b, "Nothing played. End takes a tile.");
         else {
             strcpy(b, utoa10(tp_n));
-            strcat(b, tp_n == 1 ? " tile" : " tiles");
+            strcat(b, tp_n == 1 ? " tile played" : " tiles played");
             if (tp_pts[0] != '-') {
-                strcat(b, ", meld ");
+                strcat(b, " for ");
                 strcat(b, tp_pts);
             }
-            strcat(b, tp_code == 'o' ? ": Done keeps it" : tp_code == 's' ? ": a set is not valid"
-                          : tp_code == 'm' ? ": 30 needed" : tp_code == 'j' ? ": joker rule" : "");
+            strcat(b, tp_code == 'o' ? ". End keeps them." : tp_code == 's' ? ". A set is not valid."
+                          : tp_code == 'm' ? ". A meld needs 30." : tp_code == 'j' ? ". A joker needs its tile." : ".");
         }
     }
     ui_textn(0, INFO2, b, 40);
@@ -114,35 +114,38 @@ static void info(void)
 
 static void rt_draw(void)
 {
-    unsigned char r, i;
+    unsigned char r, i, mid;
     if (g_full) {
+        mid = mono ? 6 : 4;             /* a tile's middle: three cells in monochrome, else two */
         for (r = 0; r < ROWS; ++r)
             for (i = 0; i < SETMAX; ++i)
-                ui_target((1 + 3 * i) * 4 + 8, TY + r * 16 + 4, 7, 4, r * SETMAX + i);
+                ui_target((1 + 3 * i) * 4 + mid, TY + r * 16 + 4, 6, 4, r * SETMAX + i);
         for (i = 0; i < MAXR; ++i)
-            ui_target((1 + (i % 13) * 3) * 4 + 8, RY + (i / 13) * 8 + 4, 7, 4, ID_RACK + i);
-        ui_button(0, BTY, "Done", ID_DONE);
+            ui_target((1 + (i % 13) * 3) * 4 + mid, RY + (i / 13) * 8 + 4, 6, 4, ID_RACK + i);
+        ui_button(0, BTY, "End", ID_DONE);
         ui_button(6, BTY, "Undo", ID_UNDO);
         ui_button(12, BTY, "Reset", ID_RESET);
         ui_button(19, BTY, "New", ID_NEW);
         ui_button(24, BTY, "Split", ID_SPLIT);
-        ui_target(36 * 4 + 4, BTY + 4, 4, 4, ID_UP);
-        ui_target(38 * 4 + 4, BTY + 4, 4, 4, ID_DOWN);
+        ui_target(36 * 4 + 2, BTY + 4, 4, 4, ID_UP);
+        ui_target(38 * 4 + 2, BTY + 4, 4, 4, ID_DOWN);
     }
     if (top && top >= nsets)
         top = nsets > ROWS ? nsets - ROWS : 0;
     /* the targets of empty places are out of use */
     for (r = 0; r < ROWS; ++r)
         for (i = 0; i < SETMAX; ++i)
-            t_hw[r * SETMAX + i] = top + r < nsets && (i < set_n[top + r] || i == 0) ? 7 : 0;
+            t_hw[r * SETMAX + i] = top + r < nsets && (i < set_n[top + r] || i == 0) ? 6 : 0;
     for (i = 0; i < MAXR; ++i)
-        t_hw[ROWS * SETMAX + i] = i < nrack ? 7 : 0;
+        t_hw[ROWS * SETMAX + i] = i < nrack ? 6 : 0;
     draw_table();
     draw_rack();
     ui_ink(F_WHITE, F_BLACK);
     hg_x = 36;
     hg_y = BTY;
     hgr_text(nsets > ROWS ? "^ v" : "   ");
+    /* ^ and v, the last two targets, are out of use while they are not shown */
+    t_hw[ROWS * SETMAX + MAXR + 5] = t_hw[ROWS * SETMAX + MAXR + 6] = nsets > ROWS ? 4 : 0;
     info();
 }
 

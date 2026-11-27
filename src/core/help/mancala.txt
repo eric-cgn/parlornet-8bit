@@ -1,0 +1,20 @@
+Mancala help
+Moving
+Your pits are the bottom row, 1 to 6 from the left, and your store is on the right. Move to a pit and press {RET} to sow its seeds.
+
+Keys for Mancala
+1 to 6 move the pointer to that pit.
+
+Commands
+Type a pit after the slash, as /3.
+
+Every game
+{OA}R resigns, after asking first. {OA}T opens the chat. {ESC} goes back to the lobby, and the game goes on without you.
+---
+Mancala help
+The rules
+Sowing drops the pit's seeds one by one in the pits after it. In Kalah your store takes one too, a last seed there gives you another turn, and a last seed in an empty pit of yours takes the seeds across. In Oware a last seed that makes two or three in the other row takes them.
+
+The game ends when a row is empty, and the most seeds win.
+
+/say, /note, /time and /resign work at every table, and /tutorial shows how the games work.

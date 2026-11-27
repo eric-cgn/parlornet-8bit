@@ -1,0 +1,65 @@
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+hold cfg_tutor 1 30
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type tia\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 400
+key ret
+wait 200
+key ret
+wait 200
+watch FEFF
+key ret
+wait 1200
+snap t_start
+hold mono 1 30
+wait 40
+type ?
+wait 120
+key esc
+wait 300
+hold mono 0 30
+wait 40
+type ?
+wait 120
+key esc
+wait 300
+hold mono 1 30
+wait 40
+type ?
+wait 120
+key esc
+wait 300
+hold mono 0 30
+wait 40
+type ?
+wait 120
+key esc
+wait 300
+need bgsnapa tia Swordfish 1997
+wait 300
+need bgplay tia Swordfish 1997
+wait 300
+snap t_after
+hold mono 1 30
+wait 40
+type ?
+wait 120
+key esc
+wait 300
+hold mono 0 30
+wait 40
+type ?
+wait 120
+key esc
+wait 300
+exit

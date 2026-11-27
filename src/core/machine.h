@@ -20,14 +20,22 @@
                       dialer; 0: it connects only through its network (the IIgs, through Marinetti).
      MACHINE_LOWBSS   defined: a table's move tokens and chat parts go in the LOWBSS segment (the IIgs, whose
                       program space is full; its low memory has no serial ring).
+     MACHINE_GRBSS    defined: the buffers of the command line, the dialogs and the status line go in the
+                      GRBSS segment, memory that is theirs only while the graphics screen shows (the C64's
+                      text screen).
    Names and key legends
      MACHINE_NAME     "the Apple II", "the C64": in "This game is not on ... yet."
-     OA_NAME          the command key as the text names it: "Open-Apple", "Commodore".
-     OA, CA           the font's characters for the command key ("\x7F") and a second one ("\x80").
+     OA, CA           the font's characters for the command key ("\x7F") and a second one ("\x80"). Every
+                      screen that names the command key shows OA, the key's symbol, and the letter after it.
      K1, K3, K6       in a key legend on the graphics screen, the next 1, 3 or 6 characters are a key, drawn
                       in the keys' color or in bold.
    Key codes (kbd_get)
-     K_LEFT 8, K_RIGHT 21, K_UP 11, K_DOWN 10, K_RET 13, K_ESC 27, K_TAB 9, K_DEL 127, on every machine so far.
+     K_LEFT 8, K_RIGHT 21, K_UP 11, K_DOWN 10, K_RET 13, K_ESC 27, K_TAB 9, K_DEL 127, on every machine so far,
+     and K_BACK 28 for the second button of a joystick or a mouse, which cancels as Esc does but never
+     leaves a table.
+     KEY_RET, KEY_ESC  the Return and Esc keys' names in a sentence on the graphics screen, with their key
+                      marks: "Return" and "Esc" on the Apple II, "RETURN" and "RUN/STOP" on the C64.
+     COL_PX           a text column's width in pixels (7 on the Apple II, 8 on the C64), for ui_box.
    The table screen's frame, in lines of the graphics screen
      GAME_TOP         the game's area starts here, below the title row.
      MSG_Y            the message line (the bot's greeting, chat, a game's messages).
@@ -125,6 +133,8 @@ void ui_rect(unsigned char x, unsigned char y, unsigned char w, unsigned char h,
 void ui_text(unsigned char x, unsigned char y, const char *s);
 void ui_textn(unsigned char x, unsigned char y, const char *s, unsigned char w); /* padded or cut to w */
 void ui_box(unsigned int px, unsigned char y, unsigned int w, unsigned char h);  /* an outline, in pixels */
+extern unsigned char hg_xor;            /* 1: ui_box flips the pixels it draws, so a second one takes it away */
+extern unsigned char ui_unlit;          /* 1: buttons and the keys in text are drawn unlit (the command line) */
 void ui_button(unsigned char x, unsigned char y, const char *s, unsigned char id);   /* and its target */
 void ui_button_draw(unsigned char x, unsigned char y, const char *s);  /* without a target */
 void ui_cls(void);                     /* clear the screen and the targets */
@@ -153,11 +163,13 @@ void ui_show(void);
 
 /* Input on the graphics screen: a key (the arrows move the pointer and are not returned), U_CLICK when a
    target is clicked (ui_clicked is its id), or 0 when nothing happened. A key with the command key comes
-   with U_OA set (U_OA | key). ui_poll also keeps the pointer and the connected time (clk_show) up to date. */
+   with U_OA set (U_OA | key). ui_poll also keeps the pointer and the time signed in (clk_show) up to date. */
 #define U_CLICK 0xFF
 #define U_OA    0x80
 extern unsigned char ui_clicked;
-extern unsigned char ui_retkey;          /* 1: Return is a key for the screen, not a click */
+/* 0: Return and Space click the target under the pointer; 1: Return is a key for the screen, not a click;
+   2: the arrows, Return and Space are all keys for the screen (a page of text), and only a pointer clicks. */
+extern unsigned char ui_retkey;
 unsigned char ui_poll(void);
 /* The mouse (the AppleMouse II card, the C64's 1351 when the settings say so): found at start-up by the
    machine itself; ui_hasmouse is 1 when there is one. */
@@ -200,10 +212,18 @@ void ui_wait_key(void);                 /* until a key */
    the KERNAL reads). The Apple II reads the self-booting disk's sectors itself or PARLOR.DAT under ProDOS;
    the C64 loads PN.<NAME> files through the KERNAL and unpacks them. */
 unsigned char __fastcall__ ovl_load(unsigned char k);
+/* Help k (0 the lobby, 1 to 10 the games in the catalog's order, 11 the tutorial; tools/help.py makes them)
+   into memory from page page, which the reply buffer gives (net_rbuf): its lines, each ended by a 0, and a
+   4 after the last. 1 when it is there. The Apple II reads it from the overlay OVL_HELP, the C64 from the
+   file PN.HELPk. */
+unsigned char __fastcall__ ovl_help(unsigned char k, unsigned char page);
 
-/* Whether the line has been greeted (so the sign-in skips the opening and greeting), and what the sign-in
-   should say on its way in: 1 that the player signed out, 2 that the line was lost. */
+/* Whether the line has been greeted (so the sign-in skips the opening and greeting), whether the player is
+   signed in (from the end of the sign-in until signing out or the connection's end: the time signed in shows
+   only then), and what the sign-in should say on its way in: 1 that the player signed out, 2 that the line
+   was lost. */
 extern unsigned char connected;
+extern unsigned char signed_in;
 extern unsigned char signin_note;
 
 /* ---------------------------------------------------------------------------------------------------
@@ -218,9 +238,10 @@ extern unsigned char signin_note;
 extern unsigned int ticks;
 void tick_poll(void);
 
-/* The time connected to the parlor, shown as "0:12" or "1:05:33": the seconds the parlor gave (TIM, asked by
-   clk_sync about every 32 seconds), counted on between by the ticks. On the 6502 machines this is assembly
-   shared by both (src/common/6502/clock.inc and clockvars.inc). */
+/* The time signed in, from 0 when sign-in completes, shown in whole minutes: the seconds the parlor gave (TIM,
+   asked by clk_sync about every 32 seconds), counted on between by the ticks. TIM's secs more than 30 seconds
+   over the program's own count are not taken. On the 6502 machines this is assembly shared by both
+   (src/common/6502/clock.inc and clockvars.inc). */
 extern unsigned char clk_t[3];          /* seconds */
 extern unsigned char clk_sub;           /* ticks left in this second */
 extern unsigned char clk_shown;         /* clk_min when last shown; 255 to show it again */

@@ -30,14 +30,14 @@ snap gs_splash_14
 wait 60
 snap gs_splash_15
 title 1800
-waittext Open-Apple-Q 1800
+waittext quit to the Finder 1800
 key s
 waittext settings 300
 key d
 wait 30
 snap gs_settings_mono
 key ret
-waittext Open-Apple-Q 600
+waittext quit to the Finder 600
 key cmd+q
 wait 900
 dclick 86 49
@@ -66,14 +66,14 @@ snap gs_splash_mono_14
 wait 60
 snap gs_splash_mono_15
 title 1800
-waittext Open-Apple-Q 1800
+waittext quit to the Finder 1800
 key s
 waittext settings 300
 key t
 wait 30
 snap gs_settings_notitle
 key ret
-waittext Open-Apple-Q 600
+waittext quit to the Finder 600
 key cmd+q
 wait 900
 dclick 86 49
@@ -101,7 +101,7 @@ wait 60
 snap gs_notitle_14
 wait 60
 snap gs_notitle_15
-waittext Open-Apple-Q 1800
+waittext quit to the Finder 1800
 key s
 waittext settings 300
 dumptext gs_settings_kept

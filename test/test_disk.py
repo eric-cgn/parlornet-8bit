@@ -37,9 +37,12 @@ def read_volume(img):
             if storage == 1:
                 data = block(key)[:eof]
             else:
-                assert storage == 2
-                idx = block(key)
-                data = b"".join(block(idx[k] | (idx[256 + k] << 8)) for k in range((eof + 511) // 512))[:eof]
+                assert storage in (2, 3)
+                n = (eof + 511) // 512
+                ix = [block(key)] if storage == 2 else \
+                    [block(block(key)[j] | (block(key)[256 + j] << 8)) for j in range((n + 255) // 256)]
+                data = b"".join(block(ix[k // 256][k % 256] | (ix[k // 256][256 + k % 256] << 8))
+                                for k in range(n))[:eof]
             files[name] = (e[0x10], int.from_bytes(e[0x1F:0x21], "little"), data)
         first = False
         b = int.from_bytes(blk[2:4], "little")
@@ -54,6 +57,10 @@ class ProdosVolume(unittest.TestCase):
         self.assertEqual(len(img), 280 * 512)
         files = read_volume(img)
         self.assertEqual(files["A.SYSTEM"], (0xFF, 0x2000, small))
+        # a tree: over 128K, a master index block over the index blocks
+        tree = bytes((i * 13) & 255 for i in range(140000))
+        trees = read_volume(disk.prodos_volume("TESTVOL", [("T.DAT", 0x06, 0, tree)], blocks=400))
+        self.assertEqual(trees["T.DAT"], (0x06, 0, tree))
         self.assertEqual(files["B.DAT"], (0x06, 0, big))
 
     def test_free_map_marks_used_blocks(self):
@@ -76,6 +83,19 @@ class Built(unittest.TestCase):
         self.assertTrue(all(n <= 560 for n in used.values()), used)
         end = [int(f[2], 16) for f in layout if f[:2] == ["prodos", "end"]]
         self.assertTrue(end and end[0] <= 0xBF00, end)
+
+    def test_dhr_kit(self):
+        """The Double Hi-Res kit fits its place ($2800-$3FFF, then the auxiliary $0800-$1FFF), and both loaders
+        know its pages."""
+        layout = [ln.split() for ln in open(os.path.join(BUILD, "layout.txt"))]
+        kit = [f for f in layout if f[:3] == ["disk", "1", "dhr"]]
+        self.assertEqual(len(kit), 1)
+        pages = int(kit[0][4])
+        self.assertTrue(1 <= pages <= 24, pages)
+        boot = open(os.path.join(BUILD, "parlornet.dsk"), "rb").read()[:256]
+        self.assertEqual(boot[0x0D + 10:0x0D + 12], bytes([pages, 0x28]))
+        loader = open(os.path.join(BUILD, "prodos", "PARLOR.SYSTEM"), "rb").read()
+        self.assertEqual(loader[disk.KPAGES_AT], pages)
 
     def test_prodos_files(self):
         img = open(os.path.join(BUILD, "prodos", "parlor-files.po"), "rb").read()
@@ -146,7 +166,7 @@ class BuiltGS(unittest.TestCase):
     def test_fits_its_bank(self):
         ends = [int(f[2], 16) for f in (ln.split() for ln in open(os.path.join(GS, "parlor.map")))
                 if len(f) > 2 and f[0] == "BSS" and len(f[2]) == 6]
-        self.assertTrue(ends and ends[0] < 0xC000, ends)
+        self.assertTrue(ends and ends[0] < 0xD000, ends)
 
     def test_disk(self):
         img = open(os.path.join(GS, "parlornet-gs.po"), "rb").read()

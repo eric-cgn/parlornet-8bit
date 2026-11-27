@@ -7,6 +7,9 @@
 --   oa C               Open-Apple and the key C
 --   ctrl C             Control and the key C
 --   snap NAME          save the screen as /out/NAME.png
+--   settle [N]         until the program waits for a key with everything drawn: for 30 frames it has read
+--                      the keyboard every frame and the screen has not changed; at most N frames (default
+--                      1200). Before a snap, so that a screen still being drawn is not taken.
 --   set TAG FIELD V    set an input field's value (DIP switches, configs)
 --   hold NAME V N      keep the byte at the program's variable NAME (from the link map) at V for the
 --                      next N frames, while the steps go on (the program's settings before it draws)
@@ -19,6 +22,10 @@
 --   where              log the id of the target the pointer is on ("where 3", or "where none")
 --   nostick V          V 1: the game port reads as a real one does with no joystick in it, its timers never
 --                      running out; V 0: the joystick again
+--   poke HEX V ...     write the bytes V (negative ones as their two's complement) from address HEX on; at
+--                      $D000-$DFFF it waits for a frame where the language card's bank 2 (the overlays') is in
+--   watch HEX          from now on, log the frame whenever the byte at HEX changes ("120 mark 3"): a build
+--                      with DHR_TIMING marks Backgammon's drawing at $FEFF (draw/backgammon.c)
 --   exit
 -- Addresses of the pointer's targets, from the link map (/xchg/addr.txt: name hex per line).
 -- The Uthernet II test double, when the lab asks for it.
@@ -65,12 +72,23 @@ local function field(tag, name)
   return port and port.fields[name]
 end
 
+-- (the keyboard's reads, which only kbd_get makes: the program waits for a key while they go on)
+local kbd_reads = 0
+kbd_tap = space:install_read_tap(0xC000, 0xC000, "kbd", function(offset, data, mask)
+  kbd_reads = kbd_reads + 1
+end)
+
 local joy = dofile("/scripts/joy.lua")    -- the Apple joystick (run.sh gives MAME -gameio joy)
 local joy_until = nil
 
 local frame = 0
+local watch_addr, watch_v = nil, nil
 sub = emu.add_machine_frame_notifier(function()
   frame = frame + 1
+  if watch_addr then
+    local v = space:read_u8(watch_addr)
+    if v ~= watch_v then log:write(frame .. " mark " .. v .. "\n"); watch_v = v end
+  end
   if hold_addr and frame < hold_until then space:write_u8(hold_addr, hold_v) end
   if release_oa and frame >= release_oa then
     field(":keyb_special", "Open Apple"):clear_value()
@@ -105,12 +123,16 @@ sub = emu.add_machine_frame_notifier(function()
   elseif cmd == "title" then
     -- the title screen: graphics ($C01A bit 7 clear) in Hi-Res ($C01D bit 7 set). Return every second
     -- while it is up (one pressed while the program still loads is not taken), until text mode is back.
-    if not deadline then deadline = frame + (tonumber(rest) or 1800); title_key = nil end
+    -- (up after 30 frames of Hi-Res, and gone after 30 of text: the start-up shows Hi-Res for a moment
+    -- before the title)
+    if not deadline then deadline = frame + (tonumber(rest) or 1800); title_key = nil; title_text = 0; title_up = 0 end
     local up = space:read_u8(0xC01A) < 0x80 and space:read_u8(0xC01D) >= 0x80
-    if up and (not title_key or frame - title_key >= 60) then
+    title_text = up and 0 or title_text + 1
+    title_up = up and title_up + 1 or 0
+    if title_up >= 30 and (not title_key or frame - title_key >= 60) then
       if not title_key then log:write(frame .. " title\n") end
       manager.machine.natkeyboard:post("\r"); title_key = frame
-    elseif not up and title_key then
+    elseif title_text >= 30 and title_key then
       log:write(frame .. " title gone\n"); deadline = nil; i = i + 1
     elseif frame > deadline then
       log:write(frame .. (title_key and " title stays\n" or " no title\n")); deadline = nil; i = i + 1
@@ -194,6 +216,18 @@ sub = emu.add_machine_frame_notifier(function()
     field(":keyb_special", "Open Apple"):set_value(1); i = i + 1
   elseif cmd == "oaup" then
     field(":keyb_special", "Open Apple"):clear_value(); i = i + 1
+  elseif cmd == "settle" then
+    if not deadline then
+      deadline = frame + (tonumber(rest) or 1200); settle_n = 0; settle_px = nil; settle_reads = kbd_reads
+    end
+    local px = manager.machine.screens[":screen"]:pixels()
+    settle_n = (kbd_reads > settle_reads and px == settle_px) and settle_n + 1 or 0
+    settle_px = px; settle_reads = kbd_reads
+    if settle_n >= 30 then
+      log:write(frame .. " settled\n"); deadline = nil; settle_px = nil; i = i + 1
+    elseif frame > deadline then
+      log:write(frame .. " TIMEOUT settling\n"); deadline = nil; settle_px = nil; i = i + 1
+    end
   elseif cmd == "snap" then
     manager.machine.screens[":screen"]:snapshot("/out/" .. rest .. ".png")
     log:write(frame .. " snap " .. rest .. "\n"); i = i + 1
@@ -232,6 +266,18 @@ sub = emu.add_machine_frame_notifier(function()
   elseif cmd == "button" then
     local b, v = rest:match("^(%d)%s+(%d)$")
     joy.button(tonumber(b), tonumber(v)); i = i + 1
+  elseif cmd == "poke" then
+    local a = tonumber(rest:match("^(%x+)"), 16)
+    if a >= 0xD000 and a < 0xE000 and space:read_u8(0xC011) < 0x80 then return end
+    local k = 0
+    for word in rest:gmatch("%S+") do
+      if k > 0 then space:write_u8(a + k - 1, tonumber(word) & 0xFF) end
+      k = k + 1
+    end
+    i = i + 1
+  elseif cmd == "watch" then
+    watch_addr = tonumber(rest, 16); watch_v = space:read_u8(watch_addr)
+    log:write(frame .. " mark " .. watch_v .. "\n"); i = i + 1
   elseif cmd == "nostick" then
     joy.nostick(space, rest == "1"); i = i + 1
   elseif cmd == "exit" then

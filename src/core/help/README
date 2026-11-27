@@ -1,0 +1,5 @@
+The help pages (docs/design.md in the ParlorNet repository, Help), one file for each place that has
+help: lobby.txt, then each game by its type, and tutorial.txt. tools/help.py wraps them at 40 columns and
+writes them for each machine. The first line is the title, a line of three dashes starts the next page,
+and these marks stand for the machine's own keys: {RET} the Return key, {ESC} the Esc key, {OA} the
+command key. A key named in a sentence is drawn as a key, in bold or the keys' color.

@@ -33,6 +33,7 @@ static char set_k[MAXS];                /* r, g or x; | 0x80 when changed this t
 static unsigned char rack[MAXR], nrack;
 static unsigned char pool, cnt[4], meld[4], gone[4];
 static unsigned char tp_n, tp_code;     /* TP: tiles played; ok, none, sets, meld, joker */
+static unsigned char sorted;            /* OA-O: the rack as dealt (0), by color (1) or by number (2) */
 static char tp_pts[4];
 static unsigned char top;               /* the first set shown */
 static unsigned char rsel[MAXR];        /* rack tiles chosen */
@@ -56,6 +57,22 @@ static unsigned char tile_of(const char *s)
     return ((c - colours) << 4) | (s[0] == 'J' || s[0] == 'j' ? 0 : num(s + 1));
 }
 
+/* The rack in the order OA-O chose: a tile's color is its high four bits, its number the low four. */
+static void sort_rack(void)
+{
+    unsigned char i, j, t;
+    if (!sorted)
+        return;
+    for (i = 1; i < nrack; ++i)
+        for (j = i; j; --j) {
+            t = rack[j - 1];
+            if (sorted == 1 ? t <= rack[j] : ((t & 15) << 4 | t >> 4) <= ((rack[j] & 15) << 4 | rack[j] >> 4))
+                break;
+            rack[j - 1] = rack[j];
+            rack[j] = t;
+        }
+}
+
 static void rt_line(void)
 {
     unsigned char i, k;
@@ -72,6 +89,7 @@ static void rt_line(void)
     } else if (is(w[0], "H")) {
         for (i = 1; i < wn && nrack < MAXR; ++i)
             rack[nrack++] = tile_of(w[i]);
+        sort_rack();
     } else if (is(w[0], "P") && wn > 1) {
         pool = num(w[1]);
     } else if ((is(w[0], "C") || is(w[0], "I") || is(w[0], "G")) && wn > 1) {
@@ -130,7 +148,7 @@ static void rt_click(unsigned char id)
     static char tok[48];
     unsigned char k, p;
     if (!g_myturn) {
-        g_message("Not your turn.");
+        g_message("It's not your turn.");
         return;
     }
     if (id < ROWS * SETMAX) {             /* a tile (or the first place) of a set on the table */
@@ -160,7 +178,7 @@ static void rt_click(unsigned char id)
         } else if (p < set_n[k]) {
             tsel_k = k;
             tsel_p = p;
-            g_message("Now a set, New, Split, or the rack.");
+            g_message("");
         }
         redraw();
         return;
@@ -176,15 +194,14 @@ static void rt_click(unsigned char id)
             return;
         }
         rsel[p] ^= 1;
-        if (rsel[p])
-            g_message("Now a set, or New for a new one.");
         redraw();
+        g_message("");
         return;
     }
     switch (id) {
     case ID_DONE:
         unchoose();
-        g_end();
+        g_cmd("/end");                  /* (a dialog first when the turn would pass or not count) */
         break;
     case ID_UNDO:
         unchoose();
@@ -231,18 +248,91 @@ static void rt_click(unsigned char id)
     }
 }
 
+/* What Return does under the pointer: pick a tile, put the tiles picked on a set, or a button's action. */
+static void rt_hover(unsigned char id)
+{
+    static char b[42], t[4];
+    const char *s = 0;
+    unsigned char k, p, n = 0;
+    for (k = 0; k < nrack; ++k)
+        n += rsel[k];
+    if (id >= ID_RACK && id < ID_RACK + nrack) {
+        p = id - ID_RACK;
+        strcpy(b, tsel_k >= 0 ? "Press " KEY_RET " to take it back." : rsel[p] ? "Press " KEY_RET " to let go of "
+               : "Press " KEY_RET " to pick ");
+        if (tsel_k < 0) {
+            strcat(b, tile_name(t, rack[p]));
+            strcat(b, ".");
+        }
+    } else if (id < ROWS * SETMAX) {
+        k = top + id / SETMAX;
+        p = id % SETMAX;
+        strcpy(b, n ? "Press " KEY_RET " to put them on set " : tsel_k >= 0 ? "Press " KEY_RET " to move it to set "
+               : p < set_n[k] ? "Press " KEY_RET " to pick a tile of set " : "Pick tiles from your rack.");
+        if (b[strlen(b) - 1] == ' ') {
+            strcat(b, utoa10(k + 1));
+            strcat(b, ".");
+        }
+    } else
+        s = id == ID_DONE ? "Press " KEY_RET " to end your turn." : id == ID_UNDO ? "Press " KEY_RET " to undo a step." :
+            id == ID_RESET ? "Press " KEY_RET " to start your turn over." : id == ID_NEW ? "Press " KEY_RET " to make a new set." :
+            id == ID_SPLIT ? "Press " KEY_RET " to split the set." : "Pick tiles, or " OA "E to end your turn.";
+    g_message(s ? s : (const char *)b);
+}
+
+/* The other player's turn in words: "ann played 3 tiles.", "ann ended the turn and took a tile." */
+static void rt_event(void)
+{
+    if (num(w[4]) == (unsigned char)g_seat)
+        return;
+    if (is(w[3], "DONE") && wn > 5) {
+        strcat(g_who(num(w[4])), " played ");
+        strcat(g_last, w[5]);
+        strcat(g_last, w[5][0] == '1' && !w[5][1] ? " tile." : " tiles.");
+    } else if (is(w[3], "DRAW"))
+        strcat(g_who(num(w[4])), " ended the turn and took a tile.");
+    else if (is(w[3], "PASS"))
+        strcat(g_who(num(w[4])), " passed.");
+}
+
+/* The keys: Esc lets go of the tiles picked; OA-E ends the turn, OA-U takes back a step, OA-Z the whole turn,
+   OA-M makes a new set of the tiles picked, OA-B splits a set before the tile picked, OA-C says whether the
+   turn would count, OA-P passes and OA-O sorts the rack. */
 static unsigned char rt_key(unsigned char k)
 {
-    switch (k | 0x20) {
-    case 'd': rt_click(ID_DONE); return 1;
-    case 'u': rt_click(ID_UNDO); return 1;
-    case 'n': rt_click(ID_NEW); return 1;
-    case 's': rt_click(ID_SPLIT); return 1;
+    static const char keys[] = "EUZMB";
+    static const unsigned char ids[] = {ID_DONE, ID_UNDO, ID_RESET, ID_NEW, ID_SPLIT};
+    const char *p;
+    if (k == K_ESC) {
+        if (tsel_k < 0 && !memchr(rsel, 1, nrack))
+            return 0;
+        unchoose();
+        g_message("");
+        redraw();
+        return 1;
     }
-    return 0;
+    if (!(k & U_OA))
+        return 0;
+    k &= 0x7F;
+    if (k == 'C' || k == 'P') {
+        g_cmd(k == 'C' ? "/check" : "/pass");
+        return 1;
+    }
+    if (k == 'O') {
+        sorted = sorted == 1 ? 2 : 1;
+        unchoose();
+        sort_rack();
+        g_message(sorted == 1 ? "Your rack is sorted by color." : "Your rack is sorted by number.");
+        redraw();
+        return 1;
+    }
+    if (!k || !(p = strchr(keys, k)))
+        return 0;
+    rt_click(ids[p - keys]);
+    return 1;
 }
 
 #pragma rodata-name (push, "OVHDR")
 const struct game g_rummytile = {"rummytile", "Rummy Tile", rt_begin, rt_line, rt_draw, rt_click, rt_key,
-                                 K1 "D done " K1 "U undo " K1 "N new set " K1 "S split", 1};
+                                 1, rt_event, rt_hover};
 #pragma rodata-name (pop)

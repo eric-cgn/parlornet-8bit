@@ -10,9 +10,12 @@
 #define MACHINE_SERIAL 1                /* the Super Serial Card (or the Uthernet II) */
 #endif
 
-/* The key that stands for commands (OA in the key legends) as the text names it. */
-#define OA_NAME "Open-Apple"
 #define MACHINE_NAME "the Apple II"
+#ifdef IIGS
+#define MACHINE_LABEL "Apple IIgs"     /* the computer, for its sign-in key (KEY NEW) */
+#else
+#define MACHINE_LABEL "Apple IIe"
+#endif
 
 /* The Open-Apple and Closed-Apple keys in text: MouseText's apples on an enhanced IIe, a IIc or a IIgs
    (txt_mt), "OA-" and "CA-" on an older IIe (txt_putc); the Hi-Res font has them on every machine. */
@@ -32,9 +35,14 @@
 #define K_ESC   27
 #define K_TAB   9
 #define K_DEL   127
+#define K_BACK  28                      /* the second button of a joystick or a mouse */
+#define KEY_RET K6 "Return"
+#define KEY_ESC K3 "Esc"
+#define COL_PX 7
 
-/* Where overlays are loaded (ovl.h): the language card's RAM. */
+/* Where overlays are loaded (ovl.h): the language card's RAM, up to OVL_TOP. */
 #define OVL_ADDR 0xD000
+#define OVL_TOP 0xF900
 
 /* The table screen's frame (game.h): a title line at the top, then the game's area (lines 9 to 166), a
    message line (167), the status line (176) and the buttons (184). */
@@ -42,5 +50,9 @@
 #define MSG_Y 167
 #define STATUS_Y 176
 #define BUTTON_Y 184
+
+/* The middle of a screen line (280 pixels) as a target's x (pixel x / 2), for a target as wide as the
+   screen (the lobby's rows). */
+#define MID_X2 70
 
 #endif

@@ -2,6 +2,7 @@ wait 120
 caps
 title 1800
 waittext ParlorNet: connect 1200
+hold cfg_tutor 1 30
 type S
 waittext settings 600
 type C

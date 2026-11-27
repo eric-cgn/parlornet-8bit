@@ -1,0 +1,49 @@
+# A draw offer on the IIgs, with test/lab/offers.py as ann (offers.py 6501 checkers gwen "Swordfish 1997"):
+# the invitation's dialog (gs_of_invitation), then ann's draw offer, whose dialog starts on Decline
+# (gs_of_draw). Esc puts it away (gs_of_away), Return brings it back and N declines (gs_of_declined).
+wait 2400
+dclick 568 66
+wait 300
+dclick 86 49
+title 1800
+waittext quit to the Finder 1800
+key s
+waittext settings 300
+key 1
+wait 30
+key ctrl+x
+type parlor\r
+wait 30
+key ret
+waittext quit to the Finder 600
+key p
+waittext Name: 3600
+type new\r
+waittext want 300
+type gwen\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 6000
+type n
+wait 600
+wait 1800
+key esc
+click 201
+wait 600
+click 40
+wait 300
+snap gs_of_invitation
+key ret
+wait 6000
+snap gs_of_draw
+key esc
+wait 300
+snap gs_of_away
+key ret
+wait 300
+type n
+wait 3000
+snap gs_of_declined
+exit

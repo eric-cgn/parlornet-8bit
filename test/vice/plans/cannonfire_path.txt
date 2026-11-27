@@ -7,6 +7,7 @@
 # host, where VICE falls behind.
 waittitle 12000
 title 7200
+set cfg_tutor 1
 waittext ParlorNet: connect 1800
 type P
 waittext Name: 12000

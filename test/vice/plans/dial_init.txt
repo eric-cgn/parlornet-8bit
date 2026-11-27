@@ -3,6 +3,7 @@
 # or not (modem.log shows both dials).
 waittitle 6000
 title 3600
+set cfg_tutor 1
 waittext ParlorNet: connect 600
 type S
 waittext ParlorNet settings 300

@@ -68,8 +68,8 @@ def build(d):
     names = [o.split(":")[0] for o in open(os.path.join(d, "overlays.txt")).read().split()]
     ovls = [open(os.path.join(d, "parlor." + n), "rb").read() for n in names]
     for n, o in zip(names, ovls):
-        assert pages(o) <= 0x2F, "overlay %s is too big: %d bytes" % (n, len(o))
-    assert len(main) <= 0x8000 and len(ovls) <= 16
+        assert pages(o) <= 0x2F or n == "help", "overlay %s is too big: %d bytes" % (n, len(o))
+    assert len(main) <= 0x9000 and len(ovls) <= 20
 
     dat = b""
     page8 = bytearray(256)

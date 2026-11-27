@@ -9,6 +9,7 @@ unsigned char t_x[MAXT], t_y[MAXT], t_hw[MAXT], t_hh[MAXT], t_id[MAXT];
 unsigned char ui_clicked;
 unsigned char ui_hasmouse;
 unsigned char ui_retkey;
+unsigned char ui_unlit;
 
 unsigned char ui_target(unsigned char x2, unsigned char y, unsigned char hw, unsigned char hh,
                         unsigned char id)

@@ -7,7 +7,7 @@ dclick 568 66
 wait 300
 dclick 86 49
 title 1800
-waittext Open-Apple-Q 1800
+waittext quit to the Finder 1800
 key s
 waittext settings 300
 key 1
@@ -19,7 +19,7 @@ key j
 waittext Joystick: on 60
 dumptext gsj_settings
 key ret
-waittext Open-Apple-Q 600
+waittext quit to the Finder 600
 key p
 waittext Name: 3600
 type new\r
@@ -29,6 +29,9 @@ waittext password 600
 type Swordfish 1997\r
 waittext again 600
 type Swordfish 1997\r
+wait 6000
+type n
+wait 600
 wait 900
 snap gsj_lobby
 where

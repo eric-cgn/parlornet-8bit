@@ -1,0 +1,23 @@
+Grid Words help
+Moving
+Press {RET} where your word starts, and again to turn it down. Type the letters, and {RET} plays it. {ESC} takes the tiles back.
+
+Keys for Grid Words
+{OA}P passes, after asking first.
+{OA}X starts an exchange.
+{OA}V shows the points of every letter.
+
+Commands
+Type a play, as /h8 across QUIZ.
+
+Every game
+{OA}R resigns, after asking first. {OA}T opens the chat. {ESC} goes back to the lobby, and the game goes on without you.
+---
+Grid Words help
+The squares
+2L and 3L double or triple a letter, and 2W and 3W the whole word. The first word covers the middle square.
+
+The tiles
+A blank stands for any letter and scores nothing. A letter not on your rack uses a blank, if you have one.
+
+/say, /note, /time and /resign work at every table, and /tutorial shows how the games work.

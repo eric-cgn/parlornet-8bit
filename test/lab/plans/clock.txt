@@ -1,10 +1,12 @@
-# The connected time in whole minutes: on the sign-in's title row ("ParlorNet  0m"), at the right end of the
-# lobby's and the table's title row ("1m" by the table's snapshots), and from 0m again on a new connection. The parlor gives it (TIM) every 30
-# seconds or so; a parlor without TIM leaves the count to the program's ticks.
+# The time signed in, in whole minutes: no clock on the sign-in screen ("ck_name"), "0m" at the right end of
+# the lobby's title row right after sign-in, "1m" by the table's snapshots, and no clock after signing out
+# ("ck_out"). The next sign-in starts again from 0m, and so does one on a new connection. The parlor gives
+# the time signed in (TIM) every 30 seconds or so; a parlor without TIM leaves the count to the program's ticks.
 wait 120
 caps
 title 1800
 waittext ParlorNet: connect 1200
+hold cfg_tutor 1 30
 type P
 waittext Name: 900
 wait 300
@@ -32,6 +34,16 @@ wait 1800
 snap ck_table30
 key esc
 wait 400
+# sign out: the sign-in screen has no clock, and the next sign-in starts from 0m
+click 203
+waittext Signed out 900
+wait 300
+dumptext ck_out
+type tim\r
+waittext assword 600
+type Swordfish 1997\r
+wait 500
+snap ck_lobby2
 # close the connection, then a new one: the time starts again
 oa Q
 waittext Console 600
@@ -39,10 +51,10 @@ wait 120
 oa P
 waittext Name: 900
 wait 120
-dumptext ck_name2
+dumptext ck_name3
 type tim\r
 waittext assword 600
 type Swordfish 1997\r
 wait 500
-snap ck_lobby2
+snap ck_lobby3
 exit

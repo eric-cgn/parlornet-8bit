@@ -4,8 +4,15 @@
 The disks hold no operating system. Linear sector n is track n // 16, physical sector n % 16:
 - sectors 0-5: the boot block (boot.bin), which the Disk II boot ROM loads at $0800 and which reads the
   rest itself;
-- then the program (parlor.main, loaded at $4000) and the vectors (parlor.vec, at $FF00);
-- then the overlays (parlor.<name>, each loaded at $D000 when needed), in the order of overlays.txt.
+- then the program (parlor.main, loaded at $4000), the vectors (parlor.vec, at $FF00) and the Double
+  Hi-Res kit (parlor.dhr, at $2800, which the program copies into the auxiliary memory);
+- then the overlays (parlor.<name>, each unpacked to $D000 when needed), in the order of overlays.txt.
+
+Each overlay is packed (apple2_lz.py, docs/overlay-packing.md), to be read into the top pages of
+$D000-$F8FF and unpacked from there to $D000 in place; the build fails if one would not fit. The help
+overlay is packed a help at a time: its first page is the index, with each help's first page and pages
+packed (2 bytes) and from byte 128 its pages unpacked, and each help is read into the top of those pages
+of the reply buffer and unpacked there.
 
 The boot block's load table (at $080D) and overlay table (at $0821) are filled in here. When the
 overlays do not all fit on one disk, those named in DISK2 go on a second disk, whose boot block only
@@ -15,8 +22,8 @@ The images are .dsk files in DOS 3.3 sector order, as emulators and disk tools e
 of a track is the file's sector DOS_SKEW[p] of that track.
 
 It also makes the files for running the program under ProDOS, in build/prodos/: PARLOR.SYSTEM
-(prodsys.bin with its table filled in), PARLOR.DAT (the program, its vectors and every overlay, each
-starting on a page) and parlor-files.po, a 140K ProDOS volume (ProDOS block order) named PARLORNET that
+(prodsys.bin with its table filled in), PARLOR.DAT (the program, its vectors, the kit and every overlay
+packed as on the disk, each starting on a page) and parlor-files.po, a 140K ProDOS volume (ProDOS block order) named PARLORNET that
 holds just those two files, for copying them to a ProDOS disk. ProDOS itself is not on it.
 
 Usage: apple2_disk.py [build]   (writes parlornet.dsk, and parlornet-2.dsk when needed, there,
@@ -25,6 +32,9 @@ and layout.txt)
 import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import apple2_lz  # noqa: E402
 
 TRACKS = 35
 SECTORS = TRACKS * 16
@@ -56,6 +66,41 @@ def image(sectors):
     return bytes(out)
 
 
+OVL_REGION = 0xF900 - 0xD000   # where an overlay is unpacked, in place
+
+
+def pack_help(raw):
+    """The help overlay (help.py's: an index page of each help's first page and pages, then the helps)
+    with each help packed on its own, for unpacking in place in its own pages of the reply buffer."""
+    index = bytearray(256)
+    data = b""
+    k = 0
+    while raw[k * 2 + 1]:
+        at, n = raw[k * 2], raw[k * 2 + 1]
+        assert k * 2 + 1 < 128
+        p = apple2_lz.piece(raw[at * 256:(at + n) * 256].rstrip(b"\0"), n * 256)
+        index[k * 2:k * 2 + 2] = bytes([1 + len(data) // 256, pages(p)])
+        index[128 + k] = n
+        data += p
+        k += 1
+    return bytes(index) + data
+
+
+_packed = {}
+
+
+def packed(d, names):
+    """Each overlay as it goes on the disk and in PARLOR.DAT (packed once for both)."""
+    if (d, tuple(names)) in _packed:
+        return _packed[d, tuple(names)]
+    out = []
+    for n in names:
+        raw = open(os.path.join(d, "parlor." + n), "rb").read()
+        out.append(pack_help(raw) if n == "help" else apple2_lz.piece(raw, OVL_REGION))
+    _packed[d, tuple(names)] = out
+    return out
+
+
 def place(sectors, lin, data):
     data = pad(data)
     for i in range(0, len(data), 256):
@@ -68,10 +113,11 @@ def build(d):
     assert len(boot) == BOOT_SECTORS * 256 and boot[0] == BOOT_SECTORS
     main = open(os.path.join(d, "parlor.main"), "rb").read()
     vec = open(os.path.join(d, "parlor.vec"), "rb").read()
+    kit = open(os.path.join(d, "parlor.dhr"), "rb").read()
+    assert pages(kit) <= 0x18
     names = [o.split(":")[0] for o in open(os.path.join(d, "overlays.txt")).read().split()]
-    ovls = [open(os.path.join(d, "parlor." + n), "rb").read() for n in names]
-    for n, o in zip(names, ovls):
-        assert pages(o) <= 0x2F, "overlay %s is too big: %d bytes" % (n, len(o))
+    raws = [open(os.path.join(d, "parlor." + n), "rb").read() for n in names]
+    ovls = packed(d, names)
     assert pages(main) <= 0x80
 
     disk1, disk2 = {}, {}
@@ -80,6 +126,8 @@ def build(d):
     lin = place(disk1, lin, main)
     vec_at = lin
     lin = place(disk1, lin, vec)
+    kit_at = lin
+    lin = place(disk1, lin, kit)
     # Overlays: on disk 1 while there is room, the rest (DISK2 names) on disk 2.
     total1 = lin + sum(pages(o) for o in ovls)
     on2 = set()
@@ -99,11 +147,12 @@ def build(d):
             table.append((lin, pages(o), 1))
             lin = place(disk1, lin, o)
     assert lin <= SECTORS and lin2 <= SECTORS
-    assert len(table) <= 16
+    assert len(table) <= 20
 
     b = bytearray(boot)
-    b[LOADTAB:LOADTAB + 8] = bytes([main_at & 255, main_at >> 8, pages(main), 0x40,
-                                    vec_at & 255, vec_at >> 8, 1, 0xFF])
+    b[LOADTAB:LOADTAB + 12] = bytes([main_at & 255, main_at >> 8, pages(main), 0x40,
+                                     vec_at & 255, vec_at >> 8, 1, 0xFF,
+                                     kit_at & 255, kit_at >> 8, pages(kit), 0x28])
     b[START:START + 2] = bytes([0x00, 0x40])
     for i, (at, n, disk) in enumerate(table):
         b[OVLTAB + i * 4:OVLTAB + i * 4 + 4] = bytes([at & 255, at >> 8, n, disk])
@@ -123,7 +172,8 @@ def build(d):
         f.write("disk 1 boot 0 %d\n" % BOOT_SECTORS)
         f.write("disk 1 main %d %d %d\n" % (main_at, pages(main), len(main)))
         f.write("disk 1 vec %d 1 %d\n" % (vec_at, len(vec)))
-        for n, o, (at, cnt, disk) in zip(names, ovls, table):
+        f.write("disk 1 dhr %d %d %d\n" % (kit_at, pages(kit), len(kit)))
+        for n, o, (at, cnt, disk) in zip(names, raws, table):
             f.write("disk %d %s %d %d %d\n" % (disk, n, at, cnt, len(o)))
         f.write("used 1 %d\n" % lin)
         if on2:
@@ -133,7 +183,7 @@ def build(d):
 
 # ---- ProDOS ---------------------------------------------------------------------------------------
 PRODOS_TOP = 0xBF00     # the program must end below ProDOS's global page
-NPAGES_AT, OVLTAB_AT = 5, 6     # in prodsys.bin
+NPAGES_AT, OVLTAB_AT, KPAGES_AT = 5, 6, 86     # in prodsys.bin
 
 
 def program_end(d):
@@ -148,12 +198,13 @@ def program_end(d):
 def prodos_files(d):
     main = open(os.path.join(d, "parlor.main"), "rb").read()
     vec = open(os.path.join(d, "parlor.vec"), "rb").read()
+    kit = open(os.path.join(d, "parlor.dhr"), "rb").read()
     names = [o.split(":")[0] for o in open(os.path.join(d, "overlays.txt")).read().split()]
-    ovls = [open(os.path.join(d, "parlor." + n), "rb").read() for n in names]
+    ovls = packed(d, names)
     end = program_end(d)
     assert end <= PRODOS_TOP, "the program ends at $%04X, past ProDOS's $BF00" % end
-    dat = pad(main) + pad(vec)
-    table = bytearray(64)
+    dat = pad(main) + pad(vec) + pad(kit)
+    table = bytearray(80)
     for i, o in enumerate(ovls):
         page = len(dat) // 256
         table[i * 4:i * 4 + 4] = bytes([page & 255, page >> 8, pages(o), 0])
@@ -161,7 +212,8 @@ def prodos_files(d):
     loader = bytearray(open(os.path.join(d, "prodsys.bin"), "rb").read())
     assert loader[3:5] == b"PN"
     loader[NPAGES_AT] = pages(main)
-    loader[OVLTAB_AT:OVLTAB_AT + 64] = table
+    loader[KPAGES_AT] = pages(kit)
+    loader[OVLTAB_AT:OVLTAB_AT + 80] = table
     out = os.path.join(d, "prodos")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "PARLOR.SYSTEM"), "wb") as f:
@@ -178,7 +230,8 @@ def prodos_files(d):
 def prodos_volume(volname, files, blocks=280):
     """A ProDOS volume image (512-byte blocks in order) holding files [(name, type, aux, data)]: the
     volume directory in blocks 2-5, the free-block map in block 6, then each file as a seedling (one
-    block) or a sapling (an index block and up to 256 data blocks). Its boot blocks are empty."""
+    block), a sapling (an index block and up to 256 data blocks) or a tree (a master index block, whose
+    index blocks each hold 256 data blocks). Its boot blocks are empty."""
     img = bytearray(blocks * 512)
     used = set(range(7))
     nxt = [7]
@@ -197,14 +250,26 @@ def prodos_volume(volname, files, blocks=280):
             img[key * 512:key * 512 + len(data)] = data
             storage, count = 1, 1
         else:
-            assert n <= 256, "a file over 128K"
-            key = alloc()
-            for i in range(n):
-                b = alloc()
-                img[b * 512:b * 512 + 512] = data[i * 512:i * 512 + 512].ljust(512, b"\0")
-                img[key * 512 + i] = b & 255
-                img[key * 512 + 256 + i] = b >> 8
-            storage, count = 2, n + 1
+            def index(first, k):
+                """An index block for data blocks first to first + k - 1."""
+                key = alloc()
+                for i in range(k):
+                    b = alloc()
+                    img[b * 512:b * 512 + 512] = data[(first + i) * 512:(first + i + 1) * 512].ljust(512, b"\0")
+                    img[key * 512 + i] = b & 255
+                    img[key * 512 + 256 + i] = b >> 8
+                return key
+            if n <= 256:
+                key = index(0, n)
+                storage, count = 2, n + 1
+            else:
+                key = alloc()
+                m = (n + 255) // 256
+                for j in range(m):
+                    b = index(j * 256, min(256, n - j * 256))
+                    img[key * 512 + j] = b & 255
+                    img[key * 512 + 256 + j] = b >> 8
+                storage, count = 3, n + m + 1
         e = bytearray(39)
         e[0] = (storage << 4) | len(name)
         e[1:1 + len(name)] = name.encode()

@@ -19,11 +19,11 @@ A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammo
 
 - `mame/run.lua` is the step runner MAME loads; it reads the plan (wait, waittext, title, type, key,
   arrows, click, point, oa, caps, snap, dumptext, set, hold, need, joy, stick, button, nostick, where,
-  exit) one step per line. The title
+  poke, watch, exit) one step per line. The title
   screen waits for a key, so every plan has a `title` step, which waits for the title screen and presses
   Return (`gsrun.lua` has the same step for the IIgs). `splash.txt` shows the title screen on a color
   monitor, and `splash_mono.txt` on a monochrome monitor, with `hold mono 1 900` keeping the program's
-  mono setting on while it starts; the title screen is the same in either setting.
+  mono setting on while it starts; in monochrome the title's blocks are white.
 - `lab/orch.py` answers a plan's `need` lines: it signs in as the player on a connection of its own,
   reads the table's view and writes the clicks and keys of a legal move back to the runner.
 - `lab/bridge.py` is the other end of the serial line: a plain relay to the parlor (port 16601) or a
@@ -42,6 +42,10 @@ A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammo
   use them (`uthernet.txt`).
 - `lab/pngscale.py` scales MAME's snapshots (560 by 192) to 560 by 384.
 
+`plans/waiting.txt` opens a table of each of the ten games with Wait for anyone, one after another, and shows its waiting table (`wt_NAME.png`): the game's empty board, with "Waiting for a second player." and "Type /invite bot to play the bot." under it. `plans/gs_waiting.txt` does the same on the IIgs, and `vice/plans/waiting.txt` on the C64.
+
+The step `settle` waits until the program waits for a key with everything drawn, which is when for half a second it has read the keyboard all along and the screen has not changed. The plans that save a screenshot of each step settle before each snap, so that a screen still being drawn (after a load from the 1541, say) is not taken.
+
 `plans/table_entry.txt` starts each of the ten games against the bot from the lobby, one after another on
 one connection, and shows its first view (`te_NAME.png`); the lobby comes back after each. A crash would
 show as the title screen and clicks with no target in `run.log`. `plans/table_entry_long.txt` does the same
@@ -50,6 +54,8 @@ many tables and invitations on a busy parlor; make that player first with `lab/l
 reply that overran the buffer used to lose its final OK, and the program took the connection as lost, in
 the lobby or on entering a new table; now it keeps what fits, and a table asks for its own line
 only (`LST table=id`), since a new table's line comes last among the player's own.
+
+`plans/lobby_names.txt` shows a lobby longer than one screen, of every game, for a player made first with `lab/manytables.py nora 16501` (4 tables of their own, 2 invitations and 18 tables waiting for a player): the first screenful and More (`ln_lobby`), the rest and Back to the start (`ln_more`), the first again (`ln_back`), then the lobby after the player's Backgammon table has been opened and left (`ln_after_table`) and the list of New game (`ln_newgame`). Every name is a game's. Loading a game from the self-booting disk used to read the disk's first sector over the lobby's game names, which then showed as stray characters until the player signed in again.
 
 `parlor.sh` takes `MOTD=file` for the parlor's message of the day. `plans/motd.txt` shows the live one
 (`MOTD=deploy/motd.txt`, from the ParlorNet checkout): all 19 lines, a " More: press a key " pause on the
@@ -83,15 +89,36 @@ board on the left (`d01` on). The orchestrator's `bgsnapX` plays the first legal
 snapshots `X01` to `X30`. `plans/bg_bar.txt` plays until a checker is on the bar (`bgplay`, which hits),
 then until one of the player's is (`bgbarme`, which does not), and each time points at the bar from point
 7 with the up arrow: the pointer sits on the player's checkers on the bar, below the cube, with the home
-board on the right and on the left. Tall stacks show four checkers and +n. `plans/fingers.txt` opens Five in
+board on the right and on the left. `plans/fingers.txt` opens Five in
 a Row, Naval Combat and Grid Words and shows the pointer on the middle of a point or square, at the first one
 and one along and one down from it.
 
-`plans/clock.txt` shows the connected time in whole minutes: on the sign-in's title row ("ParlorNet  0m"), at
-the right end of the lobby's and a table's title row ("1m" at the table), and from 0m again after Open-Apple-Q
-and a new connection. The
-time comes from the parlor's TIM request (`TIM secs now`) when the parlor has it; a parlor without it
-answers ERR UNKNOWN and the program counts the ticks alone.
+`plans/dhr_backgammon.txt` shows the IIe's Double Hi-Res screens: the title screen (`dhr_title`), the lobby
+(`dhr_lobby`) and a new Backgammon board in color (`dhr_color`, and `dhr_color_ptr` with the pointer on point 6),
+then in monochrome on MAME's green, white and amber monitors (`dhr_green`, `dhr_green_ptr`, `dhr_white`,
+`dhr_amber`), and a step gliding (`a01` to `a30`). MAME's monitor is set with `set :a2video:a2_video_config
+Monitor type N`: 0 color, 4 white, 5 green, 6 amber.
+
+`plans/dhr_timing.txt` times Backgammon's drawing. Build with `-D DHR_TIMING` added to `A2FLAGS` in build.sh,
+and draw/backgammon.c marks each drawing at $FEFF (in the language card, which the kit's switches to the auxiliary memory do not move), which the plan's `watch FEFF` logs frame by frame:
+full boards in color and in monochrome (the plan sets the display with `hold mono`, and closing help draws the whole table again),
+a step of the player's and the bot's turn. `python3 test/lab/marks.py OUTDIR/run.log` prints the frames each
+took. The machine runs at 1.023 MHz, 60 frames a second, so a frame is about 17,000 cycles. The `poke` step
+writes bytes into the program's memory (into an overlay's, it waits for a frame where the language card's bank
+2 is in, since the Double Hi-Res kit runs with bank 1 in), so a position can be put into Backgammon's `pt[]`
+and drawn by the display toggle.
+
+`plans/k64.txt` boots the self-booting disk on a IIe without the auxiliary 64K
+(`MAMEARGS="-ramsize 64K -aux std80"`, or `-aux ""` for none) and shows the boot block's sentence, "ParlorNet
+needs an Apple IIe with 128K, or a IIc or IIgs." (`k64`, `k64_text`). `MACH=apple2c` runs any plan on a IIc,
+whose modem port takes the serial line, and which needs MAME's apple2c ROM set.
+
+`plans/clock.txt` shows the time signed in, in whole minutes. The sign-in screen has no clock (`ck_name`); it
+is "0m" at the right end of the lobby's title row right after sign-in (`ck_lobby`), "1m" by the table's
+snapshots, and gone after signing out (`ck_out`). The next sign-in starts again from 0m (`ck_lobby2`), and so
+does the sign-in on a new connection after Open-Apple-Q (`ck_name3`, `ck_lobby3`). The time comes from the
+parlor's TIM request (`TIM secs now`, the time signed in) when the parlor has it; a parlor without it answers
+ERR UNKNOWN and the program counts the ticks alone.
 
 The machine has the Apple joystick in its game port (`-gameio joy`), and `mame/joy.lua` sets it for the
 runners. `joy BITS [N]` holds it for N frames as the VICE runner's `joy` does (1 up, 2 down, 4 left, 8 right,
@@ -105,10 +132,10 @@ with the joystick on and gives no Return, and button 0 is Return. `plans/joystic
 and the bot with the stick and both buttons, places a disc with the stick and button 0, opens the chat with
 Open-Apple-T, and then, with the port empty, shows that the stick and the Open-Apple key alone do nothing.
 
-`plans/keys.txt` shows the Open-Apple key in the console and the sign-in (MouseText on the enhanced IIe), in
-the lobby and at the table (the font's glyph), Grid Words' letter points (Open-Apple-V), and its tiles in
-color and in monochrome. MAME's apple2e, the older IIe without MouseText, shows "OA-" on the text screens
-instead.
+`plans/keys.txt` shows the Open-Apple key in the console's title row and sentences and in the sign-in
+(MouseText on the enhanced IIe), in the lobby and at the table (the font's glyph), Grid Words' letter points
+(Open-Apple-V), and its tiles in color and in monochrome. MAME's apple2e, the older IIe without MouseText,
+shows "OA-" on the text screens instead.
 
 `plans/reversi_discs.txt` plays a move of Reversi against the bot and shows the board in color, in monochrome
 on a monochrome monitor, in monochrome on a color monitor and in color on a monochrome monitor. On a monitor a
@@ -132,6 +159,18 @@ snapshots every 6 frames from Fire on (`cfi_*`) show the bot's shell flying in a
 its crater dissolving, before the view: the program sees that the view is newer than the events it has
 read, reads those first and fetches the view again. `cfi_after` and `cfi_mono` show each tank's health over
 its letter, in color and in monochrome.
+
+`plans/command_line.txt` shows the command line. In the lobby `/who` answers on the message line, and the buttons are unlit while the line is open (`cl_typing`). At a Reversi table that waits for a player, `/invite bot` seats the bot (`cl_invited`, `cl_seated`) and the typed move `/d3` plays a disc (`cl_typed_move`). `/resign` opens the resign dialog, which starts on No (`cl_resign_dialog`), and Esc answers No (`cl_resign_no`). An unknown command says so (`cl_unknown`), and `/leave` goes back to the lobby. `plans/gs_command_line.txt` does the same on the IIgs, and `vice/plans/command_line.txt` on the C64.
+
+`plans/offers_backgammon.txt` shows offers and confirmations in dialogs. `lab/offers.py` plays ann beside it (`python3 test/lab/offers.py 16501 backgammon olly "Swordfish 1997"`): she opens a Backgammon table and invites olly, and once he sits down she doubles at the start of her turn, playing olly's first turn for him on a connection of his own if it comes first. The invitation is a row of the lobby, and Return on it opens its dialog, starting on Accept (`of_invitation`). The double's dialog starts on Accept (`of_double`). Esc puts it away, and the status line says "ann doubles to 2." with "Press Return to answer." (`of_away`). Return brings it back (`of_again`), and Y accepts (`of_taken`). The Resign button opens the resign dialog (`of_resign`), and N answers No. `vice/plans/offers_backgammon.txt` does the same on the C64, and `plans/gs_offers_checkers.txt` shows a draw offer on the IIgs (`offers.py 6501 checkers gwen "Swordfish 1997"`), whose dialog starts on Decline.
+
+`plans/letters.txt` shows one meaning per letter, with Open-Apple, against the bot: the lobby's Open-Apple-N opens New game (`lt_newgame`); Mancala's 3 moves the pointer to pit 3 (`lt_mancala_3`); Open-Apple-H says it does nothing in Reversi (`lt_nothing`); Cannon Fire's < and + aim by 10, with the pointer on Fire (`lt_cannon`); Esc lets go of a picked dot in Dots and Boxes (`lt_dots_picked`, `lt_dots_dropped`) and goes back to the lobby when nothing is picked; Grid Words' Open-Apple-X starts an exchange (`lt_exchange`); Rummy Tile's Open-Apple-O sorts the rack and Open-Apple-C says whether the turn would count (`lt_sorted`, `lt_check`); Naval Combat's Open-Apple-G places the fleet at random (`lt_random`); and Backgammon's panel shows Roll and Double over Chat, Help, Resign and Lobby (`lt_backgammon`). `vice/plans/letters.txt` does the same on the C64.
+
+`plans/sentences.txt` shows the sentence line: the status line says whose turn it is and the clock, and the message line says what Return does on the place under the pointer or the other player's move as it comes. It shows a Reversi table waiting for a player (`se_waiting`), Reversi against the bot on a square where no disc goes and on d3 (`se_reversi_a1`, `se_reversi_d3`), the bot's answer in words (`se_reversi_bot`), Five in a Row (`se_five`, `se_five_bot`), Mancala (`se_mancala`), Naval Combat while the fleet is placed (`se_naval`), Rummy Tile (`se_rummy`), Checkers (`se_checkers`) and Backgammon (`se_backgammon`). `vice/plans/sentences.txt` does the same on the C64.
+
+`plans/help.txt` shows ? and Esc in every game: the lobby's help (`hp_lobby`), then each game against the bot, where ? opens page 1 of its help (`hp_NAME_1`), Right turns to page 2 (`hp_NAME_2`), Esc closes it (`hp_NAME_closed`), and Esc again, with nothing to cancel, goes back to the lobby (`hp_lobby_again`). `vice/plans/help.txt` does the same on the C64, with Space.
+
+The first sign-in offers the tutorial in a dialog, so the plans that sign up a player and are about something else skip it: the IIe's hold `cfg_tutor` at 1 once the start screen shows (`hold cfg_tutor 1 30`, which `run.sh` finds in the map; one hold at a time, so it comes after run.sh's hold of `cfg_number`), the C64's set it (`set cfg_tutor 1`), and the IIgs's answer No (`type n`). `plans/tutorial.txt` plays the tutorial end to end. The first sign-in offers it in a dialog starting on Yes (`tu_offer`), and Y starts it. Each of the 18 steps is done as its instruction says (`tu_01` to `tu_17`): Return, the arrows to b2, Return, c1, Open-Apple-U, c1 again, /, time, a line cleared with Esc, the typed move /c3, Open-Apple-T, hello, Esc, /say good game, ? and Esc, Open-Apple-R and Esc, and c2, which wins; then Esc goes back to the lobby (`tu_lobby`). Signing out and in again does not offer it a second time (`tu_again`), and /tutorial in the lobby starts it (`tu_command`). `plans/gs_tutorial.txt` plays it on the IIgs, and `vice/plans/tutorial.txt` on the C64. `plans/tutorial_mono.txt` plays it in monochrome on the IIe, from the start screen without signing in, to show the marks drawn in single dots.
 
 ## Through a Unix shell
 
@@ -243,6 +282,9 @@ GSROMS=~/roms GSHD=~/gs/marinetti.2mg PARLORNET=~/src/parlornet test/lab/gs.sh t
   the display set to color, then to monochrome (where the IIgs shows the same title screen in black and
   white) and then not at all, each set in the settings and kept in PARLOR.CFG across a quit and a new
   start. `plans/gs_gridwords.txt` plays some words of Grid Words, in color and monochrome.
+  `plans/gs_clock.txt` shows the time signed in as `plans/clock.txt` does on the IIe: no clock on the sign-in
+  screen, "0m" in the lobby right after sign-in, none after signing out, and 0m again on the next sign-in and
+  on a new connection.
 - The IIgs has the Apple joystick in its game port too, and `gsrun.lua` has the IIe runner's joystick steps.
   `plans/gs_joystick.txt` turns the joystick on in the settings, moves in the lobby, chooses Reversi and the
   bot, places a disc, opens the chat with Open-Apple-T, and shows an empty port doing nothing.
@@ -292,6 +334,7 @@ test/vice/run.sh build/c64/parlornet.d64 test/vice/plans/reversi.txt test/out/c6
   with `joy` steps.
 
 The plans in `vice/plans`:
+- `stay_signed_in.txt` (with a parlor that has sign-in keys, and `lab/keys.py` beside it: `keys.py 16501 kim "Swordfish 1997"`): Stay signed in turned on in the settings (`ks_setting`); kim signs up with the password, which gets this computer's key (`ks_lobby`); the connection is closed from the console and P signs in again with the key, asking nothing (`ks_keyed`). keys.py then forgets kim's keys from a connection of its own, which ends the session (`ks_ended`); the next sign-in tries the key, the parlor refuses it with ERR NOKEY, and the password is asked for (`ks_nokey`), which signs in and gets a new key (`ks_password`). Signing out forgets the key, so the name is asked for again (`ks_signed_out`).
 - `title.txt`, `start.txt`: the title screen after the load at a 1541's speed, the start screen and the settings.
 - `load81.txt`, `load8.txt` (with `ATTACH=1`): `LOAD"*",8,1`, which starts the program with no RUN; and
   `LOAD"*",8` with RUN.
@@ -322,6 +365,9 @@ The plans in `vice/plans`:
   on the user port at 2400 and at 300, through the console, the dialer, signing up and the lobby.
 - `progress.txt`: the progress bars, at the start, for the lobby (PN.PARLOR) and the sign-in when the console first
   opens, and for a game.
+- `clock.txt`: the time signed in, as `plans/clock.txt` in `lab/` shows it on the Apple IIe: no clock on the
+  sign-in screen, "0m" in the lobby right after sign-in, "1m" by the table's snapshots, none after signing
+  out, and 0m again on the next sign-in and after the line is closed and dialed again.
 - `reversi.txt`: a game of Reversi against the bot, with moves by the cursor keys, the orchestrator and the joystick,
   and the board in monochrome.
 - `table_entry.txt`: the first view of each of the ten games, as `plans/table_entry.txt` does for the Apple II, by

@@ -1,0 +1,139 @@
+# One meaning per letter, with Open-Apple, against the bot. The lobby's Open-Apple-N opens New game
+# (lt_newgame). Mancala's digits move the pointer to a pit (lt_mancala_3) and Return sows it. Open-Apple-H
+# says it does nothing in Reversi (lt_nothing). Cannon Fire's < and + aim by 10 and Fire is where the pointer
+# starts (lt_cannon). In Dots and Boxes, Esc lets go of a picked dot (lt_dots_picked, lt_dots_dropped) and Esc
+# again goes back to the lobby. Grid Words' Open-Apple-X starts an exchange (lt_exchange), which Esc ends.
+# Rummy Tile's Open-Apple-O sorts the rack (lt_sorted) and Open-Apple-C says whether the turn would count
+# (lt_check). Naval Combat's Open-Apple-G places the fleet at random (lt_random). Backgammon's buttons are
+# Roll and Double, then Chat, Help, Resign and Lobby along the bottom (lt_backgammon).
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+hold cfg_tutor 1 30
+type P
+waittext Name: 900
+type new\r
+waittext want 300
+type lena\r
+waittext password 600
+type Swordfish 1997\r
+waittext again 600
+type Swordfish 1997\r
+wait 600
+oa N
+wait 200
+snap lt_newgame
+key esc
+wait 300
+click 200
+wait 200
+click 6
+wait 100
+click 0
+wait 100
+click 0
+wait 900
+type 3
+wait 30
+snap lt_mancala_3
+key ret
+wait 300
+key esc
+wait 400
+click 200
+wait 200
+click 8
+wait 100
+click 0
+wait 900
+oa H
+wait 30
+snap lt_nothing
+key esc
+wait 400
+click 200
+wait 200
+click 1
+wait 100
+click 0
+wait 100
+click 0
+wait 900
+type <+
+wait 60
+snap lt_cannon
+key esc
+wait 400
+click 200
+wait 200
+click 3
+wait 100
+click 0
+wait 100
+click 0
+wait 100
+click 0
+wait 900
+click 0
+wait 60
+snap lt_dots_picked
+key esc
+wait 60
+snap lt_dots_dropped
+key esc
+wait 400
+click 200
+wait 200
+click 5
+wait 100
+click 0
+wait 100
+click 0
+wait 100
+click 0
+wait 1200
+oa X
+wait 60
+snap lt_exchange
+key esc
+wait 200
+key esc
+wait 400
+click 200
+wait 200
+click 9
+wait 100
+click 0
+wait 100
+click 0
+wait 900
+oa O
+wait 60
+snap lt_sorted
+oa C
+wait 300
+snap lt_check
+key esc
+wait 400
+click 200
+wait 200
+click 7
+wait 100
+click 0
+wait 100
+click 0
+wait 900
+oa G
+wait 600
+snap lt_random
+key esc
+wait 400
+click 200
+wait 200
+click 0
+wait 100
+click 0
+wait 900
+snap lt_backgammon
+exit

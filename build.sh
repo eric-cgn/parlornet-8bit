@@ -27,7 +27,8 @@ A2=src/apple2
 CORE=src/core
 COMMON=src/common
 COMMON6502=src/common/6502
-OVERLAYS="signin reversi backgammon gridwords checkers mancala fiveinarow dotsandboxes navalcombat cannonfire rummytile setup splash"
+OVERLAYS="signin reversi backgammon gridwords checkers mancala fiveinarow dotsandboxes navalcombat cannonfire rummytile setup splash newgame frame help tutorial"
+FRAMEOVL=
 rm -rf "$OBJ" "$GS" "$OUT/c64" "$OUT/template"
 mkdir -p "$OBJ" "$GOBJ"
 # the version, from VERSION, for the title screens
@@ -43,15 +44,26 @@ ovl_src() {
 	signin) echo "$CORE/parlor.c $1/signin_net.c" ;;
 	setup) echo "$1/setup.c $COMMON/setting_line.c" ;;
 	splash) echo "$1/splash.c" ;;
+	newgame) echo "$CORE/newgame.c" ;;
+	tutorial) echo "$CORE/tutorial.c" ;;
+	frame) [ -n "$FRAMEOVL" ] && echo "$CORE/frame.c" ;;
 	*) if [ -f "$CORE/games/$2.c" ]; then echo "$CORE/games/$2.c"
 	   elif [ -f "$1/games/$2.c" ]; then echo "$1/games/$2.c"; fi ;;
 	esac
 }
 
+# The resident program is optimized for size: without cc65's -Oi, which writes many calls (strlen, strcpy and
+# the runtime's helpers) out in line, it takes about 1.4K less, and nothing it does is held up by the calls.
+# The overlays keep -Oi, for the drawing, but for those named in SMALLOVL, which need the room.
+RESOPT=-Ors
+OVLOPT=-Oirs
+SMALLOVL="frame backgammon"
+
 # program MACHINEDIR OBJDIR MAPOUT PROGRAMOUT CONFIG CFLAGS CSRC ASM CRT0 LIB OVLSTART OVLSIZE
 #   compiles the C files in CSRC (paths, in link order; those named in $PLATE with their code and read-only
 #   data in the segments PCODE and PRODATA), assembles the files in ASM (in MACHINEDIR) and the
-#   font ($PFONT, when set), then the overlays with their art ($PART/NAME_art.s), and links them after CRT0
+#   font ($PFONT, when set), then the overlays with their art ($PART/NAME_art.s, or on the IIe NAME_dhr.s
+#   where there is one), and links them after CRT0
 #   (an object in OBJDIR) with ld65 and CONFIG (a path; its #OVLMEM and #OVLSEG lines get the overlays).
 program() {
 	pm=$1 pobj=$2 pmap=$3 pout=$4 pcfg=$5 pcflags=$6 pcsrc=$7 pasm=$8 pcrt=$9
@@ -62,7 +74,7 @@ program() {
 		b=$(basename "$c" .c)
 		late=
 		case " $PLATE " in *" $b "*) late="--code-name PCODE --rodata-name PRODATA" ;; esac
-		cc65 $pcflags $late -o "$pobj/$b.s" "$c"
+		cc65 $pcflags $RESOPT $late -o "$pobj/$b.s" "$c"
 		ca65 --cpu 6502 -o "$pobj/$b.o" "$pobj/$b.s"
 		objs="$objs $pobj/$b.o"
 	done
@@ -82,16 +94,29 @@ program() {
 			b=$(basename "$c" .c)
 			# Code, read-only data, data and the zeroed data each in a segment of its own (in one
 			# segment cc65 would put a function's static variables before its first instruction).
-			cc65 $pcflags --code-name "OVC_$name" --rodata-name "OVR_$name" --data-name "OVD_$name" \
+			opt=$OVLOPT
+			case " $SMALLOVL " in *" $name "*) opt=$RESOPT ;; esac
+			cc65 $pcflags $opt --code-name "OVC_$name" --rodata-name "OVR_$name" --data-name "OVD_$name" \
 				--bss-name "OVB_$name" -o "$pobj/$b.s" "$c"
 			sed -i "s/\"OVHDR\"/\"OVH_$name\"/" "$pobj/$b.s"
 			ca65 --cpu 6502 -o "$pobj/$b.o" "$pobj/$b.s"
 			objs="$objs $pobj/$b.o"
 		done
-		if [ -f "$PART/${name}_art.s" ]; then
-			sed -i "s/\"RODATA\"/\"OVR_$name\"/" "$PART/${name}_art.s"
-			ca65 --cpu 6502 -o "$pobj/${name}_art.o" "$PART/${name}_art.s"
+		# (on the IIe a game drawn in Double Hi-Res has its masks, NAME_dhr.s, for its Hi-Res pictures, and
+		# they go with the kit into the auxiliary memory: the segment AUXART)
+		art=$PART/${name}_art.s
+		artseg=OVR_$name
+		if [ -z "$pdef" ] && [ -f "$PART/${name}_dhr.s" ]; then art=$PART/${name}_dhr.s; artseg=AUXART; fi
+		if [ -f "$art" ]; then
+			sed -i "s/\"RODATA\"/\"$artseg\"/" "$art"
+			ca65 --cpu 6502 -o "$pobj/${name}_art.o" "$art"
 			objs="$objs $pobj/${name}_art.o"
+		fi
+		# (and its kinds of place for the kit, draw/NAME_kinds.s, there too)
+		if [ "$artseg" = AUXART ] && [ -f "$pm/draw/${name}_kinds.s" ]; then
+			sed "s/\"RODATA\"/\"AUXART\"/" "$pm/draw/${name}_kinds.s" > "$pobj/${name}_kinds.s"
+			ca65 --cpu 6502 -o "$pobj/${name}_kinds.o" "$pobj/${name}_kinds.s"
+			objs="$objs $pobj/${name}_kinds.o"
 		fi
 		mem="$mem    OV_$name: file = \"%O.$name\", start = $povl, size = $povlsize;\\n"
 		for s in OVH OVC OVR OVD OVB; do
@@ -105,7 +130,7 @@ program() {
 }
 
 LIB=/usr/share/cc65/lib/none.lib
-A2FLAGS="-t none --cpu 6502 -O -Oirs -Cl -I $A2 -I $CORE -I $OBJ"
+A2FLAGS="-t none --cpu 6502 -O -Cl -I $A2 -I $CORE -I $OBJ"
 
 # The Apple IIe: the self-booting disk's boot block, PARLOR.SYSTEM, and the program.
 ca65 --cpu 6502 -o "$OBJ/crt0.o" "$A2/crt0.s"
@@ -118,10 +143,17 @@ LDEXTRA=
 PFONT=$OBJ/font.s
 PART=$OBJ
 PLATE=
-program "$A2" "$OBJ" "$OUT/parlor.map" "$OUT/parlor" "$A2/parlor.cfg" "$A2FLAGS" \
+# The command line, the dialogs and the pages of text (frame.c) are the overlay "frame" on the IIe, which
+# ovl.c copies into the language card's bank 1 for good; calls into it go through bank1_call (sys.s, BANK1).
+FRAMEOVL=1
+program "$A2" "$OBJ" "$OUT/parlor.map" "$OUT/parlor" "$A2/parlor.cfg" "$A2FLAGS -D BANK1" \
 	"$A2/eth.c $CORE/games.c $A2/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
-	"sys hgr disk mli w5100 joy" crt0.o "$LIB" '$D000' '$2900'
+	"sys hgr dhr disk mli w5100 joy lz" crt0.o "$LIB" '$D000' '$2900'
 echo "$OVERLAYS" | tr ' ' '\n' | awk '{ printf "%s%s:%s", (NR > 1 ? " " : ""), $1, ($1 == "signin" ? "parlor" : $1) } END { print "" }' > "$OUT/overlays.txt"
+# the help pages, one overlay of them all (tools/help.py)
+python3 tools/help.py apple2 "$OUT/parlor.help"
+
+FRAMEOVL=
 
 # The Apple IIgs: PARLORNET's start, and the program.
 ca65 --cpu 65816 -o "$GOBJ/gsshell.o" "$A2/gsshell.s"
@@ -129,14 +161,15 @@ ld65 -C "$A2/gsshell.cfg" -o "$GS/shell.bin" "$GOBJ/gsshell.o"
 ca65 -D IIGS -o "$GOBJ/gs.o" "$A2/gs.s"
 pdef="-D IIGS"
 program "$A2" "$GOBJ" "$GS/parlor.map" "$GS/parlor" "$A2/parlorgs.cfg" "$A2FLAGS -D IIGS" \
-	"$CORE/games.c $A2/gsos.c $A2/line.c $CORE/lobby.c $CORE/main.c $A2/mt.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
+	"$CORE/games.c $A2/gsos.c $A2/line.c $CORE/frame.c $CORE/lobby.c $CORE/main.c $A2/mt.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
 	"sys hgr joy" gs.o "$LIB" '$D000' '$2900'
 cp "$OUT/overlays.txt" "$GS/overlays.txt"
+cp "$OUT/parlor.help" "$GS/parlor.help"
 
 # The Commodore 64 (build/c64): PARLORNET (stub.s, which LOAD"*",8,1 starts by itself), the loader PN.BOOT,
 # the C128's boot sector, the character set, the program and its overlays, which
-# tools/c64_disk.py puts on parlornet.d64. The overlays are loaded at C64_OVL; a table's moves and chat, or
-# the lobby's lists, are in the $600 below it; the program ends below those. The lobby, the tables, the
+# tools/c64_disk.py puts on parlornet.d64. The overlays are loaded at C64_OVL, and the program ends below
+# them; a table's moves and chat, or the lobby's lists, are under the text screen (c64.cfg). The lobby, the tables, the
 # parlor's protocol, the catalog and the bitmap's buttons (PLATE, and the parts of ui.c marked PCODE) are
 # linked after the program's zeroed data, and tools/c64_disk.py makes them a file of their own, PN.PARLOR,
 # which the program loads before the first sign-in (ovl.c): the start-up loads only what the title, the
@@ -144,7 +177,8 @@ cp "$OUT/overlays.txt" "$GS/overlays.txt"
 C64=src/c64
 COUT=$OUT/c64
 COBJ=$COUT/obj
-C64_OVL=9900
+C64_OVL=9B00
+SMALLOVL="frame backgammon cannonfire gridwords"     # (for the room the C64's program needs below them)
 mkdir -p "$COBJ"
 python3 tools/c64_art.py "$COBJ"
 cp "$COBJ/chars.bin" "$COUT/chars.bin"
@@ -155,19 +189,19 @@ for f in stub boot128; do
 	ld65 -C "$C64/$f.cfg" -o "$COUT/$f.bin" "$COBJ/$f.o"
 done
 ca65 --cpu 6502 -o "$COBJ/crt0.o" "$C64/crt0.s"
-high=$(printf '%04X' $((0x$C64_OVL - 0x600)))
-mainsize=$(printf '%04X' $((0x$high - 0x1500)))
-sed -e "s/@HIGH@/\$$high/g" -e "s/@MAINSIZE@/\$$mainsize/" -e "s/@OVL@/\$$C64_OVL/" "$C64/parlor.cfg" > "$COBJ/c64.cfg"
+mainsize=$(printf '%04X' $((0x$C64_OVL - 0x1400)))
+sed -e "s/@MAINSIZE@/\$$mainsize/" -e "s/@OVL@/\$$C64_OVL/" "$C64/parlor.cfg" > "$COBJ/c64.cfg"
 pdef="-D C64 -g"
 LDEXTRA="-Ln $COUT/parlor.lbl"
 PFONT=
 PART=$COBJ
-PLATE="games lobby net table ui_targets"
+PLATE="frame games lobby net table ui_targets"
 program "$C64" "$COBJ" "$COUT/parlor.map" "$COUT/parlor" "$COBJ/c64.cfg" \
-	"-t none --cpu 6502 -O -Oirs -Cl -D C64 -D OVL_ADDR=0x$C64_OVL -I $C64 -I $CORE -I $OBJ" \
-	"$CORE/games.c $C64/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $C64/ovl.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $C64/ui.c" \
+	"-t none --cpu 6502 -O -Cl -D C64 -D OVL_ADDR=0x$C64_OVL -I $C64 -I $CORE -I $OBJ" \
+	"$CORE/games.c $C64/line.c $CORE/frame.c $CORE/lobby.c $CORE/main.c $CORE/net.c $C64/ovl.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $C64/ui.c" \
 	"sys serial gfx disk" crt0.o "$LIB" "\$$C64_OVL" "\$$(printf '%04X' $((0xC000 - 0x$C64_OVL)))"
 echo "$OVERLAYS" > "$COUT/overlays.txt"
+python3 tools/help.py c64 "$COUT/help"
 echo "$C64_OVL" > "$COUT/ovl_addr.txt"
 
 # The template machine (src/template, PORTING.md): every call of the machine interface stubbed, built and
@@ -183,6 +217,6 @@ PFONT=
 PART=$TOBJ
 PLATE=
 program "$TPL" "$TOBJ" "$TOUT/parlor.map" "$TOUT/parlor" "$TPL/template.cfg" \
-	"-t none --cpu 6502 -O -Oirs -Cl -I $TPL -I $CORE -I $OBJ" \
-	"$CORE/games.c $CORE/lobby.c $CORE/main.c $CORE/net.c $CORE/table.c $COMMON/ui_targets.c $TPL/template.c" \
+	"-t none --cpu 6502 -O -Cl -I $TPL -I $CORE -I $OBJ" \
+	"$CORE/games.c $CORE/frame.c $CORE/lobby.c $CORE/main.c $CORE/net.c $CORE/table.c $COMMON/ui_targets.c $TPL/template.c" \
 	"" crt0.o "$LIB" '$9000' '$3000'

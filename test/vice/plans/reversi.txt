@@ -3,6 +3,7 @@
 # the cursor keys and Return, then one with the joystick in port 2; then the board in monochrome.
 waittitle 6000
 title 3600
+set cfg_tutor 1
 waittext ParlorNet: connect 600
 type P
 waittext Name: 4800

@@ -2,7 +2,9 @@
 
 ## The Apple II and II+
 
-The program runs on the Apple IIe. Most of it would run on a II+ (or an original Apple II) as it is: the Hi-Res screens use the program's own font, and the Super Serial Card, the Uthernet II and the AppleMouse II all fit those machines. These are the parts that would have to change.
+The program runs on the Apple IIe with 128K. Most of it would run on a II+ (or an original Apple II) as it is: the screens use the program's own font, and the Super Serial Card, the Uthernet II and the AppleMouse II all fit those machines. These are the parts that would have to change.
+
+- **Drawing.** The IIe program draws in Double Hi-Res, which needs the IIe's auxiliary 64K. A II+ has neither, so it would need drawing of its own in Hi-Res, as release 2.0.7 had.
 
 - **Moving the pointer.** The II+ keyboard has only the left and right arrows. The pointer, the lobby and the menus need four directions, so a II+ mode would add I, J, K and M (or another set chosen on the start screen) for up, left, right and down.
 - **The Open-Apple shortcuts.** The II+ has no Open-Apple key. The program reads Open-Apple at $C061, which on a II+ is joystick button 0, so a joystick's button already works. Without a joystick, Esc followed by the letter would stand for Open-Apple and the letter. Esc today goes back to the lobby, so that move would need another key in II+ mode.

@@ -1,0 +1,40 @@
+# The lobby with more tables than fit on one screen, of every game, and its names after a table. Make the
+# player first with lab/manytables.py (4 tables of their own, 2 invitations, 18 tables waiting):
+#   python3 test/lab/manytables.py nora 16501
+# ln_lobby shows the first screenful and More, ln_more the rest and Back to the start, ln_back the first
+# again. Then the player's Backgammon table is opened (its overlay loaded from the disk) and left:
+# ln_after_table must show the same names as ln_lobby, and ln_newgame the games' names in the list of New
+# game. Each name is a game's (Backgammon, Cannon Fire, ...), never stray characters.
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+hold cfg_tutor 1 30
+type P
+waittext Name: 900
+type nora\r
+waittext Password 600
+type Swordfish 1997\r
+wait 1200
+snap ln_lobby
+click 205
+wait 120
+snap ln_more
+click 205
+wait 120
+snap ln_back
+click 0
+wait 1500
+snap ln_table
+key esc
+wait 1200
+snap ln_after_table
+click 205
+wait 120
+snap ln_after_more
+click 200
+wait 200
+snap ln_newgame
+key esc
+wait 300
+exit

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Makes the Apple IIe client's Hi-Res art: art/font.txt -> font.s, art/*.spr -> art.s and art/splash.txt ->
-splash_art.s.
+"""Makes the Apple II client's art: art/font.txt -> font.s, art/apple2/*.spr -> NAME_art.s (Hi-Res, for the
+IIgs and the IIe games not yet drawn in Double Hi-Res), art/apple2/*.dhr -> NAME_dhr.s (Double Hi-Res, for
+the IIe) and art/splash.txt -> splash_art.s.
 
 Font: each glyph is a line naming the character in quotes, then 8 rows of 5 pixels; a row becomes one
 byte with the pixels in bits 1 to 5 (bit 0 is the leftmost pixel on the screen, as Hi-Res has it).
@@ -15,8 +16,13 @@ A sprite is drawn at a byte column; on an odd column the colors of a color sprit
 so `both` also makes the version for odd columns (NAME_o). The data is the width in bytes, the height,
 then the rows, top first.
 
-Title letters (splash.txt): a line `letter X`, then its rows of blocks ('#' filled). splash.c fills each
-block solid, 4 color pixels across and 6 lines down. A letter's data (_sg_X) is its width in blocks, then a
+Double Hi-Res masks (*.dhr): a line `pix NAME` or `dots NAME`, then its rows, then a blank line. A mask is
+a group of 28 dots across: `pix` rows are 7 color pixels ('#' on, '.' off), each 4 dots, and `dots` rows
+are the 28 dots. Each row becomes 4 bytes as the screen has them (dots 0 to 6 in bits 0 to 6 of the first,
+and so on), and the data (_dhr_NAME) is the rows, top first.
+
+Title letters (splash.txt): a line `letter X`, then its rows of blocks ('#' filled). splash.c draws each
+block 4 color pixels across and 6 lines down, with a black gap on its right and bottom edge. A letter's data (_sg_X) is its width in blocks, then a
 byte a row, the blocks in bits 7 down.
 """
 import os
@@ -144,6 +150,36 @@ def sprites(paths):
     return "\n".join(out + body) + "\n"
 
 
+def dhr(path):
+    out = ["; Made by tools/apple2_art.py from %s; do not edit." % os.path.relpath(path, ROOT),
+           '        .segment "RODATA"']
+    names = []
+    lines = [ln.rstrip("\n") for ln in open(path)]
+    i = 0
+    while i < len(lines):
+        ln = lines[i].strip()
+        if not ln or ln.startswith("#"):
+            i += 1
+            continue
+        kind, name = ln.split()
+        rows = []
+        i += 1
+        while i < len(lines) and lines[i].strip():
+            rows.append(lines[i].strip())
+            i += 1
+        out.append("_dhr_%s:" % name)
+        names.append("_dhr_" + name)
+        for r in rows:
+            if kind == "pix":
+                assert len(r) == 7, (name, r)
+                r = "".join(c * 4 for c in r)
+            assert kind in ("pix", "dots") and len(r) == 28, (name, r)
+            out.append("        .byte   " + ",".join(
+                "$%02X" % sum(1 << j for j in range(7) if r[b * 7 + j] == "#") for b in range(4)))
+    out.insert(1, "        .export " + ", ".join(names))
+    return "\n".join(out) + "\n"
+
+
 def splash(path):
     letters, lines, i = {}, [ln.rstrip("\n") for ln in open(path)], 0
     while i < len(lines):
@@ -176,6 +212,9 @@ def main():
     for spr in sorted(p for p in os.listdir(A2ART) if p.endswith(".spr")):
         with open(os.path.join(outdir, spr[:-4] + "_art.s"), "w") as f:
             f.write(sprites([os.path.join(A2ART, spr)]))
+    for d in sorted(p for p in os.listdir(A2ART) if p.endswith(".dhr")):
+        with open(os.path.join(outdir, d[:-4] + "_dhr.s"), "w") as f:
+            f.write(dhr(os.path.join(A2ART, d)))
 
 
 if __name__ == "__main__":

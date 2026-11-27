@@ -1,6 +1,6 @@
 ; ParlorNet for the Apple IIe: the machine. The Super Serial Card (6551 ACIA, received bytes taken by
-; an interrupt into a 256-byte ring), the 40-column text screen, the keyboard, a 60 Hz tick from the
-; vertical blank, and the AppleMouse II card's firmware calls.
+; an interrupt into a 256-byte ring), the 40-column text screen and the switch to Double Hi-Res, the
+; keyboard, a 60 Hz tick from the vertical blank, and the AppleMouse II card's firmware calls.
 ;
 ; The program runs with the language card's RAM switched in, so the 6502 vectors at $FFFA are ours.
 ;
@@ -25,7 +25,7 @@
         .export         _clk_t, _clk_sub, _clk_set, _clk_text, _clk_buf, _clk_shown, _clk_show, _clk_sync, _clk_min
         .export         _clk_tim_off, _clk_tim_at
         .import         _q_set, _net_req, _r_n, _r_line
-        .import         _connected, _ui_hide, _ui_show, _ui_ink, _hgr_text, _hg_x, _hg_y, pusha
+        .import         _signed_in, _ui_hide, _ui_show, _ui_ink, _hgr_text, _hg_x, _hg_y, pusha
         .export         _txt_mode, _gr_mode, _txt_detect, _txt_mt
 .ifndef IIGS
         .export         _mouse_find, _mouse_call, _mouse_slot
@@ -181,14 +181,31 @@ a_s3:   lda     $C0A9
 a_d3:   stx     $C0A8
 :       rts
 
+; The interrupt handler. It can come while the Double Hi-Res kit runs in the auxiliary memory (hgr.s's
+; kcall), so it is in the code the start-up copies to the same address there (MIRROR), and it switches the
+; main memory in for rx_take and back after.
+        .segment "MIRROR"
 irq:    pha
+        lda     $C013           ; RAMRD (bit 7: the auxiliary memory is read)
+        pha
+        lda     $C014           ; RAMWRT
+        pha
+        sta     $C002
+        sta     $C004
         txa
         pha
         jsr     rx_take
         pla
         tax
         pla
+        bpl     :+
+        sta     $C005
+:       pla
+        bpl     :+
+        sta     $C003
+:       pla
         rti
+        .segment "CODE"
 
 ; int ser_get(void): the next received byte, or -1.
 _ser_get:
@@ -370,11 +387,20 @@ rowhi:  .repeat 24, r
         .segment "CODE"
 
 _txt_mode:
+.ifndef IIGS
+        sta     $C00C           ; 40 columns
+        sta     $C05F           ; AN3 on: no Double Hi-Res
+        sta     $C000           ; 80STORE off
+.endif
         io_sta  $C051           ; text
         io_sta  $C054           ; page 1
         rts
 
 _gr_mode:
+.ifndef IIGS
+        sta     $C00D           ; 80 columns
+        sta     $C05E           ; AN3 off: Double Hi-Res
+.endif
         io_sta  $C057           ; hi-res
         io_sta  $C052           ; full screen
         io_sta  $C054           ; page 1
@@ -575,6 +601,58 @@ tp:     lda     $FFFF
         inc     tp+2
         bne     tp
 :       rts
+
+.ifndef IIGS
+; ---------------------------------------------------------------------------------------------------
+; The language card's bank 1 ($D000-$DFFF), where the IIe keeps the command line, the dialogs and the pages
+; of text (frame.c, the overlay OVL_FRAME).
+
+        .importzp       ptr4
+        .import         callptr4
+        .export         _bank1_call, _bank1_copy
+
+; void bank1_call(void): cc65's wrapper for every call into bank 1 (frame.h), with the function in ptr4
+; and its last argument in A and X. Bank 1 is switched in for the call, and bank 2 back after it unless the
+; caller was in bank 1 itself; the function's result in A and X is kept.
+_bank1_call:
+        tay
+        lda     $C011           ; RDLCBNK2: bit 7 set while bank 2 is in
+        pha
+        bit     $C08B           ; the RAM of bank 1, to read and write (two reads)
+        bit     $C08B
+        tya
+        jsr     callptr4
+        tay
+        pla
+        bpl     :+
+        bit     $C083           ; the RAM of bank 2 again
+        bit     $C083
+:       tya
+        rts
+
+; void bank1_copy(void): $D000-$DFFF of bank 2 (the overlay just loaded) into bank 1, a byte at a time.
+_bank1_copy:
+        lda     #0
+        sta     ptr1
+        lda     #$D0
+        sta     ptr1+1
+        ldy     #0
+bc_lp:  bit     $C083
+        bit     $C083
+        lda     (ptr1),y
+        bit     $C08B
+        bit     $C08B
+        sta     (ptr1),y
+        iny
+        bne     bc_lp
+        inc     ptr1+1
+        lda     ptr1+1
+        cmp     #$E0
+        bne     bc_lp
+        bit     $C083
+        bit     $C083
+        rts
+.endif
 
 ; ---------------------------------------------------------------------------------------------------
 ; Keyboard and time

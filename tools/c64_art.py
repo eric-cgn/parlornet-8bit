@@ -11,6 +11,8 @@
   '#' (set) and '.' (clear), a multiple of 8 wide: _pic_NAME, the width in bytes, the height, the rows (as
   gfx.s's hgr_blit draws them). A line `sprite NAME` then up to 21 rows of up to 24: _spr_NAME, 63 bytes (a
   hires sprite). A blank line ends each.
+- gridwords_art.s, with Grid Words' tile letters from art/c64/tiles.txt: _tile_glyphs, A to Z and then ?,
+  6 bytes each, made bold as the character set is. gridwords.c draws them in a tile's rows 1 to 6.
 """
 import os
 import sys
@@ -20,7 +22,7 @@ ART = os.path.join(ROOT, "art")
 C64ART = os.path.join(ART, "c64")
 
 
-def read_glyphs(path, width):
+def read_glyphs(path, width, height=8):
     glyphs = {}
     lines = [ln.rstrip("\n") for ln in open(path) if not ln.startswith("# ")]
     i = 0
@@ -30,10 +32,10 @@ def read_glyphs(path, width):
             i += 1
             continue
         code = int(ln[1:], 16) if ln.startswith("$") else ord(ln[1])
-        rows = lines[i + 1:i + 9]
-        assert len(rows) == 8 and all(len(r) == width for r in rows), ln
+        rows = lines[i + 1:i + 1 + height]
+        assert len(rows) == height and all(len(r) == width for r in rows), ln
         glyphs[code] = rows
-        i += 9
+        i += 1 + height
     return glyphs
 
 
@@ -133,6 +135,19 @@ def pictures(path):
     return "\n".join(out) + "\n"
 
 
+TILE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ?"
+
+
+def tiles(path):
+    glyphs = read_glyphs(path, 5, 6)
+    assert sorted(glyphs) == sorted(map(ord, TILE_CHARS)), "tiles.txt needs A to Z and ?"
+    out = ["; Made by tools/c64_art.py from art/c64/tiles.txt; do not edit.",
+           "        .export _tile_glyphs", '        .segment "RODATA"', "_tile_glyphs:"]
+    for ch in TILE_CHARS:
+        out.append("        .byte   " + ",".join("$%02X" % bold(r) for r in glyphs[ord(ch)]) + "  ; " + ch)
+    return "\n".join(out) + "\n"
+
+
 def main():
     outdir = sys.argv[1]
     os.makedirs(outdir, exist_ok=True)
@@ -140,10 +155,11 @@ def main():
         f.write(charset())
     with open(os.path.join(outdir, "splash_art.s"), "w") as f:
         f.write(splash(os.path.join(ART, "splash.txt")))
-    for p in sorted(os.listdir(C64ART)):
-        if p.endswith(".pic"):
-            with open(os.path.join(outdir, p[:-4] + "_art.s"), "w") as f:
-                f.write(pictures(os.path.join(C64ART, p)))
+    art = {p[:-4]: pictures(os.path.join(C64ART, p)) for p in sorted(os.listdir(C64ART)) if p.endswith(".pic")}
+    art["gridwords"] = art.get("gridwords", "") + tiles(os.path.join(C64ART, "tiles.txt"))
+    for name, text in art.items():
+        with open(os.path.join(outdir, name + "_art.s"), "w") as f:
+            f.write(text)
 
 
 if __name__ == "__main__":

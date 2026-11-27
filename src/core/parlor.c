@@ -11,6 +11,7 @@
 #include "net.h"
 #include "app.h"
 #include "ovl.h"
+#include "frame.h"
 #if !MACHINE_SERIAL
 #define CONSOLE_KEYS ""                 /* no serial line (the IIgs): no console */
 #define NAME_KEYS "(" OA "Q: disconnect)"
@@ -24,28 +25,7 @@
 #endif
 
 static unsigned char auth_none;
-
-/* The connected time on the title row, after "ParlorNet", when the minute changed (clk_text). */
-static void txt_clock(void)
-{
-    unsigned char x, y, inv, top;
-    const char *p;
-    if (!connected || clk_shown == clk_min())
-        return;
-    x = txt_x;
-    y = txt_y;
-    inv = txt_inv;
-    top = txt_top;
-    for (p = clk_text(); *p == ' '; ++p)
-        ;
-    txt_top = 0;
-    txt_goto(11, 0);
-    txt_inv = 1;
-    say(p);
-    txt_top = top;
-    txt_inv = inv;
-    txt_goto(x, y);
-}
+static unsigned char keyed;             /* 1: the next password question is answered with the key; 2: it was */
 
 /* Text-mode line input at the cursor, to the end of the row. 1 on Return, 0 on Escape; OA-C (the
    console) gives 2. */
@@ -70,10 +50,8 @@ static unsigned char txt_input(char *buf, unsigned char max, unsigned char secre
         txt_cursor(0x20);
         ++txt_x;
         txt_clreol();
-        do {
-            txt_clock();
-            k = kbd_get();
-        } while (!k);
+        while (!(k = kbd_get()))
+            ;
         if (kbd_mods() & 1) {
             if ((k | 0x20) == 'c')
                 return 2;
@@ -203,8 +181,8 @@ static unsigned char ask_again(const char *why)
     sayln("Esc: the start screen");
 #else
     say(DIALING ? "Return: dial again" : "Return: try again");
-    sayln("   " OA_NAME "-C:");
-    sayln("the console   Esc: the start screen");
+    sayln("   " OA "C: the console");
+    sayln("Esc: the start screen");
 #endif
     for (;;) {
         k = kbd_get();
@@ -393,6 +371,13 @@ static unsigned char dialogue(void)
                 secret = 1;
             if (is(w[i], "yn"))
                 yn = 1;
+            if (is(w[i], "cred") && keyed == 1)
+                keyed = 2;
+        }
+        if (keyed == 2) {               /* the key for this computer answers it, with no question asked */
+            q_set("AUT key ");
+            q_cat(cfg_key);
+            continue;
         }
         say(label);
         if (yn) {
@@ -448,8 +433,6 @@ static void screen(void)
     title_bar("ParlorNet", CONSOLE_KEYS);
     txt_top = 2;                        /* the title bar stays when the text scrolls */
     txt_goto(0, 2);
-    clk_shown = 255;
-    txt_clock();
 }
 
 /* The screen is full: wait for a key on the bottom row, then go on at the top of a fresh screen. */
@@ -468,7 +451,7 @@ static void more(void)
 static unsigned char run(void)
 {
     static char name[14];
-    unsigned char k, n, signed_in;
+    unsigned char k, n, in;
     const char *p;
 
 #if MACHINE_SERIAL
@@ -567,12 +550,6 @@ connect:
         if (is(w[k], "AUTH=none"))
             auth_none = 1;
     connected = 1;
-    memset(clk_t, 0, 3);                /* the connected time from 0m, or the parlor's */
-    clk_tim_off = 0;
-    clk_tim_at = 0xFF;                  /* (now) */
-    clk_sync();
-    clk_shown = 255;
-    txt_clock();
     q_set("Connected to ");
     q_cat(server_name);
     show_wrapped(q);
@@ -602,6 +579,16 @@ connect:
 names:
     for (;;) {
         txt_putc(13);
+        keyed = 0;
+        if (cfg_key[0] && !auth_none) {
+            /* Stay signed in: the key kept for this computer answers the password */
+            strcpy(name, cfg_user);
+            say("Signing in as ");
+            sayln(name);
+            keyed = 1;
+            q_set("USER");
+            goto user;
+        }
         sayln("Type your name, or new to sign up.");
         sayln(NAME_KEYS);
         say("Name: ");
@@ -624,20 +611,46 @@ names:
             q_set(auth_none ? "HELO" : "REG");
         } else
             q_set(auth_none ? "HELO" : "USER");
+user:
         q_add(name);
-        signed_in = dialogue();
-        if (signed_in >= 2)
-            return signed_in == 2 ? 1 : 3;
+        in = dialogue();
+        if (in >= 2)
+            return in == 2 ? 1 : 3;
         if (net_lost)
             goto lost;
-        if (!signed_in) {
-            if (r_final && strncmp(r_final, "ERR STATE", 9) == 0)
-                signed_in = 1;          /* signed in already, on this connection */
-            else
-                continue;
+        if (!in && keyed == 2 && r_final && strncmp(r_final, "ERR NOKEY", 9) == 0) {
+            /* the key was refused (signed out elsewhere, or the password changed): forgotten, and the
+               password asked for as usual */
+            cfg_key[0] = 0;
+            cfg_changed = 1;
+            keyed = 0;
+            q_set("USER");
+            goto user;
+        }
+        if (!in && !(r_final && strncmp(r_final, "ERR STATE", 9) == 0))
+            continue;                   /* (ERR STATE: signed in already, on this connection) */
+        if (keyed == 2) {
+            if (!cfg_stay) {            /* (the setting turned off since: this computer's key forgotten) */
+                q_set("KEY DEL");
+                net_req();
+                cfg_key[0] = 0;
+                cfg_changed = 1;
+            }
+        } else if (cfg_stay && !auth_none) {
+            /* the first sign-in with the password gets the key, which is kept instead of the password */
+            q_set("KEY NEW " MACHINE_LABEL);
+            if (net_req() == R_OK && r_final[2]) {
+                strncpy(cfg_key, r_final + 3, sizeof cfg_key - 1);
+                strcpy(cfg_user, name);
+                cfg_changed = 1;
+            }
         }
         strcpy(me, name);
         prefs_load();
+        /* The time signed in starts from 0m; the lobby's first poll asks the parlor for it (TIM). */
+        memset(clk_t, 0, 3);
+        clk_tim_off = 0;
+        clk_tim_at = 0xFF;
         return 4;
     }
 lost:
@@ -651,10 +664,129 @@ lost:
     return k == 2;
 }
 
+#if MACHINE_SERIAL
+/* The console: a plain terminal on the serial line, for setting up the line (dialing a modem, say) before
+   ParlorNet mode. What is typed goes out and what comes in is shown. Returns 1 when Open-Apple-P asks for
+   ParlorNet mode, 0 for the start screen (Open-Apple-Q) and 2 for the settings (Open-Apple-S), after which
+   main.c opens it again. When a line has been typed and not yet sent, OA-P sends its Return first, so that a
+   command that connects to the parlor (nc in a Unix shell) is followed at once by ParlorNet mode's opening
+   line: the parlor waits 20 seconds for it. */
+static unsigned char console(void)
+{
+    static unsigned char k, under, shown, lastcr, typed;
+    static unsigned int blink;
+    static int c;
+    txt_mode();
+    txt_top = 0;
+    txt_bot = 24;
+    txt_clear();
+    title_bar("Console", OA "P: ParlorNet  " OA "S: Settings");
+    txt_top = 1;
+    txt_goto(0, 1);
+    say("Line: ");
+    sayln(line_desc());
+    sayln("Connect to the parlor's native port");
+    sayln("(6501, not telnet), then press " OA "P.");
+    sayln("To dial a modem, type ATDT host:6501.");
+    sayln("Press " OA "Q for the start screen.");
+    txt_putc(13);
+    shown = 0;
+    lastcr = 0;
+    blink = ticks;
+    for (;;) {
+        c = ser_get();
+        if (c >= 0 || (k = kbd_get()) != 0 || ticks - blink > 20) {
+            if (shown) {
+                txt_cursor(under);
+                shown = 0;
+            }
+        }
+        if (c >= 0) {
+            c &= 0x7F;
+            if (c == 13) {
+                txt_putc(13);
+                lastcr = 1;
+            } else if (c == 10) {
+                if (!lastcr)
+                    txt_putc(13);
+                lastcr = 0;
+            } else {
+                lastcr = 0;
+                if (c == 8)
+                    txt_putc(8);
+                else if (c == 9) {
+                    do
+                        txt_putc(' ');
+                    while (txt_x & 7);
+                } else if (c >= 32 && c < 127)
+                    txt_putc(c);
+            }
+            continue;
+        }
+        if (k) {
+            if (kbd_mods() & 1) {
+                if (k >= 'a')
+                    k -= 32;
+                if (k == 'P') {
+                    if (typed)
+                        ser_put(13);
+                    typed = 0;
+                    return 1;
+                }
+                if (k == 'Q')
+                    return 0;
+                if (k == 'S')
+                    return 2;
+                k = 0;
+                continue;
+            }
+            if (k == K_LEFT)
+                k = 8;
+            typed = k != 13;
+            ser_put(k);
+            if (cfg_echo) {
+                if (k == 13)
+                    txt_putc(13);
+                else if (k == 8 || k == K_DEL) {
+                    txt_putc(8);
+                    txt_putc(' ');
+                    txt_putc(8);
+                } else
+                    txt_putc(k);
+            }
+            k = 0;
+            continue;
+        }
+        tick_poll();
+        if (!shown && ticks - blink > 20) {
+            under = txt_peek();
+            txt_cursor(0x20);           /* an inverse space */
+            shown = 1;
+            blink = ticks;
+        } else if (shown && ticks - blink > 20) {
+            blink = ticks;
+        }
+    }
+}
+#endif
+
+/* The first sign-in on this computer: the tutorial, offered once in a dialog. 1 to run it now. */
+static unsigned char offer(void)
+{
+    gr_mode();
+    ui_cls();
+    ui_ink(F_BLACK, F_WHITE);
+    ui_textn(0, 0, "ParlorNet", 32);
+    ui_ink(F_WHITE, F_BLACK);
+    strcpy(dlg_words, "Would you like a short tutorial on how the games work? You can run it again any time "
+           "with /tutorial.");
+    return dialog(dlg_words, D_FIRST) == D_YES;
+}
+
 #pragma rodata-name (push, "OVHDR")
 #if !MACHINE_SERIAL
-const struct signin signin_header = {run};
+const struct signin signin_header = {run, offer};
 #else
-const struct signin signin_header = {run, hangup};
+const struct signin signin_header = {run, offer, hangup, console};
 #endif
 #pragma rodata-name (pop)

@@ -1,9 +1,10 @@
 ; ParlorNet for the Apple IIe: the boot block and the sector reader.
 ;
 ; The Disk II boot ROM reads physical sectors 0 to N-1 of track 0 into $0800 upwards, where N is the
-; first byte of sector 0, and jumps to $0801. This block then reads the program from the disk with its
-; own 6-and-2 sector reader, switches the language card's RAM in, and starts the program. The reader
-; stays in memory: the program loads the games through it (rd_range, below).
+; first byte of sector 0, and jumps to $0801. This block checks for the auxiliary memory that Double
+; Hi-Res needs, then reads the program from the disk with its own 6-and-2 sector reader, switches the
+; language card's RAM in, and starts the program. The reader stays in memory: the program loads the games
+; through it (rd_range, below).
 ;
 ; The disk holds no operating system. Sectors are counted linearly from track 0 physical sector 0
 ; (linear sector = track * 16 + physical sector); tools/apple2_disk.py lays the program out and fills
@@ -12,6 +13,8 @@
         .setcpu "6502"
 
 BOOTSECT = 6                    ; this block is 6 sectors, $0800-$0DFF
+HOME    = $FC58                 ; the monitor's: clear the text screen
+COUT    = $FDED                 ; and print a character
 
 ; Zero page used by the reader ($F0-$FF; the C program keeps out of it).
 slot16  = $F0                   ; boot slot * 16
@@ -46,32 +49,50 @@ LOADTAB:
         .res    16, 0           ; $080D-$081C
 start:  .word   0               ; $081D
         .res    2, 0            ; $081F-$0820 (spare; under ProDOS PARLOR.SYSTEM keeps its values there)
-; $0821: the overlays (the games, and the sign-in), set by the disk maker: 16 entries of linear sector
+; $0821: the overlays (the games, and the sign-in), set by the disk maker: 20 entries of linear sector
 ; (2 bytes), count and disk number. Each loads at $D000.
-OVLTAB: .res    64, 0           ; $0821-$0860
+OVLTAB: .res    80, 0           ; $0821-$0870
 
 ; Messages for the boot screen (text page 1, inverse/normal screen codes made by the code).
 title:  .byte   "PARLORNET", 0
 msg2:   .byte   "THIS IS DISK 2. BOOT DISK 1.", 0
 msgerr: .byte   "DISK ERROR", 0
+; (40 characters to the space, so that the screen's own wrap ends the first line there)
+msg128: .byte   "ParlorNet needs an Apple IIe with 128K, or a IIc or IIgs.", 0
 
 boot:
         stx     slot16
         ; Clear the text screen and say what this is.
         lda     $C051           ; text
-        lda     $C054           ; page 1
         sta     $C00C           ; 40 columns
         sta     $C00F           ; the alternate characters (inverse lower case)
-        sta     $C000           ; 80STORE off
+        sta     $C001           ; 80STORE
+        jsr     HOME
+        ; Double Hi-Res needs the auxiliary 64K. With 80STORE and HIRES on, PAGE2 puts its $2000 in place
+        ; of the main memory's, so a value written there must still be there after the main one is, and
+        ; after its $2400 is, which the 1K of an 80-column card without the 64K repeats at $2000.
+        lda     $C057           ; HIRES (the text screen still shows)
+        sta     $C055           ; the auxiliary memory
+        lda     #$A5
+        sta     $2000
+        lsr     a
+        sta     $2400
+        sta     $C054           ; the main memory
+        sta     $2000
+        sta     $C055
+        lda     $2000
+        sta     $C054           ; (page 1: PAGE2 is off once 80STORE is)
+        sta     $C000           ; 80STORE off (HIRES stays on, which text mode does not mind)
+        cmp     #$A5
+        beq     :+
         ldx     #0
-        lda     #$A0
-:       sta     $0400,x
-        sta     $0500,x
-        sta     $0600,x
-        sta     $0700,x
+no128:  lda     msg128,x
+        beq     hang
+        ora     #$80
+        jsr     COUT
         inx
-        bne     :-
-        ldx     #0
+        bne     no128
+:       ldx     #0
 :       lda     title,x
         beq     :+
         ora     #$80
@@ -411,12 +432,6 @@ dc1:    lda     RAW,y
         beq     dc0
 dc2:    rts
 
-; The 64 disk bytes of 6-and-2 encoding, by value.
-wtab:   .byte   $96,$97,$9A,$9B,$9D,$9E,$9F,$A6,$A7,$AB,$AC,$AD,$AE,$AF,$B2,$B3
-        .byte   $B4,$B5,$B6,$B7,$B9,$BA,$BB,$BC,$BD,$BE,$BF,$CB,$CD,$CE,$CF,$D3
-        .byte   $D6,$D7,$D9,$DA,$DB,$DC,$DD,$DE,$DF,$E5,$E6,$E7,$E9,$EA,$EB,$EC
-        .byte   $ED,$EE,$EF,$F2,$F3,$F4,$F5,$F6,$F7,$F9,$FA,$FB,$FC,$FD,$FE,$FF
-
 patchlo: .byte  <(p0+1),<(p1+1),<(p2+1),<(p3+1),<(p4+1),<(p5+1),<(p6+1),<(p7+1),<(p8+1),<(p9+1),<(p10+1)
 patchhi: .byte  >(p0+1),>(p1+1),>(p2+1),>(p3+1),>(p4+1),>(p5+1),>(p6+1),>(p7+1),>(p8+1),>(p9+1),>(p10+1)
 npatch = 11
@@ -425,3 +440,12 @@ afield: .res    4
 want:   .res    16
 
         .assert * <= RAW, error, "boot code overlaps its buffers"
+
+; (The block's last 64 bytes, after the reader's buffers: the table is needed only to make XLATE.)
+        .res    XLATE + 106 - $0800 - (* - entry) - 1
+; The 64 disk bytes of 6-and-2 encoding, by value.
+wtab:   .byte   $96,$97,$9A,$9B,$9D,$9E,$9F,$A6,$A7,$AB,$AC,$AD,$AE,$AF,$B2,$B3
+        .byte   $B4,$B5,$B6,$B7,$B9,$BA,$BB,$BC,$BD,$BE,$BF,$CB,$CD,$CE,$CF,$D3
+        .byte   $D6,$D7,$D9,$DA,$DB,$DC,$DD,$DE,$DF,$E5,$E6,$E7,$E9,$EA,$EB,$EC
+        .byte   $ED,$EE,$EF,$F2,$F3,$F4,$F5,$F6,$F7,$F9,$FA,$FB,$FC,$FD,$FE,$FF
+        .assert * = $0E00, error, "the disk bytes' table is not at the end of the block"

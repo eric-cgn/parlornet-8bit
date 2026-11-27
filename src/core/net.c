@@ -15,7 +15,6 @@
 
 /* The reply buffer and its lines' places, in low memory (LOWBSS) with the lobby's game names; a view takes
    about 2K at most, and a longer reply keeps what fits (split). */
-#define RBUF 2944
 #pragma bss-name (push, "LOWBSS")
 static char rbuf[RBUF];
 char *r_line[MAXL];
@@ -29,6 +28,11 @@ unsigned char net_again;                /* requests sent again after a broken re
 char q[84];
 char *w[MAXW];
 unsigned char wn;
+
+char *net_rbuf(void)
+{
+    return rbuf;
+}
 
 void net_reset(void)
 {
@@ -129,7 +133,7 @@ unsigned char net_reply(unsigned int secs)
 /* The verbs, four characters each: the first AGAIN change nothing and are sent again after a broken reply;
    after the others, which change something, the caller looks again. The rest (signing in and out) count a
    broken reply as the line lost. */
-static const char verbs[] = "SIN LST VUE TIM MOTDPRL GAM CHK IVL WHO MOV END UND RES CHT NEW JON INV UNV PRF ";
+static const char verbs[] = "SIN LST VUE TIM MOTDPRL GAM CHK IVL WHO MOV END UND RES CHT NEW JON INV UNV PRF CMD ";
 #define AGAIN 10
 
 static unsigned char verb(void)

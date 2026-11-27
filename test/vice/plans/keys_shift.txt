@@ -8,6 +8,7 @@
 # lobby comes back only if the field had the password exactly (shift_lobby2).
 waittitle 6000
 title 3600
+set cfg_tutor 1
 waittext ParlorNet: connect 600
 press c
 waittext Line: 4800
