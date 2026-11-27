@@ -33,6 +33,8 @@ void __fastcall__ dhr_call(unsigned char entry);
 #define DK_NUM 13                       /* dl_v in digits 3 color pixels by 5 lines, into dhr_knum (dhr.s) */
 #define DK_PIPS 14                      /* a die's dl_v pips, into dhr_knum */
 #define DK_VBAR 15                      /* hgr_vline hg_w pixels across, in color hg_p[0] */
+#define DK_HROW 16                      /* hg_p[0..2] at column hg_x of line hg_y where hg_m[0..2] say */
+extern unsigned char hg_m[3];
 #define dhr_place() dhr_call(DK_PLACE)
 
 /* A fill of ui.c's (ui_fill, ui_ink) that is the Double Hi-Res color c */
