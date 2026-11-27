@@ -27,11 +27,12 @@
         .segment "DATA"
 .else
         .exportzp       _hg_x, _hg_y, _hg_w, _hg_h, _hg_p, _hg_src, _hg_px, _hg_fg, _hg_bg, _hg_xor, _hg_bold
-        .exportzp       _hg_key, zka, zmono
+        .exportzp       _hg_key, zka, zmono, _hg_m
         .export         _dhr_call, ktick, _dhr_install
         .segment "ZEROPAGE"
 zka:    .res    1               ; kcall: the entry's A, for the kit
 zmono:  .res    1               ; and mono (machine.h)
+_hg_m:  .res    3               ; d_hrow: which pixels of each of its bytes to write (dhr.h)
 .endif
 _hg_x:  .res    1
 _hg_y:  .res    1
@@ -93,7 +94,7 @@ _hgr_text:
 KIT     = $0800                 ; the kit's entry, in the auxiliary memory
 KPLACE  = 7                     ; the kit's entries from here take the parameters at $0200 (dhr.h)
 KPXLINE = 10                    ; and this one dl_buf too
-KVBAR   = 15                    ; (but not this one, which takes only the hg_ parameters)
+KVBAR   = 15                    ; (but not this one or those after it, which take only the hg_ parameters)
 
 ; The entries: X the kit's entry number, A passed on to it (hgr_char's character).
 _hgr_clear:

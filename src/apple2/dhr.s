@@ -30,7 +30,7 @@
         .importzp       ptr1, ptr2, tmp1, tmp2, tmp3, tmp4
         .import         _hgr_ylo, _hgr_yhi, _font, ktick
         .importzp       _hg_x, _hg_y, _hg_w, _hg_h, _hg_p, _hg_src, _hg_px, _hg_fg, _hg_bg, _hg_xor
-        .importzp       _hg_bold, _hg_key, zka, zmono
+        .importzp       _hg_bold, _hg_key, zka, zmono, _hg_m
         .export         _dl_x, _dl_y, _dl_w, _dl_h, _dl_n, _dl_m, _dl_ms, _dl_ce, _dl_co, _dl_sx, _dl_buf
         .export         _dl_cn, _dl_col, _dl_sh, _dl_v
         .exportzp       PARMN
@@ -78,9 +78,9 @@ kp:     .res    2               ; the kinds of place (d_types)
         rts
 ; (0 to 6 hgr.s's, from 7 on dhr.h's)
 ktl:    .lobytes d_clear-1, d_rect-1, d_blit-1, d_char-1, d_vline-1, d_hline-1, d_ptr-1, d_place-1
-        .lobytes d_glide-1, d_unglide-1, d_pxline-1, d_types-1, d_column-1, d_num-1, d_pips-1, d_vbar-1
+        .lobytes d_glide-1, d_unglide-1, d_pxline-1, d_types-1, d_column-1, d_num-1, d_pips-1, d_vbar-1, d_hrow-1
 kth:    .hibytes d_clear-1, d_rect-1, d_blit-1, d_char-1, d_vline-1, d_hline-1, d_ptr-1, d_place-1
-        .hibytes d_glide-1, d_unglide-1, d_pxline-1, d_types-1, d_column-1, d_num-1, d_pips-1, d_vbar-1
+        .hibytes d_glide-1, d_unglide-1, d_pxline-1, d_types-1, d_column-1, d_num-1, d_pips-1, d_vbar-1, d_hrow-1
 
 ; Each color's byte for a byte k of the line, by k mod 4: colpat + color * 4 + k mod 4.
 colpat: .repeat 64, i
@@ -539,6 +539,119 @@ bl_put: ldy     _hg_xor
 :       ldy     tmp1
         sta     (ptr1),y
         rts
+
+; ---------------------------------------------------------------------------------------------------
+; d_hrow: three Hi-Res bytes at text column hg_x of line hg_y, from hg_p[0] to hg_p[2], each written only
+; where its mask, hg_m[0] to hg_m[2], has a pixel, the rest of the line kept. A byte goes to the screen as
+; hgr_blit draws it, its palette bit set by the caller. It is what a game that wrote parts of Hi-Res bytes
+; itself (Grid Words' tiles) does in Double Hi-Res.
+hk:     .res    1
+hma:    .res    1               ; the mask's dots, in the auxiliary byte and the main one
+hmm:    .res    1
+hms:    .res    1               ; $40: the mask's dot that goes into the byte before
+
+d_hrow: ldx     _hg_y
+        cpx     #192
+        bcc     :+
+        rts
+:
+        jsr     row
+        ldx     #0
+hr_k:   stx     hk
+        lda     _hg_m,x
+        bne     :+
+        jmp     hr_next
+:
+        tay
+        txa
+        clc
+        adc     _hg_x
+        cmp     #40
+        bcc     :+
+        jmp     hr_next
+:       sta     tmp1            ; the column
+        tya                     ; the mask's dots
+        and     #15
+        tax
+        lda     lo16,x
+        sta     hma
+        tya
+        lsr     a
+        lsr     a
+        lsr     a
+        tax
+        lda     hi16,x
+        sta     hmm
+        ldx     hk              ; the byte's dots
+        lda     _hg_p,x
+        sta     bhb
+        and     #$7F
+        tay
+        and     #15
+        tax
+        lda     lo16,x
+        and     hma
+        sta     bla
+        tya
+        lsr     a
+        lsr     a
+        lsr     a
+        tax
+        lda     hi16,x
+        and     hmm
+        sta     blm
+        lda     #0
+        sta     bsp
+        sta     hms
+        bit     bhb             ; the palette bit clear, in color: one dot to the left, as hgr_blit
+        bmi     hr_put
+        lda     zmono
+        bne     hr_put
+        lsr     blm
+        lda     bla
+        bcc     :+
+        ora     #$80
+:       lsr     a
+        sta     bla
+        bcc     :+
+        lda     #$40
+        sta     bsp
+:       lsr     hmm
+        lda     hma
+        bcc     :+
+        ora     #$80
+:       lsr     a
+        sta     hma
+        bcc     hr_put
+        lda     #$40
+        sta     hms
+hr_put: sta     AUXON
+        ldy     tmp1
+        lda     hma
+        eor     #$FF
+        and     (ptr1),y
+        ora     bla
+        sta     (ptr1),y
+        sta     MAINON
+        lda     hmm
+        eor     #$FF
+        and     (ptr1),y
+        ora     blm
+        sta     (ptr1),y
+        lda     hms             ; the dot that goes into the byte before
+        beq     hr_next
+        dey
+        bmi     hr_next
+        eor     #$FF
+        and     (ptr1),y
+        ora     bsp
+        sta     (ptr1),y
+hr_next:ldx     hk
+        inx
+        cpx     #3
+        beq     :+
+        jmp     hr_k
+:       rts
 
 ; ---------------------------------------------------------------------------------------------------
 ; Lines, in white or flipped with hg_xor: hgr_hline, hg_w Hi-Res pixels across from (hg_px, hg_y), and

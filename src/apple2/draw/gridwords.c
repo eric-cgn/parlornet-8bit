@@ -13,6 +13,9 @@
    board or the rack, are on the message line, and Open-Apple-V shows every letter's points, as the
    table's TIL lines give them. The rack's tiles are 10 pixels wide, drawn the same way. */
 #include "apple2.h"
+#ifndef IIGS
+#include "dhr.h"
+#endif
 
 #define X0 0                            /* the board: 2 bytes by 10 lines a square */
 #define Y0 10
@@ -41,14 +44,19 @@ static unsigned char *trow;
 static unsigned char tb, ts, tcol;
 static unsigned int tcover;
 
-/* Write the line's pixels: the tile covers tcover's bits (from pixel tb * 7 + ts), lit as in on. */
+/* Write the line's pixels: the tile covers tcover's bits (from pixel tb * 7 + ts), lit as in on. On the
+   IIe the kit writes them into Double Hi-Res (DK_HROW), as Hi-Res bytes of which only the tile's pixels
+   change. */
 static void tile_line(unsigned char y, unsigned int on)
 {
-    unsigned char k, mask, bits, old;
+    unsigned char k, mask, bits;
     unsigned int c = tcover;
+#ifdef IIGS
+    unsigned char old;
     ((unsigned char *)&trow)[0] = hgr_ylo[y];
     ((unsigned char *)&trow)[1] = hgr_yhi[y];
     trow += tb;
+#endif
     for (k = 0; k < 3; ++k) {
         if (k == 0) {
             mask = (c << ts) & 0x7F;
@@ -57,21 +65,23 @@ static void tile_line(unsigned char y, unsigned int on)
             mask = (c >> (k * 7 - ts)) & 0x7F;
             bits = (on >> (k * 7 - ts)) & 0x7F;
         }
+#ifdef IIGS
         if (!mask)
             continue;
-#ifdef IIGS
         old = gs_scr_get(trow + k);     /* the screen is in bank $E0 (apple2.h) */
-#else
-        old = trow[k];
-#endif
         bits |= old & ~mask & 0x7F;
         bits |= tcol ? tcol & 0x80 : old & 0x80;
-#ifdef IIGS
         gs_scr_put(trow + k, bits);
 #else
-        trow[k] = bits;
+        hg_m[k] = mask;
+        hg_p[k] = bits | (tcol ? tcol & 0x80 : 0x80);
 #endif
     }
+#ifndef IIGS
+    hg_x = tb;
+    hg_y = y;
+    dhr_call(DK_HROW);
+#endif
 }
 
 /* A tile w pixels across (14 on the board, RACK_W on the rack) and 10 lines down, at pixel px (even) and
