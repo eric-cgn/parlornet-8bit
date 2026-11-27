@@ -138,17 +138,8 @@ static void next(void)
         instruct(0);
 }
 
-static void square(unsigned char i)
-{
-    static const char *const x[] = {"X X", " X ", "X X"};
-    static const char *const o[] = {"OOO", "O O", "OOO"};
-    unsigned char c = BX + i % 3 * SW, y = BY + i / 3 * SH, r;
-    ui_rect(c, y, SW, SH, F_BLACK);
-    ui_box(c * COL_PX + 1, y + 1, SW * COL_PX - 2, SH - 2);
-    if (board[i] != ' ')
-        for (r = 0; r < 3; ++r)
-            ui_text(c + 1, y + 4 + r * 8 + 4, (board[i] == 'X' ? x : o)[r]);
-}
+/* The machine's drawing: square(i). */
+#include "draw/tutorial.c"
 
 static void buttons(void)
 {
@@ -199,7 +190,9 @@ static void partner(unsigned char i)
 {
     static char b[40];
     board[i] = 'O';
+    ui_hide();
     square(i);
+    ui_show();
     strcpy(b, "Your partner placed an O on ");
     b[strlen(b) + 2] = 0;
     b[strlen(b) + 1] = '1' + i / 3;

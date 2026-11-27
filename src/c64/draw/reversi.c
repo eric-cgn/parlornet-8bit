@@ -1,9 +1,14 @@
 /* ParlorNet on the Commodore 64: Reversi's board (core/games/reversi.c includes it). A square is two cells
    by two (16 by 16 pixels), the squares in the two greens by turns, so that every cell has just the colors
    its square and its disc need: a disc is black or white on its square's green, and a legal move's mark a
-   yellow dot. The 10 by 10 board fits the screen too. Beside the board, each player's disc, name and count.
-   In monochrome the squares are two grays. */
+   small dot in RV_DOT. The 10 by 10 board fits the screen too. Beside the board, each player's disc, name
+   and count. In monochrome the squares are two grays and the dot is black. */
 #include "gfx.h"
+
+/* The legal move's dot in color. It must stand out on both greens on a greyscale monitor as well, where
+   yellow is as bright as the light green, so it is black (or the screen's blue, C_BLUE, which reads as
+   well). */
+#define RV_DOT C_BLACK
 
 extern const unsigned char pic_rv_disc[], pic_rv_hint[], pic_rv_empty[];
 
@@ -22,7 +27,7 @@ static void cell(char c, unsigned char x, unsigned char y)
     hg_w = 2;
     hg_h = 16;
     hg_bg = sq;
-    hg_fg = c == '0' ? C_BLACK : c == '1' ? C_WHITE : mono ? C_WHITE : C_YELLOW;
+    hg_fg = c == '0' ? C_BLACK : c == '1' ? C_WHITE : mono ? C_BLACK : RV_DOT;
     hgr_color();
     hg_src = c == '0' || c == '1' ? pic_rv_disc : c == 'h' ? pic_rv_hint : pic_rv_empty;
     hgr_blit();
