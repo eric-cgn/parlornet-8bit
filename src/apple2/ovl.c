@@ -86,6 +86,12 @@ static unsigned char __fastcall__ read(const unsigned char *e, unsigned char at,
     return 0;
 }
 
+#ifndef IIGS
+/* Packed pages lz_n of them from page lz_from, unpacked in place to page lz_to (lz.s). */
+extern unsigned char lz_from, lz_n, lz_to;
+void lz_unpack(void);
+#endif
+
 static unsigned char __fastcall__ load(unsigned char k)
 {
     unsigned char *e = OVLTAB + k * 4;
@@ -94,15 +100,48 @@ static unsigned char __fastcall__ load(unsigned char k)
     if (!e[2])
         return 0;
     loaded = 255;                       /* (a failed read leaves the overlay in memory half there) */
+#ifdef IIGS
     if (!read(e, 0, e[2], OVL_ADDR >> 8))
         return 0;
+#else
+    /* on the IIe the overlay is packed (tools/apple2_lz.py): read to the top of its memory, and unpacked
+       from there to its start */
+    lz_n = e[2];
+    lz_from = (OVL_TOP >> 8) - lz_n;
+    if (!read(e, 0, lz_n, lz_from))
+        return 0;
+    lz_to = OVL_ADDR >> 8;
+    lz_unpack();
+#endif
     loaded = k;
     return 1;
 }
 
+#ifdef IIGS
 /* Help k (help.py): its first page and pages from the index, the help overlay's first page, then them. */
 unsigned char __fastcall__ ovl_help(unsigned char k, unsigned char page)
 {
     const unsigned char *e = OVLTAB + OVL_HELP * 4, *x = (unsigned char *)(page << 8) + k * 2;
     return e[2] && read(e, 0, 1, page) && read(e, x[0], x[1], page);
 }
+#else
+/* Help k, packed on its own (apple2_disk.py): the help overlay's first page is the index, with each help's
+   first page and pages packed (2 bytes) and from byte 128 its pages unpacked. The packed pages are read to
+   the top of those, and unpacked from there to page. */
+unsigned char __fastcall__ ovl_help(unsigned char k, unsigned char page)
+{
+    static const unsigned char *ix;
+    static unsigned char at;
+    ix = (unsigned char *)(page << 8);
+    if (!OVLTAB[OVL_HELP * 4 + 2] || !read(OVLTAB + OVL_HELP * 4, 0, 1, page))
+        return 0;
+    at = ix[k * 2];
+    lz_n = ix[k * 2 + 1];
+    lz_from = page + ix[128 + k] - lz_n;
+    if (!read(OVLTAB + OVL_HELP * 4, at, lz_n, lz_from))
+        return 0;
+    lz_to = page;
+    lz_unpack();
+    return 1;
+}
+#endif

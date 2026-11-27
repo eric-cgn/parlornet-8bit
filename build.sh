@@ -148,7 +148,7 @@ PLATE=
 FRAMEOVL=1
 program "$A2" "$OBJ" "$OUT/parlor.map" "$OUT/parlor" "$A2/parlor.cfg" "$A2FLAGS -D BANK1" \
 	"$A2/eth.c $CORE/games.c $A2/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
-	"sys hgr dhr disk mli w5100 joy" crt0.o "$LIB" '$D000' '$2900'
+	"sys hgr dhr disk mli w5100 joy lz" crt0.o "$LIB" '$D000' '$2900'
 echo "$OVERLAYS" | tr ' ' '\n' | awk '{ printf "%s%s:%s", (NR > 1 ? " " : ""), $1, ($1 == "signin" ? "parlor" : $1) } END { print "" }' > "$OUT/overlays.txt"
 # the help pages, one overlay of them all (tools/help.py)
 python3 tools/help.py apple2 "$OUT/parlor.help"
