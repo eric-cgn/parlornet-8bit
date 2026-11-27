@@ -413,11 +413,17 @@ cpair:  asl     a
 
 ; ---------------------------------------------------------------------------------------------------
 ; hgr_blit: a Hi-Res picture (its width in bytes, its height, then the rows) at text column hg_x, line
-; hg_y, each pixel two dots of white (or flipped with hg_xor). It is read through kfetch, since it may be
-; in an overlay.
+; hg_y, each pixel two dots (or flipped with hg_xor). In color a byte whose palette bit (bit 7) is clear
+; goes one dot to the left, as the IIe shows such a byte half a Hi-Res pixel left of one with the bit
+; set, so that its colors stay those of Hi-Res: green and violet rather than orange and blue. Its first
+; dot, when set, goes into the last dot of the byte before.
 bw:     .res    1
 bh:     .res    1
 bln:    .res    1
+bla:    .res    1               ; a byte's dots, in the auxiliary byte and the main one
+blm:    .res    1
+bsp:    .res    1               ; $40: the dot that goes into the byte before
+bhb:    .res    1               ; bit 7: the palette bit
 
 d_blit: lda     _hg_src
         sta     ptr2
@@ -438,10 +444,11 @@ d_blit: lda     _hg_src
 :       ldx     _hg_y
 bl_line:
         lda     bh
-        beq     bl_done
+        beq     :+
         cpx     #192
-        bcs     bl_done
-        stx     bln
+        bcc     :++
+:       jmp     bl_done
+:       stx     bln
         jsr     row
         ldy     #0
 bl_col: tya
@@ -452,26 +459,64 @@ bl_col: tya
         sta     tmp1
         sty     tmp2
         lda     (ptr2),y
+        sta     bhb
         and     #$7F
         sta     tmp3
         and     #15
         tax
-        sta     AUXON
         lda     lo16,x
-        jsr     bl_put
-        sta     MAINON
+        sta     bla
         lda     tmp3
         lsr     a
         lsr     a
         lsr     a
         tax
         lda     hi16,x
+        sta     blm
+        lda     #0
+        sta     bsp
+        bit     bhb
+        bmi     bl_put2         ; the palette bit set, or monochrome: as it is
+        lda     zmono
+        bne     bl_put2
+        lsr     blm             ; one dot to the left: the main byte's first dot to the end of the
+        lda     bla             ; auxiliary one, and the auxiliary one's first to the byte before
+        bcc     :+
+        ora     #$80
+:       lsr     a
+        sta     bla
+        bcc     bl_put2
+        lda     #$40
+        sta     bsp
+bl_put2:sta     AUXON
+        lda     bla
         jsr     bl_put
-        ldy     tmp2
+        sta     MAINON
+        lda     blm
+        jsr     bl_put
+        bit     bhb
+        bmi     bl_next
+        lda     zmono
+        bne     bl_next
+        ldy     tmp1            ; the dot before, the last of the main byte to the left
+        beq     bl_next
+        dey
+        lda     _hg_xor
+        beq     :+
+        lda     (ptr1),y
+        eor     bsp
+        sta     (ptr1),y
+        jmp     bl_next
+:       lda     (ptr1),y        ; set, never cleared, so that the byte before keeps its own last dot
+        ora     bsp
+        sta     (ptr1),y
+bl_next:ldy     tmp2
 bl_skip:
         iny
         cpy     bw
-        bcc     bl_col
+        bcs     :+
+        jmp     bl_col
+:
         lda     ptr2
         clc
         adc     bw
