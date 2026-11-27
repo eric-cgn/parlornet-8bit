@@ -6,7 +6,13 @@ The disks hold no operating system. Linear sector n is track n // 16, physical s
   rest itself;
 - then the program (parlor.main, loaded at $4000), the vectors (parlor.vec, at $FF00) and the Double
   Hi-Res kit (parlor.dhr, at $2800, which the program copies into the auxiliary memory);
-- then the overlays (parlor.<name>, each loaded at $D000 when needed), in the order of overlays.txt.
+- then the overlays (parlor.<name>, each unpacked to $D000 when needed), in the order of overlays.txt.
+
+Each overlay is packed (apple2_lz.py, docs/overlay-packing.md), to be read into the top pages of
+$D000-$F8FF and unpacked from there to $D000 in place; the build fails if one would not fit. The help
+overlay is packed a help at a time: its first page is the index, with each help's first page and pages
+packed (2 bytes) and from byte 128 its pages unpacked, and each help is read into the top of those pages
+of the reply buffer and unpacked there.
 
 The boot block's load table (at $080D) and overlay table (at $0821) are filled in here. When the
 overlays do not all fit on one disk, those named in DISK2 go on a second disk, whose boot block only
@@ -16,8 +22,8 @@ The images are .dsk files in DOS 3.3 sector order, as emulators and disk tools e
 of a track is the file's sector DOS_SKEW[p] of that track.
 
 It also makes the files for running the program under ProDOS, in build/prodos/: PARLOR.SYSTEM
-(prodsys.bin with its table filled in), PARLOR.DAT (the program, its vectors, the kit and every overlay,
-each starting on a page) and parlor-files.po, a 140K ProDOS volume (ProDOS block order) named PARLORNET that
+(prodsys.bin with its table filled in), PARLOR.DAT (the program, its vectors, the kit and every overlay
+packed as on the disk, each starting on a page) and parlor-files.po, a 140K ProDOS volume (ProDOS block order) named PARLORNET that
 holds just those two files, for copying them to a ProDOS disk. ProDOS itself is not on it.
 
 Usage: apple2_disk.py [build]   (writes parlornet.dsk, and parlornet-2.dsk when needed, there,
@@ -26,6 +32,9 @@ and layout.txt)
 import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import apple2_lz  # noqa: E402
 
 TRACKS = 35
 SECTORS = TRACKS * 16
@@ -57,6 +66,41 @@ def image(sectors):
     return bytes(out)
 
 
+OVL_REGION = 0xF900 - 0xD000   # where an overlay is unpacked, in place
+
+
+def pack_help(raw):
+    """The help overlay (help.py's: an index page of each help's first page and pages, then the helps)
+    with each help packed on its own, for unpacking in place in its own pages of the reply buffer."""
+    index = bytearray(256)
+    data = b""
+    k = 0
+    while raw[k * 2 + 1]:
+        at, n = raw[k * 2], raw[k * 2 + 1]
+        assert k * 2 + 1 < 128
+        p = apple2_lz.piece(raw[at * 256:(at + n) * 256].rstrip(b"\0"), n * 256)
+        index[k * 2:k * 2 + 2] = bytes([1 + len(data) // 256, pages(p)])
+        index[128 + k] = n
+        data += p
+        k += 1
+    return bytes(index) + data
+
+
+_packed = {}
+
+
+def packed(d, names):
+    """Each overlay as it goes on the disk and in PARLOR.DAT (packed once for both)."""
+    if (d, tuple(names)) in _packed:
+        return _packed[d, tuple(names)]
+    out = []
+    for n in names:
+        raw = open(os.path.join(d, "parlor." + n), "rb").read()
+        out.append(pack_help(raw) if n == "help" else apple2_lz.piece(raw, OVL_REGION))
+    _packed[d, tuple(names)] = out
+    return out
+
+
 def place(sectors, lin, data):
     data = pad(data)
     for i in range(0, len(data), 256):
@@ -72,9 +116,8 @@ def build(d):
     kit = open(os.path.join(d, "parlor.dhr"), "rb").read()
     assert pages(kit) <= 0x18
     names = [o.split(":")[0] for o in open(os.path.join(d, "overlays.txt")).read().split()]
-    ovls = [open(os.path.join(d, "parlor." + n), "rb").read() for n in names]
-    for n, o in zip(names, ovls):
-        assert pages(o) <= 0x2F or n == "help", "overlay %s is too big: %d bytes" % (n, len(o))
+    raws = [open(os.path.join(d, "parlor." + n), "rb").read() for n in names]
+    ovls = packed(d, names)
     assert pages(main) <= 0x80
 
     disk1, disk2 = {}, {}
@@ -130,7 +173,7 @@ def build(d):
         f.write("disk 1 main %d %d %d\n" % (main_at, pages(main), len(main)))
         f.write("disk 1 vec %d 1 %d\n" % (vec_at, len(vec)))
         f.write("disk 1 dhr %d %d %d\n" % (kit_at, pages(kit), len(kit)))
-        for n, o, (at, cnt, disk) in zip(names, ovls, table):
+        for n, o, (at, cnt, disk) in zip(names, raws, table):
             f.write("disk %d %s %d %d %d\n" % (disk, n, at, cnt, len(o)))
         f.write("used 1 %d\n" % lin)
         if on2:
@@ -157,7 +200,7 @@ def prodos_files(d):
     vec = open(os.path.join(d, "parlor.vec"), "rb").read()
     kit = open(os.path.join(d, "parlor.dhr"), "rb").read()
     names = [o.split(":")[0] for o in open(os.path.join(d, "overlays.txt")).read().split()]
-    ovls = [open(os.path.join(d, "parlor." + n), "rb").read() for n in names]
+    ovls = packed(d, names)
     end = program_end(d)
     assert end <= PRODOS_TOP, "the program ends at $%04X, past ProDOS's $BF00" % end
     dat = pad(main) + pad(vec) + pad(kit)

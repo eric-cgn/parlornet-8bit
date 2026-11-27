@@ -239,6 +239,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `draw/`: each game's board.
   - `eth.c`, `w5100.s`, `signin_net.c`: our driver for the Uthernet II's W5100 (TCP on socket 0, UDP for DNS on socket 1) and the sign-in's DNS lookup. While a connection is up, the serial calls in sys.s go to it, so everything above them works the same over either.
   - `prodsys.s`: PARLOR.SYSTEM, which starts the program under ProDOS.
+  - `lz.s`: unpacking an overlay or a help in place (docs/overlay-packing.md).
   - `prodos.c`, `mli.s`: ProDOS calls from the program (reading the games from PARLOR.DAT, the settings in PARLOR.CFG, quitting).
   - `gsshell.s`, `gs.s`, `gsos.c`, `mt.c`, `a2gs.inc`: the IIgs program's start (PARLORNET), its calls into the toolbox and GS/OS, its files and mouse, Marinetti, and the macros that let `sys.s` and `hgr.s` build for either machine.
 - `src/c64`: the Commodore 64 (The Commodore 64, above; `c64.h` declares the machine's own calls).
@@ -255,7 +256,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
 - `VERSION`, `tools/release.py`: the version, and the release files with their sums.
 - `tools/`:
   - `build.sh` runs the build;
-  - `apple2_disk.py` and `apple2gs.py` make the Apple's disks;
+  - `apple2_disk.py` and `apple2gs.py` make the Apple's disks, and `apple2_lz.py` packs the IIe's overlays (docs/overlay-packing.md);
   - `c64_disk.py` and `c64_pack.py` make the C64's disk.
 - `test/`: tests of the disk tools, and runners that play the programs in MAME (the Apple II) and VICE (the C64) against a lab parlor (test/README.md).
 
@@ -294,7 +295,7 @@ Under ProDOS the program keeps out of ProDOS's way: it ends below $BF00, the boo
 
 ## Disks and files
 
-`tools/build.sh` builds everything into `build/`: `parlornet.dsk`, the self-booting disk (DOS 3.3 sector order, 140K, with every game), and `prodos/` with `PARLOR.SYSTEM`, `PARLOR.DAT` and `parlor-files.po`, a ProDOS volume holding just those two files. ProDOS is not part of this program: the player copies the two files to a disk that has their own ProDOS. `gs/` has the IIgs program: `PARLORNET`, `PARLOR.DAT` and `parlornet-gs.po`, an 800K ProDOS volume holding just those two. GS/OS and Marinetti are not on it. `c64/` has the C64's disk, `parlornet.d64` (The Commodore 64, above).
+`tools/build.sh` builds everything into `build/`: `parlornet.dsk`, the self-booting disk (DOS 3.3 sector order, 140K, with every game), and `prodos/` with `PARLOR.SYSTEM`, `PARLOR.DAT` and `parlor-files.po`, a ProDOS volume holding just those two files. ProDOS is not part of this program: the player copies the two files to a disk that has their own ProDOS. On the IIe the overlays are packed on the disk and in PARLOR.DAT, and unpacked in place as they load (docs/overlay-packing.md), so a 140K disk holds ProDOS and both files. `gs/` has the IIgs program: `PARLORNET`, `PARLOR.DAT` and `parlornet-gs.po`, an 800K ProDOS volume holding just those two. GS/OS and Marinetti are not on it. `c64/` has the C64's disk, `parlornet.d64` (The Commodore 64, above).
 
 On the IIgs the program's bank has the same layout as the IIe's memory, with nothing at $2000-$3FFF (the screen is Hi-Res page 1, in bank $E0), no Double Hi-Res kit and no vectors at the top; its zero page is in the direct page GS/OS gives the application. In a bank of its own $C000-$CFFF is memory like any other, so the program runs on to $CFFF there, with `frame.c` a part of it.
 
