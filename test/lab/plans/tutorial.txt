@@ -84,6 +84,7 @@ settle
 snap tu_16
 key esc
 wait 60
+settle
 click 5
 settle
 snap tu_17
