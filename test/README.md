@@ -32,7 +32,9 @@ A2ROMS=~/roms test/lab/run.sh 16601 build/parlornet.dsk test/lab/plans/backgammo
   on each side back to command mode, where ATH hangs up, and some numbers stand for a modem's other
   answers: one with BUSY in it gives BUSY, NOCARRIER gives NO CARRIER, SILENT gives nothing until the next
   byte (which stops the dial, with NO CARRIER), and STAY connects but does not notice the parlor hanging
-  up. Everything it sees is in `work/srv/modem.log`.
+  up. Everything it sees is in `work/srv/modem.log`. As a plain relay it can also lose a byte on the
+  way to the Apple, once (its last argument, DROP: the O of the first OK line after that many bytes), so
+  that a reply comes without its final line and the program asks for it again.
 - P dials a modem first, which the plain relay cannot answer, so on port 16601, or with `DIRECT=1`,
   `run.sh` adds `hold cfg_number 0 30` after a plan's `title` step: the dialer's number is then empty, as
   a player on a direct line sets it, and P sends the opening at once.
@@ -49,11 +51,12 @@ The step `settle` waits until the program waits for a key with everything drawn,
 `plans/table_entry.txt` starts each of the ten games against the bot from the lobby, one after another on
 one connection, and shows its first view (`te_NAME.png`); the lobby comes back after each. A crash would
 show as the title screen and clicks with no target in `run.log`. `plans/table_entry_long.txt` does the same
-for a player whose table list is longer than the program's reply buffer (2944 bytes), as for a player with
-many tables and invitations on a busy parlor; make that player first with `lab/longlist.py olga 16501`. A
-reply that overran the buffer used to lose its final OK, and the program took the connection as lost, in
-the lobby or on entering a new table; now it keeps what fits, and a table asks for its own line
-only (`LST table=id`), since a new table's line comes last among the player's own.
+for a player whose table list is longer than the program's reply buffer (1024 bytes), as for a player with
+many tables and invitations on a busy parlor; make that player first with `lab/longlist.py olga 16501`. The
+parlor sends such a reply in pages that fit the buffer (PAG), and the program asks for each next page (CNT)
+until the lobby's list is full, then drops the rest. A table asks for its own line only (`LST table=id`). `plans/long_list.txt`, for the same player, shows the lobby and More, then
+`/list`, the parlor's whole list, as pages of text: Right turns them, and at the last one the program asks
+the parlor for the reply's next page.
 
 `plans/lobby_names.txt` shows a lobby longer than one screen, of every game, for a player made first with `lab/manytables.py nora 16501` (4 tables of their own, 2 invitations and 18 tables waiting for a player): the first screenful and More (`ln_lobby`), the rest and Back to the start (`ln_more`), the first again (`ln_back`), then the lobby after the player's Backgammon table has been opened and left (`ln_after_table`) and the list of New game (`ln_newgame`). Every name is a game's. Loading a game from the self-booting disk used to read the disk's first sector over the lobby's game names, which then showed as stray characters until the player signed in again.
 

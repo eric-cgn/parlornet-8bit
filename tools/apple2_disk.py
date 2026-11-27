@@ -9,7 +9,7 @@ The disks hold no operating system. Linear sector n is track n // 16, physical s
 - then the overlays (parlor.<name>, each unpacked to $D000 when needed), in the order of overlays.txt.
 
 Each overlay is packed (apple2_lz.py, docs/overlay-packing.md), to be read into the top pages of
-$D000-$F8FF and unpacked from there to $D000 in place; the build fails if one would not fit. The help
+$D000-$FEFF and unpacked from there to $D000 in place; the build fails if one would not fit. The help
 overlay is packed a help at a time: its first page is the index, with each help's first page and pages
 packed (2 bytes) and from byte 128 its pages unpacked, and each help is read into the top of those pages
 of the reply buffer and unpacked there.
@@ -66,7 +66,7 @@ def image(sectors):
     return bytes(out)
 
 
-OVL_REGION = 0xF900 - 0xD000   # where an overlay is unpacked, in place
+OVL_REGION = 0xFF00 - 0xD000   # where an overlay is unpacked, in place
 
 
 def pack_help(raw):

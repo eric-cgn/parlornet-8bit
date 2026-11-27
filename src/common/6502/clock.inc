@@ -150,10 +150,10 @@ _clk_sync:
         jsr     _net_req
         cmp     #1              ; R_OK, with "TIM secs now"
         bne     cy_err
-        lda     _r_n
+        lda     _r_n            ; (its one line, in r_text)
         beq     cy_at
-        lda     _r_line
-        ldx     _r_line+1
+        lda     #<_r_text
+        ldx     #>_r_text
         sta     ptr1
         stx     ptr1+1
         ldy     #0

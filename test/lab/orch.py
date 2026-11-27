@@ -233,7 +233,8 @@ def steps_for(game, name, pw):
             if not STATE.get("snapped"):
                 STATE["snapped"] = 1
                 st += ["snap rt_staged"]
-        return st + ["click 200", "wait 400", again]
+        # End: with nothing played the parlor asks first (a dialog, "Pass your turn?"), which Y answers
+        return st + ["click 200", "wait 200", "type y", "wait 400", again]
     if game in ("dbplay", "ncplay", "ncplace"):
         typ = "dotsandboxes" if game == "dbplay" else "navalcombat"
         t, v = view(name, pw, typ)

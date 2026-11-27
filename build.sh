@@ -148,7 +148,7 @@ PLATE=
 FRAMEOVL=1
 program "$A2" "$OBJ" "$OUT/parlor.map" "$OUT/parlor" "$A2/parlor.cfg" "$A2FLAGS -D BANK1" \
 	"$A2/eth.c $CORE/games.c $A2/line.c $CORE/lobby.c $CORE/main.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
-	"sys hgr dhr disk mli w5100 joy lz" crt0.o "$LIB" '$D000' '$2900'
+	"sys hgr dhr disk mli w5100 joy lz" crt0.o "$LIB" '$D000' '$2F00'
 echo "$OVERLAYS" | tr ' ' '\n' | awk '{ printf "%s%s:%s", (NR > 1 ? " " : ""), $1, ($1 == "signin" ? "parlor" : $1) } END { print "" }' > "$OUT/overlays.txt"
 # the help pages, one overlay of them all (tools/help.py)
 python3 tools/help.py apple2 "$OUT/parlor.help"
@@ -162,7 +162,7 @@ ca65 -D IIGS -o "$GOBJ/gs.o" "$A2/gs.s"
 pdef="-D IIGS"
 program "$A2" "$GOBJ" "$GS/parlor.map" "$GS/parlor" "$A2/parlorgs.cfg" "$A2FLAGS -D IIGS" \
 	"$CORE/games.c $A2/gsos.c $A2/line.c $CORE/frame.c $CORE/lobby.c $CORE/main.c $A2/mt.c $CORE/net.c $A2/ovl.c $A2/prodos.c $CORE/table.c $COMMON/ui_targets.c $COMMON/ui_hgr.c $A2/ui.c" \
-	"sys hgr joy" gs.o "$LIB" '$D000' '$2900'
+	"sys hgr joy" gs.o "$LIB" '$D000' '$2F00'
 cp "$OUT/overlays.txt" "$GS/overlays.txt"
 cp "$OUT/parlor.help" "$GS/parlor.help"
 
@@ -177,20 +177,21 @@ cp "$OUT/parlor.help" "$GS/parlor.help"
 C64=src/c64
 COUT=$OUT/c64
 COBJ=$COUT/obj
-C64_OVL=9B00
+C64_MAIN=0D00                           # where the program starts, after the reply buffer and LOWBSS
+C64_OVL=9420
 SMALLOVL="frame backgammon cannonfire gridwords"     # (for the room the C64's program needs below them)
 mkdir -p "$COBJ"
 python3 tools/c64_art.py "$COBJ"
 cp "$COBJ/chars.bin" "$COUT/chars.bin"
-ca65 --cpu 6502 -I "$C64" -o "$COBJ/loader.o" "$C64/loader.s"
+ca65 --cpu 6502 -I "$C64" -D MAIN=\$$C64_MAIN -o "$COBJ/loader.o" "$C64/loader.s"
 ld65 -C "$C64/loader.cfg" -o "$COUT/loader.bin" "$COBJ/loader.o"
 for f in stub boot128; do
 	ca65 --cpu 6502 -o "$COBJ/$f.o" "$C64/$f.s"
 	ld65 -C "$C64/$f.cfg" -o "$COUT/$f.bin" "$COBJ/$f.o"
 done
 ca65 --cpu 6502 -o "$COBJ/crt0.o" "$C64/crt0.s"
-mainsize=$(printf '%04X' $((0x$C64_OVL - 0x1400)))
-sed -e "s/@MAINSIZE@/\$$mainsize/" -e "s/@OVL@/\$$C64_OVL/" "$C64/parlor.cfg" > "$COBJ/c64.cfg"
+mainsize=$(printf '%04X' $((0x$C64_OVL - 0x$C64_MAIN)))
+sed -e "s/@MAINSIZE@/\$$mainsize/" -e "s/@MAIN@/\$$C64_MAIN/" -e "s/@OVL@/\$$C64_OVL/" "$C64/parlor.cfg" > "$COBJ/c64.cfg"
 pdef="-D C64 -g"
 LDEXTRA="-Ln $COUT/parlor.lbl"
 PFONT=

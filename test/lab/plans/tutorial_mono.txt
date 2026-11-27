@@ -71,7 +71,7 @@ oa R
 settle
 snap tm_16
 key esc
-wait 60
+settle
 click 5
 settle
 snap tm_17
