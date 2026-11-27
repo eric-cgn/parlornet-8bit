@@ -7,7 +7,7 @@ C128 boots the disk and goes to 64 mode to start the program) and
                 idle-loop vector), and LOAD"*",8 then RUN starts it too
   PN.BOOT       the loader (loader.bin, at $C800)
   PN.CHARS      the character set (chars.bin, at $C000)
-  PN.MAIN       the program (parlor.main up to its zeroed data, for $1400): what starts it and runs the start
+  PN.MAIN       the program (parlor.main up to its zeroed data, for where it starts): what starts it and runs the start
                 screen, the settings and the console
   PN.PARLOR     the lobby, the tables, the parlor's protocol, the catalog and the bitmap's buttons and
                 pointer (the rest of parlor.main, from PCODE, after the zeroed data), loaded before the
@@ -199,11 +199,12 @@ def main():
     add("PN.CHARS", prg(0xC000, open(os.path.join(d, "chars.bin"), "rb").read()))
     # parlor.main: the program to its zeroed data, then (the zeroed data not in the file) PCODE and PRODATA
     prog = open(os.path.join(d, "parlor.main"), "rb").read()
-    cut = syms["__BSS_RUN__"] - 0x1400
+    main = syms["__MAIN_START__"]
+    cut = syms["__BSS_RUN__"] - main
     late = syms["__PCODE_RUN__"]
     assert late == syms["__BSS_RUN__"] + syms["__BSS_SIZE__"]
     assert len(prog) == cut + syms["__PRODATA_RUN__"] + syms["__PRODATA_SIZE__"] - late
-    add("PN.MAIN", packed(prog[:cut], 0x1400, 0xC000))
+    add("PN.MAIN", packed(prog[:cut], main, 0xC000))
     add("PN.PARLOR", packed(prog[cut:], late, 0xC000))
     for n in names:
         p = os.path.join(d, "parlor." + n)

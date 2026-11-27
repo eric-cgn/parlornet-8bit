@@ -49,11 +49,12 @@ The step `settle` waits until the program waits for a key with everything drawn,
 `plans/table_entry.txt` starts each of the ten games against the bot from the lobby, one after another on
 one connection, and shows its first view (`te_NAME.png`); the lobby comes back after each. A crash would
 show as the title screen and clicks with no target in `run.log`. `plans/table_entry_long.txt` does the same
-for a player whose table list is longer than the program's reply buffer (2944 bytes), as for a player with
-many tables and invitations on a busy parlor; make that player first with `lab/longlist.py olga 16501`. A
-reply that overran the buffer used to lose its final OK, and the program took the connection as lost, in
-the lobby or on entering a new table; now it keeps what fits, and a table asks for its own line
-only (`LST table=id`), since a new table's line comes last among the player's own.
+for a player whose table list is longer than the program's reply buffer (1024 bytes), as for a player with
+many tables and invitations on a busy parlor; make that player first with `lab/longlist.py olga 16501`. The
+parlor sends such a reply in pages that fit the buffer (PAG), and the program asks for each next page (CNT)
+until the lobby's list is full, then drops the rest. A table asks for its own line only (`LST table=id`). `plans/long_list.txt`, for the same player, shows the lobby and More, then
+`/list`, the parlor's whole list, as pages of text: Right turns them, and at the last one the program asks
+the parlor for the reply's next page.
 
 `plans/lobby_names.txt` shows a lobby longer than one screen, of every game, for a player made first with `lab/manytables.py nora 16501` (4 tables of their own, 2 invitations and 18 tables waiting for a player): the first screenful and More (`ln_lobby`), the rest and Back to the start (`ln_more`), the first again (`ln_back`), then the lobby after the player's Backgammon table has been opened and left (`ln_after_table`) and the list of New game (`ln_newgame`). Every name is a game's. Loading a game from the self-booting disk used to read the disk's first sector over the lobby's game names, which then showed as stray characters until the player signed in again.
 

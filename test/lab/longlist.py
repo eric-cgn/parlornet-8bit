@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Gives a player of the lab parlor a table list (LST) longer than the Apple program's reply buffer: it signs
-up NAME (password Swordfish 1997), then six helpers (NAMEh0 to NAMEh5) who each open two tables of every
+"""Gives a player of the lab parlor a table list (LST) longer than the program's reply buffer, so that it
+comes in pages: it signs up NAME (password Swordfish 1997), then six helpers (NAMEh0 to NAMEh5) who each
+open two tables of every
 game, sit there and invite NAME, so that NAME's own tables and invitations, which LST lists in full, run past
 3.3K, as they can for a player of a busy parlor. plans/table_entry_long.txt then signs in as NAME.
 usage: longlist.py NAME [port]"""

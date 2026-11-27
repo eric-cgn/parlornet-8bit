@@ -1,7 +1,7 @@
 ; ParlorNet on the Commodore 64: PN.BOOT, the loader, at $C800 (where the text screen will be), started by
 ; PARLORNET (stub.s) or, on a C128, by the boot sector's start in 64 mode (boot128.s). Through the KERNAL it
 ; loads the character set (PN.CHARS) to $C000 and the program (PN.MAIN, packed by tools/c64_pack.py) where
-; its file says, unpacks it to $1400 and starts it there. While the program loads (about 25 seconds from a
+; its file says, unpacks it to MAIN and starts it there. While the program loads (about 25 seconds from a
 ; 1541), a bar fills the screen's bottom row: the KERNAL's interrupt goes through ours first, which follows
 ; the KERNAL's load pointer from where the file loads to $C000, where it ends.
 
@@ -9,7 +9,7 @@ SETLFS  = $FFBA
 SETNAM  = $FFBD
 LOAD    = $FFD5
 CHROUT  = $FFD2
-MAIN    = $1400
+; MAIN, where the program starts, comes from build.sh (C64_MAIN).
 UP_SRC  = $FB
 UP_DST  = $FD
 UP_REF  = $22

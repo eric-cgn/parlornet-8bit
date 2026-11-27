@@ -61,43 +61,47 @@ static const char *nice_name(const char *type)
     return type;
 }
 
-static void load_gam(void)
+static unsigned char gk;                /* gnames' bytes used */
+
+/* A line of GAM: a game and its rules. */
+static void gam_line(void)
 {
-    static unsigned char i, k;
     static struct gam *g, *h;
     static char *p;
-    q_set("GAM");
-    if (net_req() != R_OK)
+    if (!r_n)
+        ngam = gk = 0;
+    words(r_text);
+    if (wn < 6 || !is(w[0], "GAM") || ngam == MAXG)
         return;
-    ngam = 0;
-    k = 0;
-    for (i = 0; i < r_n && ngam < MAXG; ++i) {
-        words(r_line[i]);
-        if (wn < 6 || !is(w[0], "GAM"))
-            continue;
-        g = gams + ngam;
-        strncpy(g->type, w[1], 15);
-        strncpy(g->rules, w[2], 9);
-        for (h = gams; h < g && strcmp(h->type, w[1]); ++h)
-            ;
-        if (h < g)
-            g->name = h->name;          /* the same game with other rules */
-        else {
-            if (k + 20 > sizeof gnames)
-                continue;
-            g->name = k;
-            p = gnames + k;
-            strncpy(p, w[3], 19);
-            p[19] = 0;
-            for (; *p; ++p, ++k)
-                if (*p == '_')
-                    *p = ' ';
-            ++k;
-        }
-        g->min = num(w[4]);
-        g->max = num(w[5]);
-        ++ngam;
+    g = gams + ngam;
+    strncpy(g->type, w[1], 15);
+    strncpy(g->rules, w[2], 9);
+    for (h = gams; h < g && strcmp(h->type, w[1]); ++h)
+        ;
+    if (h < g)
+        g->name = h->name;          /* the same game with other rules */
+    else {
+        if (gk + 20 > sizeof gnames)
+            return;
+        g->name = gk;
+        p = gnames + gk;
+        strncpy(p, w[3], 19);
+        p[19] = 0;
+        for (; *p; ++p, ++gk)
+            if (*p == '_')
+                *p = ' ';
+        ++gk;
     }
+    g->min = num(w[4]);
+    g->max = num(w[5]);
+    ++ngam;
+}
+
+static void load_gam(void)
+{
+    q_set("GAM");
+    r_each = gam_line;
+    net_req();
 }
 
 static unsigned char names_have_me(char *names, char *who)
@@ -123,46 +127,58 @@ static unsigned char names_have_me(char *names, char *who)
     return mine;
 }
 
-/* LOBBY's memory is a table's too and is not zeroed, so the strings copied into it are ended here. */
+/* A line of LST: a table of yours, or one open to join. The list stops when the lobby's is full. LOBBY's
+   memory is a table's too and is not zeroed, so the strings copied into it are ended here. */
+static void tab_line(void)
+{
+    static char *p;
+    static struct tab *t;
+    if (!r_n)
+        ntab = 0;
+    words(r_text);
+    if (wn < 7 || !is(w[0], "TAB"))
+        return;
+    t = tabs + ntab;
+    t->id = num(w[1]);
+    strncpy(t->type, w[2], 15);
+    t->type[15] = 0;
+    t->open = is(w[5], "open");
+    p = strchr(w[4], '/');
+    t->full = p != 0 && num(w[4]) >= num(p + 1);
+    t->mine = names_have_me(w[6], t->who);
+    if ((t->mine || (t->open && !t->full)) && ++ntab == MAXTAB)
+        r_stop = 1;
+}
+
+/* A line of IVL: an invitation. */
+static void inv_line(void)
+{
+    static struct inv *v;
+    if (!r_n)
+        ninv = 0;
+    words(r_text);
+    if (wn < 5 || !is(w[0], "IVT"))
+        return;
+    v = invs + ninv;
+    v->id = num(w[1]);
+    strncpy(v->type, w[2], 15);
+    v->type[15] = 0;
+    strncpy(v->from, w[4], 12);
+    v->from[12] = 0;
+    if (++ninv == MAXI)
+        r_stop = 1;
+}
+
 static void load_lists(void)
 {
-    unsigned char i;
-    char *p;
-    struct tab *t;
-    struct inv *v;
     q_set("LST");
     ntab = 0;
-    if (net_req() == R_OK)
-        for (i = 0; i < r_n && ntab < MAXTAB; ++i) {
-            words(r_line[i]);
-            if (wn < 7 || !is(w[0], "TAB"))
-                continue;
-            t = tabs + ntab;
-            t->id = num(w[1]);
-            strncpy(t->type, w[2], 15);
-            t->type[15] = 0;
-            t->open = is(w[5], "open");
-            p = strchr(w[4], '/');
-            t->full = p != 0 && num(w[4]) >= num(p + 1);
-            t->mine = names_have_me(w[6], t->who);
-            if (t->mine || (t->open && !t->full))
-                ++ntab;
-        }
+    r_each = tab_line;
+    net_req();
     q_set("IVL");
     ninv = 0;
-    if (net_req() == R_OK)
-        for (i = 0; i < r_n && ninv < MAXI; ++i) {
-            words(r_line[i]);
-            if (wn < 5 || !is(w[0], "IVT"))
-                continue;
-            v = invs + ninv;
-            v->id = num(w[1]);
-            strncpy(v->type, w[2], 15);
-            v->type[15] = 0;
-            strncpy(v->from, w[4], 12);
-            v->from[12] = 0;
-            ++ninv;
-        }
+    r_each = inv_line;
+    net_req();
     if (first >= ntab + ninv)
         first = 0;
     clk_sync();

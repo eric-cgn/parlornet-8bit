@@ -6,12 +6,14 @@
      $0002-$008F  zero page (cc65's and ours); the KERNAL's above
      $0400-$05FF  the serial line's receive and send rings
      $0600-$07FF  cc65's C stack
-     $0800-$13FF  the reply buffer (net.c), and the loader (PARLORNET) before it
-     $1400-       the program (PN.MAIN), then its zeroed data, then the lobby and the tables (PN.PARLOR,
+     $0800-$0CFF  the reply buffer and LOWBSS (net.c), and PARLORNET before them
+     $0D00-       the program (PN.MAIN), then its zeroed data, then the lobby and the tables (PN.PARLOR,
                  loaded before the first sign-in: ovl.c)
-     OVL_ADDR-$600  a table's moves and chat (TABLE), or the lobby's lists (LOBBY)
-     OVL_ADDR-$BFFF one overlay at a time: the sign-in, a game, the start screen or the title screen
+     OVL_ADDR-$BFFF one overlay at a time (OVL_ADDR from build.sh's C64_OVL): the sign-in, a game, the start
+                 screen or the title screen
      $C000-$C7FF  the character set: the program's font, then the same inverted (PN.CHARS, made at start)
+     $C400-$CBE7  while the bitmap shows: a table's moves and chat (TABLE) or the lobby's lists (LOBBY),
+                 then GRBSS, over the inverted characters and the text screen
      $C800-$CBFF  the text screen; $CC00-$CFFF the colors of the bitmap's cells; both end in sprite pointers
      $D000-$DFFF  the I/O; the RAM under it holds the sprites' shapes
      $E000-$FF3F  the bitmap (320 by 200), under the KERNAL ROM

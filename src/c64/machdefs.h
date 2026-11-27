@@ -4,7 +4,7 @@
 
 #define MACHINE_SERIAL 1                /* the user port or a SwiftLink: the console and the dialer */
 #define MACHINE_GRBSS                   /* frame.c's buffers in the text screen while the bitmap shows */
-#define RBUF 2688                       /* the reply buffer (net.h), from $0800, with the program at $1400 */
+#define RBUF 1024                       /* the reply buffer (net.h), from $0800 */
 
 /* The Commodore key, which stands for commands as Open-Apple does on the Apple II: OA, wherever a screen
    names it, is the font's Commodore logo (C=), on the text screen and the bitmap alike. */
@@ -33,7 +33,7 @@
 
 /* Where overlays are loaded (ovl.h). build.sh sets it (C64_OVL) for the linker too. */
 #ifndef OVL_ADDR
-#define OVL_ADDR 0x9B00
+#define OVL_ADDR 0x9420
 #endif
 
 /* The table screen's frame (game.h), on whole rows of 8 lines: the title on row 0, the game on rows 1 to

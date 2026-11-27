@@ -24,7 +24,7 @@
         .export         _kbd_get, _kbd_mods, _tick_poll, _ticks
         .export         _clk_t, _clk_sub, _clk_set, _clk_text, _clk_buf, _clk_shown, _clk_show, _clk_sync, _clk_min
         .export         _clk_tim_off, _clk_tim_at
-        .import         _q_set, _net_req, _r_n, _r_line
+        .import         _q_set, _net_req, _r_n, _r_text
         .import         _signed_in, _ui_hide, _ui_show, _ui_ink, _hgr_text, _hg_x, _hg_y, pusha
         .export         _txt_mode, _gr_mode, _txt_detect, _txt_mt
 .ifndef IIGS

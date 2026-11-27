@@ -82,7 +82,7 @@ Settings kept by an older version of the program are reset to the defaults.
 
 Under ProDOS the program keeps these in PARLOR.CFG with the other settings. The self-booting disk keeps its settings only until the Apple is switched off, as it does the others.
 
-When you close the connection (Open-Apple-Q at the name prompt), the program says goodbye to the parlor, which hangs up, and the modem says NO CARRIER. A modem that does not notice gets the Hayes escape, `+++` with a second of quiet before and after it, then `ATH`. That escape is sent only then, never during a session. Then the start screen comes back. If the connection is lost while you play, the program says so and Return dials again. A reply that comes back with a byte missing (noise on the line, say) is not a lost connection: the program asks again, or looks at the table again after a move, and goes on.
+When you close the connection (Open-Apple-Q at the name prompt), the program says goodbye to the parlor, which hangs up, and the modem says NO CARRIER. A modem that does not notice gets the Hayes escape, `+++` with a second of quiet before and after it, then `ATH`. That escape is sent only then, never during a session. Then the start screen comes back. If the connection is lost while you play, the program says so and Return dials again. A reply that comes back with a byte missing (noise on the line, say) is not a lost connection: the program asks again, or looks at the table again after a move, and goes on. The program asks the parlor to send a long reply in pages (PAG), such as a long list of tables, and asks for each next page (CNT) once it has read the last, so its reply buffer is 1K and the games have the rest of the memory.
 
 - **A WiFi modem or a modem emulator** (tcpser, or a computer's modem emulation): press P.
 - **A Unix shell:** see Through a Unix shell, below.
@@ -188,9 +188,9 @@ The user port's driver (`src/c64/serial.s`) receives by CIA 2's NMI: the start b
 | Address | What |
 |---|---|
 | $0400-$07FF | the serial line's receive and send rings, the C stack |
-| $0800-$13FF | the reply buffer (the loader before it) |
-| $1400-$9AFF | the program (PN.MAIN), its variables, then the lobby, the tables and `frame.c` (PN.PARLOR) |
-| $9B00-$BFFF | one overlay: the sign-in, a game, New game, the start screen and settings, or the title screen |
+| $0800-$0CFF | the reply buffer and the lines of pages (PARLORNET before them) |
+| $0D00-$941F | the program (PN.MAIN), its variables, then the lobby, the tables and `frame.c` (PN.PARLOR) |
+| $9420-$BFFF | one overlay: the sign-in, a game, New game, the start screen and settings, or the title screen |
 | $C000-$C7FF | the character set, and the same inverted |
 | $C800-$CFFF | the text screen and the bitmap's colors (the loader, PN.BOOT, at start-up) |
 | $C400-$CBE7 | while the bitmap shows: a table's moves and chat, or the lobby's lists, then the buffers of the command line, the dialogs and the status line, over the inverted characters and the text screen, which come back with the text screen (`txt_mode` makes the inverted half again) |
@@ -219,7 +219,7 @@ The program and the overlays are packed with the program's own LZ packing (`tool
   - `tutorial.c` (an overlay): the tutorial, a game of Tic Tac Toe that never reaches the parlor. It includes the machine's drawing of its squares, `draw/tutorial.c`.
   - `help/`: the help pages, which `tools/help.py` makes for each machine.
   - `table.c`: the table screen every game shares, with its chat.
-  - `net.c`: PARLORNET/1 requests and replies.
+  - `net.c`: PARLORNET/1 requests, and their replies read a page at a time and handed out a line at a time.
   - `games.c`: the catalog.
   - `games/`: one file per game, its rules (the view's lines, the moves it sends), each an overlay. It includes the machine's drawing of its board, `draw/NAME.c`.
   - `machine.h`: the machine interface, everything the core asks of a machine (the line, input, the text screen, the graphics screen kit, the games' drawing, overlays, the clock, start-up), each with what the Apple II and the C64 do. Each machine's `machdefs.h` sets its constants and capabilities.
@@ -269,12 +269,13 @@ The Apple IIe's (the C64's is under The Commodore 64, above):
 | $0200-$03CE | the Double Hi-Res kit's parameters (`dhr.s`) |
 | $0400-$07FF | the 40-column text screen |
 | $0800-$0DFF | the boot block and sector reader |
-| $0E00-$1FFF | the serial ring, the reply buffer, the C stack |
+| $0E00-$14FF | the serial ring, the reply buffer, the lines of pages |
+| $1500-$1AFF | a table's moves and chat, or the lobby's lists |
+| $1C00-$1FFF | the C stack |
 | $2000-$3FFF | Double Hi-Res, its main half |
 | $4000-$BFFF | the program |
 | $D000-$DFFF | the command line, the dialogs and the pages of text (`frame.c`, language card RAM, bank 1) |
-| $D000-$F8FF | one overlay: the title screen, the start screen and settings, the sign-in, New game, or a game (language card RAM, bank 2) |
-| $F900-$FEFF | a table's moves and chat, or the lobby's lists (language card RAM, bank 2) |
+| $D000-$FEFF | one overlay: the title screen, the start screen and settings, the sign-in, New game, or a game (language card RAM, bank 2) |
 | $FF00-$FFFF | the joystick's code (`joy.s`) and the 6502 vectors (the interrupt handler is ours) |
 
 The language card has two banks at $D000-$DFFF. The overlays use bank 2, and bank 1 holds `frame.c`, which the program loads once from its own overlay before the first lobby and copies there. Each call into it goes through `bank1_call` (`sys.s`), which cc65 puts in front of every call to a function `frame.h` declares, and which switches bank 1 in for the call and back after.

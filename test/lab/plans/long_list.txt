@@ -1,0 +1,40 @@
+# Long replies in pages, for a player made first with lab/longlist.py (python3 test/lab/longlist.py olga
+# 16501), whose table list is several pages long: the lobby with the start of the list (ll_lobby) and More
+# (ll_more), then /list, the parlor's whole list, shown as pages of text; Right (or Space) turns the pages and,
+# at the last of them, asks the parlor for the reply's next page (ll_list_1 to ll_list_4). Esc closes it
+# (ll_closed).
+wait 120
+caps
+title 1800
+waittext ParlorNet: connect 1200
+hold cfg_tutor 1 30
+type P
+waittext Name: 900
+type olga\r
+waittext Password 600
+type Swordfish 1997\r
+wait 600
+settle 3600
+snap ll_lobby
+click 205
+settle 3600
+snap ll_more
+type /
+wait 30
+type list\r
+wait 300
+settle 3600
+snap ll_list_1
+arrows R
+settle 3600
+snap ll_list_2
+arrows R
+settle 3600
+snap ll_list_3
+arrows R
+settle 3600
+snap ll_list_4
+key esc
+settle 3600
+snap ll_closed
+exit

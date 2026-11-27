@@ -7,7 +7,8 @@ struct game {
     const char *type;                   /* "reversi" */
     const char *name;                   /* "Reversi" */
     void (*begin)(void);                /* a view is coming: forget the last one's lines */
-    void (*line)(void);                 /* one view line, in w[] and wn (net.h) */
+    void (*line)(void);                 /* one view line, in w[] and wn (net.h), as it comes: what the game
+                                           keeps it copies, since the line is gone when the next one comes */
     void (*draw)(void);                 /* draw the table; everything when g_full */
     void (*click)(unsigned char id);    /* a target of the game's was clicked */
     unsigned char (*key)(unsigned char k);  /* a key; 1 if the game took it */

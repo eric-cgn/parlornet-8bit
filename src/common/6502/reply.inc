@@ -1,12 +1,13 @@
 ; ParlorNet: reading a reply from the line (ser_reply, net.c). Machine-neutral 6502 code, .included by each
 ; machine's sys.s where it belongs among its own code and data.
 
-; unsigned int ser_reply(void): read a reply into sr_buf (at most sr_max bytes), as lines ended by a 0,
-; until a line that starts with OK, ERR, ASK or NO C (a modem's NO CARRIER) has ended, or, with sr_any
-; set, any line; or until sr_ticks pass without a byte. Empty lines are skipped, a line is kept to 80
-; characters, and what does not fit is dropped. Once part of the reply has come, sr_gap ticks without a
-; byte end it too (a reply comes in one piece, so a pause in it means a byte was lost on the line). sr_final is the final line's first character (O, E, A or
-; N) when one came, 0 when none did, so the kind is known even if the line did not fit. Returns the
+; unsigned int ser_reply(void): read a page of a reply into sr_buf (at most sr_max bytes), as lines ended by
+; a 0, until a line that starts with OK, ERR, ASK or NO C (a modem's NO CARRIER), or the line CNT that ends
+; a page with more to come, has ended, or, with sr_any set, any line; or until sr_ticks pass without a
+; byte. Empty lines are skipped, a line is kept to 80 characters, and what does not fit is dropped. Once
+; part of the page has come, sr_gap ticks without a byte end it too (a page comes in one piece, so a pause
+; in it means a byte was lost on the line). sr_final is the last line's first character (O, E, A, N, or C
+; for CNT) when one came, 0 when none did, so the kind is known even if the line did not fit. Returns the
 ; bytes stored. A tight loop, so that a card without its interrupt switch keeps up.
         .export         _ser_reply, _sr_buf, _sr_max, _sr_ticks, _sr_gap, _sr_any, _sr_final
 
@@ -136,7 +137,7 @@ ss_full:
         pla
         rts
 
-; C set when sr_kw starts a final line: "OK" alone or "OK ", "ERR", "ASK ", "NO C".
+; C set when sr_kw starts a final line ("OK" alone or "OK ", "ERR", "ASK ", "NO C") or is "CNT" alone.
 sr_isfinal:
         lda     sr_kw
         cmp     #'O'
@@ -165,6 +166,17 @@ sr_isfinal:
         bne     sr_no
         lda     sr_kw+2
         cmp     #'K'
+        beq     sr_yes
+        bne     sr_no
+:       cmp     #'C'
+        bne     :+
+        lda     sr_kw+1
+        cmp     #'N'
+        bne     sr_no
+        lda     sr_kw+2
+        cmp     #'T'
+        bne     sr_no
+        lda     sr_kw+3         ; (CNT alone)
         beq     sr_yes
         bne     sr_no
 :       cmp     #'N'
