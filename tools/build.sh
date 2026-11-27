@@ -4,11 +4,12 @@
 #   build/parlornet.dsk            the self-booting disk (140K, DOS 3.3 sector order, no operating system)
 #   build/parlornet-2.dsk        the second disk, only when the games do not all fit on the first
 #   build/layout.txt           where each part is on the disks (test/test_disk.py reads it)
-#   build/prodos/                  PARLOR.SYSTEM and PARLOR.DAT for the player's own ProDOS, and
-#                                  parlor-files.po, a ProDOS volume holding just those two files
+#   build/prodos/                  PARLOR.SYSTEM and PARLOR.DAT for the player's own ProDOS,
+#                                  parlor-files.po, a ProDOS volume holding just those two files, and
+#                                  parlornet.shk, a ShrinkIt archive of them (tools/nufx.py)
 #   build/gs/                      the IIgs program: PARLORNET (a GS/OS application, S16),
-#                                  PARLOR.DAT, and parlornet-gs.po, an 800K ProDOS volume holding
-#                                  just those two files
+#                                  PARLOR.DAT, parlornet-gs.po, an 800K ProDOS volume holding
+#                                  just those two files, and parlornet-gs.shk, a ShrinkIt archive of them
 #   build/c64/parlornet.d64        the C64 program's disk (a 1541's, 170K; tools/c64_disk.py)
 #
 # The compiler is cc65 2.19 in a Debian image pinned by digest (Dockerfile), built here and
